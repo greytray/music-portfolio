@@ -3,108 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EKO - Premium Music Production</title>
+    <!-- Import clean Google Fonts like the original Carrd design -->
+    <link rel="preconnect" href="https://googleapis.com">
+    <link rel="preconnect" href="https://gstatic.com" crossorigin>
+    <link href="https://googleapis.com/css2?family=Poppins:wght@400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Base Styling & Cyber Background Gradient */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background: linear-gradient(135deg, #a7cdfb 0%, #ecd3ff 50%, #6be3e7 100%);
+            background-attachment: fixed;
+            color: #121212; 
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-    <title>Grey Primary — Music Producer</title>
+        /* Glassmorphism Container to match Carrd look */
+        .section-container {
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 1100px;
+            margin: 20px 0;
+            padding: 40px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-    <!-- Main stylesheet -->
-    <link rel="stylesheet" href="style.css">
+        /* Section Layouts */
+        .column-left { flex: 1; min-width: 300px; padding: 20px; }
+        .column-right { flex: 1; min-width: 300px; padding: 20px; text-align: center; }
+
+        /* Typography matching your exact image layout */
+        h1 { font-size: 3.5rem; font-weight: 800; color: #1e1e2f; margin-bottom: 10px; }
+        h2 { font-size: 2.2rem; font-weight: 600; color: #3b3b54; margin-bottom: 20px; }
+        .subtitle { font-size: 1.1rem; color: #555566; margin-bottom: 30px; letter-spacing: 0.5px; }
+
+        /* Smooth Interactive Buttons */
+        .btn { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center;
+            background: #ffffff; 
+            color: #000000; 
+            padding: 14px 32px; 
+            text-decoration: none; 
+            border: 2px solid #000000;
+            border-radius: 50px; 
+            font-weight: 600; 
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); background: #000; color: #fff; }
+
+        /* Social Icons Area */
+        .social-icons { display: flex; gap: 15px; margin-bottom: 25px; }
+        .icon-circle {
+            width: 50px; height: 50px; border-radius: 50%; border: 2px solid #000;
+            display: flex; align-items: center; justify-content: center; background: #fff;
+            text-decoration: none; font-size: 1.2rem; color: #000; transition: 0.2s;
+        }
+        .icon-circle:hover { background: #000; color: #fff; }
+
+        /* Pricing Grid Setup */
+        .pricing-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .pricing-table td { padding: 14px 0; font-size: 1.1rem; border-bottom: 1px solid rgba(0, 0, 0, 0.15); }
+        .price-label { font-weight: 600; display: inline-block; background: #abfff7; padding: 2px 10px; border-radius: 4px; }
+        .price-value { text-align: right; font-family: 'Share Tech Mono', monospace; font-weight: bold; }
+
+        /* Beautiful Responsive Form Structure */
+        .input-field {
+            width: 100%; padding: 12px 16px; margin: 8px 0;
+            background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(0,0,0,0.15);
+            border-radius: 10px; font-size: 1rem; color: #121212; outline: none;
+        }
+        .input-field:focus { border-color: #000; background: #fff; }
+
+        /* Side Artwork Custom Layout */
+        .art-box img { max-width: 100%; border-radius: 16px; border: 2px solid #000; box-shadow: 5px 5px 0px #000; }
+        
+        /* Footer Legal styling */
+        footer { margin-top: 40px; font-size: 0.8rem; color: #666; letter-spacing: 1px; }
+    </style>
 </head>
-
 <body>
 
-    <!-- HERO -->
-    <header id="hero">
-        <div class="hero-content">
-            <p class="eyebrow">MUSIC PRODUCER</p>
-            <h1>Original music built around your sound.</h1>
-            <p class="hero-description">
-                Professional music production, built from scratch for your project.
-            </p>
+    <!-- SECTION 1: HERO & CONNECT (Based on Screen 1 & 7) -->
+    <div class="section-container">
+        <div class="column-left">
+            <h1>Let's Work</h1>
+            <p class="subtitle">DM for quick response. Available for collaborations & ongoing projects.</p>
+            
+            <div class="social-icons">
+                <!-- Replace '#' with your actual links -->
+                <a href="#" class="icon-circle">📸</a>
+                <a href="#" class="icon-circle">✉️</a>
+                <a href="#" class="icon-circle">💬</a>
+            </div>
 
-            <a href="#work" class="button">LISTEN TO MY WORK</a>
+            <a href="#contact" class="btn">Start a Project &nbsp; ❯</a>
         </div>
-    </header>
-
-
-    <main>
-
-        <!-- INTRO -->
-        <section id="intro">
-            <h2>Your sound deserves its own identity.</h2>
-            <p>
-                Original production, professional quality, and a process built around your vision.
-            </p>
-        </section>
-
-
-        <!-- THE WORK -->
-        <section id="work">
-            <p class="section-label">THE WORK</p>
-            <h2>Hear what I create.</h2>
-
-            <!-- Custom demo player will go here -->
-            <div class="audio-showcase">
-                <p>Audio showcase coming soon.</p>
+        <div class="column-right">
+            <div class="art-box">
+                <!-- Replace this placeholder URL with your real anime layout banner later -->
+                <img src="https://placeholder.com" alt="Studio Artwork">
             </div>
-        </section>
+        </div>
+    </div>
 
-
-        <!-- THE PROCESS -->
-        <section id="process">
-            <p class="section-label">THE PROCESS</p>
-            <h2>Built around your project.</h2>
-
-            <div class="process-grid">
-                <div class="process-card">✓ Original Music</div>
-                <div class="process-card">✓ Made From Scratch</div>
-                <div class="process-card">✓ No AI Used</div>
-                <div class="process-card">✓ Built Around Your Style</div>
-                <div class="process-card">✓ Professional Mixing</div>
-                <div class="process-card">✓ Ready To Release</div>
+    <!-- SECTION 2: PRICING (Based on Screen 3) -->
+    <div class="section-container">
+        <div class="column-left">
+            <div class="art-box">
+                <!-- Replace this placeholder URL with your graphic dial element image later -->
+                <img src="https://placeholder.com" alt="Production Hardware Control">
             </div>
-        </section>
+        </div>
+        <div class="column-right" style="text-align: left;">
+            <h2>Pricing</h2>
+            <table class="pricing-table">
+                <tr><td><span class="price-label">Beat Lease</span></td><td class="price-value">₹500</td></tr>
+                <tr><td><span class="price-label">Custom Beat</span></td><td class="price-value">₹800 - ₹2000</td></tr>
+                <tr><td><span class="price-label">Mix & Master</span></td><td class="price-value">₹1000 - ₹2500</td></tr>
+                <tr><td><span class="price-label">Vocal Mixing</span></td><td class="price-value">₹800 - ₹2000</td></tr>
+                <tr><td><span class="price-label">Audio Editing</span></td><td class="price-value">₹500 - ₹1500</td></tr>
+                <tr><td><span class="price-label">Lessons</span></td><td class="price-value">₹400 / hour</td></tr>
+            </table>
+        </div>
+    </div>
 
+    <!-- SECTION 3: AUTOMATED FORM & DISPATCH (Based on Screen 2) -->
+    <div id="contact" class="section-container" style="background: rgba(255, 255, 255, 0.55);">
+        <div class="column-left">
+            <h2>Place Order / Request Service</h2>
+            <p class="subtitle" style="margin-bottom:15px;">UPI / GPay / PhonePe / PayPal accepted worldwide. Projects confirmed upon advance deposit.</p>
+            <p style="font-size:0.9rem; font-weight:600;">⚡ Delivery Times:</p>
+            <p style="font-size:0.9rem; color:#444;">Beats: 24 hrs | Mixing: 24-48 hrs | Edits: Same day</p>
+        </div>
+        
+        <div class="column-right" style="text-align: left;">
+            <!-- Setup with Web3Forms backend API -->
+            <form action="https://web3forms.com" method="POST">
+                <!-- Paste your custom access key token inside the value="" below -->
+                <input type="hidden" name="access_key" value="YOUR_ACCESS_KEY_HERE">
+                
+                <input type="text" name="name" class="input-field" placeholder="Your Name" required>
+                <input type="email" name="email" class="input-field" placeholder="Your Email Address" required>
+                
+                <select name="service_type" class="input-field" required>
+                    <option value="" disabled selected>Select Your Required Service...</option>
+                    <option value="beat_lease">Beat Lease (₹500)</option>
+                    <option value="custom_beat">Custom Beat (₹800+)</option>
+                    <option value="mix_master">Mix & Master (₹1000+)</option>
+                    <option value="lessons">FL Studio Lessons (₹400/hr)</option>
+                </select>
+                
+                <textarea name="message" class="input-field" placeholder="Paste your Google Drive audio sample/recording upload link here, or detail your track ideas..." style="height: 100px;" required></textarea>
+                
+                <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">Order Service 🛒</button>
+            </form>
+        </div>
+    </div>
 
-        <!-- PRICING -->
-        <section id="pricing">
-            <p class="section-label">PRICING</p>
-            <h2>Clear pricing. No surprises.</h2>
-
-            <div class="pricing-content">
-                <p>Pricing details will be added here.</p>
-            </div>
-        </section>
-
-
-        <!-- DELIVERY & PAYMENT -->
-        <section id="delivery">
-            <p class="section-label">DELIVERY</p>
-            <h2>Simple from start to finish.</h2>
-
-            <div class="delivery-content">
-                <p>Delivery and payment information will be added here.</p>
-            </div>
-        </section>
-
-
-        <!-- CONTACT -->
-        <section id="contact">
-            <p class="section-label">START A PROJECT</p>
-            <h2>Let's create something original.</h2>
-
-            <a href="mailto:your@email.com" class="button">GET IN TOUCH</a>
-        </section>
-
-    </main>
-
-
-    <footer>
-        <p>© Grey Primary</p>
-    </footer>
-
-
-    <!-- Main JavaScript -->
-    <script src="script.js"></script>
+    <footer>© Eko. All rights reserved.</footer>
 
 </body>
 </html>
