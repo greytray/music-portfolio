@@ -3,116 +3,116 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Eko — independent music producer crafting original beats, mixes, and release-ready sound.">
+  <meta name="description" content="Eko music production — original beats, mixing, mastering, vocal production, and audio editing.">
   <meta name="theme-color" content="#4B0082">
   <title>Eko — Music Producer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="site-header">
-    <a class="brand" href="#top" aria-label="Eko home">EKO<span>.</span></a>
-    <nav aria-label="Main navigation">
-      <a href="#producer">Music</a><a href="#process">Process</a><a href="#pricing">Pricing</a><a href="#work">Let&apos;s work</a>
-    </nav>
-    <a class="header-cta" href="#player">Play beats <span aria-hidden="true">↗</span></a>
-  </header>
+  <nav class="floating-nav" aria-label="Main navigation">
+    <a class="logo" href="#hero">EKO<span>•</span></a>
+    <div><a href="#work">Work</a><a href="#process">Process</a><a href="#pricing">Pricing</a><a href="#contact">Contact</a></div>
+  </nav>
 
   <main>
-    <section class="hero" id="top" aria-labelledby="hero-title">
-      <div class="hero-image" role="img" aria-label="Music studio with synthesizers and recording equipment"></div>
-      <div class="hero-overlay"></div>
-      <div class="hero-content reveal">
-        <p class="kicker">Independent producer · Worldwide</p>
-        <h1 id="hero-title">Sound that<br><span>moves different.</span></h1>
-        <div class="hero-bottom">
-          <p>Original production for artists who refuse to sound like everybody else.</p>
-          <a class="button button-light" href="#player">Listen to beats <span aria-hidden="true">↓</span></a>
-        </div>
+    <section class="panel hero" id="hero" aria-labelledby="hero-title">
+      <!-- HERO GIF PLACEHOLDER: replace src with your first animated GIF URL -->
+      <img class="animated-background" src="" alt="" aria-hidden="true">
+      <div class="hero-copy reveal">
+        <p class="eyebrow">Independent producer · Worldwide</p>
+        <h1 id="hero-title">Music<br>Producer</h1>
+        <p class="hero-lead">Beats, Mixing &amp; Vocal Production</p>
+        <p>Focused on clean, impactful sound with fast delivery.</p>
+        <div class="hero-actions"><a class="capsule ghost" href="#hero">Back <span>←</span></a><a class="capsule solid" href="#work">View Work <span>↓</span></a></div>
       </div>
-      <p class="hero-tag" aria-hidden="true">EKO / 2026</p>
+      <figure class="hero-art glass reveal"><div class="image-placeholder" role="img" aria-label="Portrait or producer artwork placeholder"><span>YOUR ARTWORK</span><small>Replace this image placeholder</small></div></figure>
     </section>
 
-    <section class="section producer" id="producer" aria-labelledby="producer-title">
-      <div class="section-label"><span>01</span><p>music producer</p></div>
-      <div class="producer-copy reveal">
-        <h2 id="producer-title">I build worlds<br>you can <span>hear.</span></h2>
-        <div class="statement">
-          <p>From the first kick to the final master, every detail is shaped around your identity—not a template.</p>
-          <p>Genre-fluid production with a sharp ear for atmosphere, movement, and emotion.</p>
+    <section class="panel section" id="work" aria-labelledby="work-title">
+      <header class="section-head reveal"><p class="eyebrow">Selected services</p><h2 id="work-title">The Work</h2></header>
+      <div class="work-layout">
+        <div class="work-bento reveal">
+          <article class="glass tile tile-wide"><span class="tile-icon" aria-hidden="true">≋</span><div><small>Mix engineering</small><h3>ProMix</h3></div></article>
+          <article class="glass tile"><span class="tile-icon" aria-hidden="true">♪</span><div><small>Your style</small><h3>ProBeat</h3></div></article>
+          <article class="glass tile"><span class="tile-icon" aria-hidden="true">◉</span><div><small>Vocal production</small><h3>ProVocal</h3></div></article>
+          <article class="glass tile tile-cta"><p>Order or DM to start your project.</p><a href="#contact">Start <span>↗</span></a></article>
+          <article class="glass tile tile-fast"><strong>24–48</strong><span>hour turnaround</span></article>
+        </div>
+        <div class="service-list reveal">
+          <article><h3>Beat Production</h3><p>Custom beats tailored to your style and vision.</p></article>
+          <article><h3>Mixing &amp; Mastering</h3><p>Clean, balanced, and industry-ready sound.</p></article>
+          <article><h3>Vocal Mixing</h3><p>Crisp vocals that sit perfectly in the mix.</p></article>
+          <article><h3>Audio Editing</h3><p>Podcast cleanup, noise removal, voice enhancement.</p></article>
+          <article><h3>FL Studio Lessons</h3><p>1-on-1 sessions covering beatmaking and mixing.</p></article>
+          <article><h3>Jingles &amp; Custom Work</h3><p>Short-form music for content, ads, or branding.</p></article>
+          <button class="capsule solid listen-button" type="button" data-scroll-player>Listen <span>♪</span></button>
         </div>
       </div>
-
-      <div class="player" id="player">
-        <div class="player-top">
-          <div class="player-status"><span class="pulse"></span> Eko sound archive</div>
-          <div class="player-code">SESSION / 001</div>
-        </div>
-        <div class="player-main">
-          <div class="track-identity">
-            <p class="kicker">Now playing</p>
-            <h3 id="current-title">Midnight Bloom</h3>
-            <p id="current-style">Future R&amp;B · 118 BPM</p>
-          </div>
-          <button class="main-play" id="main-play" type="button" aria-label="Play Midnight Bloom"><span class="play-icon" aria-hidden="true">▶</span></button>
-        </div>
-        <div class="visualizer-wrap">
-          <canvas id="waveform" aria-label="Animated audio frequency visualizer"></canvas>
-          <div class="visualizer-labels" aria-hidden="true"><span>Bass / Sub details</span><span>Stereo width</span></div>
-        </div>
-        <div class="timeline">
-          <span id="current-time">0:00</span><input id="progress" type="range" min="0" max="100" value="0" aria-label="Track progress"><span id="duration">0:00</span>
-        </div>
-        <div class="playlist" id="playlist" aria-label="Beat playlist">
-          <button class="track active" type="button" data-src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" data-title="Midnight Bloom" data-style="Future R&amp;B · 118 BPM"><span>01</span><strong>Midnight Bloom</strong><small>Future R&amp;B</small><b>Play</b></button>
-          <button class="track" type="button" data-src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" data-title="Blue Static" data-style="Alternative Rap · 142 BPM"><span>02</span><strong>Blue Static</strong><small>Alternative Rap</small><b>Play</b></button>
-          <button class="track" type="button" data-src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" data-title="Afterimage" data-style="Cinematic Soul · 96 BPM"><span>03</span><strong>Afterimage</strong><small>Cinematic Soul</small><b>Play</b></button>
-        </div>
-        <audio id="audio" preload="metadata" crossorigin="anonymous"></audio>
+      <div class="glass mini-player reveal" id="player">
+        <button id="play-button" type="button" aria-label="Play demo beat">▶</button>
+        <div><small>DEMO BEAT 01</small><strong>Midnight Bloom</strong></div>
+        <canvas id="waveform" aria-label="Animated audio visualizer"></canvas>
+        <span id="player-time">0:00</span>
+        <audio id="audio" preload="metadata" crossorigin="anonymous" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
       </div>
     </section>
 
-    <section class="section process" id="process" aria-labelledby="process-title">
-      <div class="section-label"><span>02</span><p>the process</p></div>
-      <div class="split-heading reveal"><h2 id="process-title">Clear steps.<br><span>Zero static.</span></h2><p>A focused collaboration that protects the spark and keeps your project moving.</p></div>
-      <ol class="process-list">
-        <li class="reveal"><span>01</span><h3>Discover</h3><p>We unpack your references, story, audience, and what the record needs to feel like.</p></li>
-        <li class="reveal"><span>02</span><h3>Shape</h3><p>I build the sonic direction, then refine every choice with your feedback in the loop.</p></li>
-        <li class="reveal"><span>03</span><h3>Finish</h3><p>You receive organized, release-ready files with clarity, impact, and room to last.</p></li>
+    <section class="panel section process" id="process" aria-labelledby="process-title">
+      <header class="section-head reveal"><p class="eyebrow">100% original · No AI used</p><h2 id="process-title">The Process</h2><p>A simple, creative workflow designed to bring your sound to life.</p></header>
+      <ol class="process-grid">
+        <li class="glass process-card reveal"><span>01</span><i aria-hidden="true">●●●</i><h3>Discuss</h3><p>We discuss your ideas, references, and goals to understand the vision.</p></li>
+        <li class="glass process-card reveal"><span>02</span><i aria-hidden="true">✓</i><h3>Plan</h3><p>I analyze the vibe and create a custom plan for your track.</p></li>
+        <li class="glass process-card reveal"><span>03</span><i aria-hidden="true">♫</i><h3>Create</h3><p>I compose, design, and build your track from scratch.</p></li>
+        <li class="glass process-card reveal"><span>04</span><i aria-hidden="true">∿</i><h3>Mix &amp; Refine</h3><p>I balance and polish the sound until it feels just right.</p></li>
+        <li class="glass process-card reveal"><span>05</span><i aria-hidden="true">⌁</i><h3>Master</h3><p>Final mastering for loudness, clarity, and release-level quality.</p></li>
+        <li class="glass process-card reveal"><span>06</span><i aria-hidden="true">WAV</i><h3>Deliver</h3><p>You receive high-quality, ready-to-release files.</p></li>
       </ol>
+      <div class="glass original-strip reveal"><strong>100% Original. Built For You. Each Time.</strong><span>No templates. No shortcuts. Just honest music, crafted to tell your story.</span></div>
     </section>
 
-    <section class="pricing" id="pricing" aria-labelledby="pricing-title">
-      <div class="pricing-head section"><div class="section-label"><span>03</span><p>pricing</p></div><div class="split-heading reveal"><h2 id="pricing-title">Pick your<br><span>frequency.</span></h2><p>Simple starting points. Every project can be tailored to fit the record.</p></div></div>
-      <div class="bento-grid">
-        <article class="price-card price-card-main reveal"><p class="card-type">Signature service</p><h3>Custom Beat Production</h3><p>Built from zero around your voice, references, and release vision.</p><ul><li>Exclusive rights</li><li>Tracked stems</li><li>Two revision rounds</li></ul><div class="price"><small>From</small><strong>$299</strong></div><!-- Paste your PayPal or Stripe payment link into href below --><a class="button button-dark" href="#">Buy now <span aria-hidden="true">↗</span></a></article>
-        <article class="price-card reveal"><p class="card-type">Engineering</p><h3>Mixing &amp; Mastering</h3><p>Dimension, clarity, and impact across every playback system.</p><div class="price"><small>From</small><strong>$149</strong></div><!-- Paste your PayPal or Stripe payment link into href below --><a class="button button-outline" href="#">Buy now <span aria-hidden="true">↗</span></a></article>
-        <article class="price-card reveal"><p class="card-type">Post production</p><h3>Audio Editing</h3><p>Precise tuning, cleanup, comping, and timing for polished performances.</p><div class="price"><small>From</small><strong>$79</strong></div><!-- Paste your PayPal or Stripe payment link into href below --><a class="button button-outline" href="#">Buy now <span aria-hidden="true">↗</span></a></article>
-        <aside class="price-note reveal"><p>Need something different?</p><h3>Build a custom package.</h3><a href="#work">Start a conversation <span aria-hidden="true">→</span></a></aside>
+    <section class="panel section" id="pricing" aria-labelledby="pricing-title">
+      <header class="section-head reveal"><p class="eyebrow">Simple, transparent rates</p><h2 id="pricing-title">Pricing</h2></header>
+      <div class="pricing-layout">
+        <div class="glass control-deck reveal" role="img" aria-label="Audio quality and affordability control deck placeholder">
+          <div class="deck-label"><span>QUALITY</span><span>AFFORDABILITY</span></div>
+          <div class="knob-row"><div class="knob cyan"><i></i></div><div class="knob purple"><i></i></div></div>
+          <p>BUILT FOR ARTISTS. PRICED FOR CREATORS.</p>
+        </div>
+        <div class="glass price-menu reveal">
+          <div><span>Beat Lease</span><strong>₹500</strong></div><div><span>Custom Beat</span><strong>₹800 – ₹2000</strong></div><div><span>Mix &amp; Master</span><strong>₹1000 – ₹2500</strong></div><div><span>Vocal Mixing</span><strong>₹800 – ₹2000</strong></div><div><span>Audio Editing</span><strong>₹500 – ₹1500</strong></div><div><span>Lessons</span><strong>₹400 / hour</strong></div>
+        </div>
       </div>
     </section>
 
-    <section class="section delivery" id="delivery" aria-labelledby="delivery-title">
-      <div class="section-label"><span>04</span><p>delivery and payment</p></div>
-      <div class="split-heading reveal"><h2 id="delivery-title">No friction.<br><span>Just files.</span></h2><p>Transparent terms, protected payments, and everything you need for release day.</p></div>
-      <div class="delivery-row"><article><span>01</span><h3>Secure checkout</h3><p>Pay safely through your preferred payment provider.</p></article><article><span>02</span><h3>High-resolution delivery</h3><p>WAV, MP3, stems, and session-ready exports as needed.</p></article><article><span>03</span><h3>Clear licensing</h3><p>Usage and ownership terms are agreed before we begin.</p></article></div>
+    <section class="panel section delivery" id="delivery" aria-labelledby="delivery-title">
+      <header class="section-head reveal"><p class="eyebrow">Clear terms, fast files</p><h2 id="delivery-title">Delivery &amp; Payment</h2></header>
+      <div class="delivery-grid">
+        <div class="glass payment-note reveal"><h3>UPI / GPay / PhonePe accepted</h3><p>Projects are confirmed upon advance payment.</p></div>
+        <div class="glass delivery-times reveal"><p>Beats <span>within 24 hours</span></p><p>Mixing <span>24–48 hours</span></p><p>Edits <span>same day in most cases</span></p></div>
+        <div class="glass providers reveal" aria-label="Accepted payment providers"><span>G Pay</span><span>PayPal</span><span>UPI</span><span>Paytm</span><span>PhonePe</span></div>
+      </div>
+      <!-- Paste your PayPal or Stripe payment link into href below -->
+      <a class="capsule solid order-button" href="#">Order <span>↗</span></a>
     </section>
 
-    <section class="work" id="work" aria-labelledby="work-title">
-      <div class="work-copy reveal"><p class="kicker">Free project inquiry</p><h2 id="work-title">Let&apos;s work.</h2><p>Send the vision. I&apos;ll reply with creative direction, availability, and a clear quote.</p><a href="mailto:hello@eko.audio">hello@eko.audio</a></div>
+    <section class="panel contact" id="contact" aria-labelledby="contact-title">
+      <!-- FOOTER GIF PLACEHOLDER: replace src with your second animated GIF URL -->
+      <img class="animated-background" src="" alt="" aria-hidden="true">
+      <div class="contact-copy reveal"><p class="eyebrow">Available for collaborations</p><h2 id="contact-title">Let&apos;s Work</h2><p>Tell me what you&apos;re building. I&apos;ll reply with direction, availability, and a clear quote.</p><div class="social-circles" aria-label="Contact links"><a href="#" aria-label="Instagram">◎</a><a href="mailto:hello@eko.audio" aria-label="Email">✉</a><a href="#" aria-label="Message">◌</a></div></div>
       <!-- Paste your Web3Forms action URL into the action attribute below -->
-      <form class="contact-form" action="" method="POST">
-        <div class="form-row"><label>Name<input type="text" name="name" autocomplete="name" required placeholder="Your name"></label><label>Email<input type="email" name="email" autocomplete="email" required placeholder="you@email.com"></label></div>
-        <label>Project type<select name="service" required><option value="" selected disabled>Choose a service</option><option>Custom Beat Production</option><option>Mixing &amp; Mastering</option><option>Audio Editing</option><option>Custom Package</option></select></label>
-        <label>Tell me about the project<textarea name="message" rows="5" required placeholder="Sound, references, timeline, budget..."></textarea></label>
-        <button class="button button-light" type="submit">Send inquiry <span aria-hidden="true">↗</span></button><p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+      <form class="glass contact-form reveal" action="" method="POST">
+        <label>Name<input name="name" autocomplete="name" required placeholder="Your name"></label>
+        <label>Email<input type="email" name="email" autocomplete="email" required placeholder="you@email.com"></label>
+        <label>Project<select name="service" required><option value="" disabled selected>Select a service</option><option>Custom Beat</option><option>Mix &amp; Master</option><option>Vocal Mixing</option><option>Audio Editing</option><option>Lessons</option></select></label>
+        <label>Vision<textarea name="message" rows="4" required placeholder="References, deadline, and what you want it to feel like..."></textarea></label>
+        <button class="capsule solid" type="submit">Start a Project <span>→</span></button><p class="form-status" id="form-status" role="status" aria-live="polite"></p>
       </form>
+      <footer><span>© Eko. All rights reserved.</span><a href="#hero">Back to top ↑</a></footer>
     </section>
   </main>
-
-  <footer><a class="brand" href="#top">EKO<span>.</span></a><div class="socials" aria-label="Social links"><a href="#">Instagram</a><a href="#">YouTube</a><a href="#">SoundCloud</a></div><p>© Eko. All rights reserved.</p></footer>
   <script src="script.js"></script>
 </body>
 </html>
