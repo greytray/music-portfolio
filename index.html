@@ -1,184 +1,150 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EKO - Premium Music Production</title>
-    <!-- Import clean Google Fonts like the original Carrd design -->
-    <link rel="preconnect" href="https://googleapis.com">
-    <link rel="preconnect" href="https://gstatic.com" crossorigin>
-    <link href="https://googleapis.com/css2?family=Poppins:wght@400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    
-    <style>
-        /* Base Styling & Cyber Background Gradient */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: 'Poppins', sans-serif; 
-            background: linear-gradient(135deg, #a7cdfb 0%, #ecd3ff 50%, #6be3e7 100%);
-            background-attachment: fixed;
-            color: #121212; 
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        /* Glassmorphism Container to match Carrd look */
-        .section-container {
-            background: rgba(255, 255, 255, 0.45);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 24px;
-            width: 100%;
-            max-width: 1100px;
-            margin: 20px 0;
-            padding: 40px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        /* Section Layouts */
-        .column-left { flex: 1; min-width: 300px; padding: 20px; }
-        .column-right { flex: 1; min-width: 300px; padding: 20px; text-align: center; }
-
-        /* Typography matching your exact image layout */
-        h1 { font-size: 3.5rem; font-weight: 800; color: #1e1e2f; margin-bottom: 10px; }
-        h2 { font-size: 2.2rem; font-weight: 600; color: #3b3b54; margin-bottom: 20px; }
-        .subtitle { font-size: 1.1rem; color: #555566; margin-bottom: 30px; letter-spacing: 0.5px; }
-
-        /* Smooth Interactive Buttons */
-        .btn { 
-            display: inline-flex; 
-            align-items: center; 
-            justify-content: center;
-            background: #ffffff; 
-            color: #000000; 
-            padding: 14px 32px; 
-            text-decoration: none; 
-            border: 2px solid #000000;
-            border-radius: 50px; 
-            font-weight: 600; 
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); background: #000; color: #fff; }
-
-        /* Social Icons Area */
-        .social-icons { display: flex; gap: 15px; margin-bottom: 25px; }
-        .icon-circle {
-            width: 50px; height: 50px; border-radius: 50%; border: 2px solid #000;
-            display: flex; align-items: center; justify-content: center; background: #fff;
-            text-decoration: none; font-size: 1.2rem; color: #000; transition: 0.2s;
-        }
-        .icon-circle:hover { background: #000; color: #fff; }
-
-        /* Pricing Grid Setup */
-        .pricing-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .pricing-table td { padding: 14px 0; font-size: 1.1rem; border-bottom: 1px solid rgba(0, 0, 0, 0.15); }
-        .price-label { font-weight: 600; display: inline-block; background: #abfff7; padding: 2px 10px; border-radius: 4px; }
-        .price-value { text-align: right; font-family: 'Share Tech Mono', monospace; font-weight: bold; }
-
-        /* Beautiful Responsive Form Structure */
-        .input-field {
-            width: 100%; padding: 12px 16px; margin: 8px 0;
-            background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(0,0,0,0.15);
-            border-radius: 10px; font-size: 1rem; color: #121212; outline: none;
-        }
-        .input-field:focus { border-color: #000; background: #fff; }
-
-        /* Side Artwork Custom Layout */
-        .art-box img { max-width: 100%; border-radius: 16px; border: 2px solid #000; box-shadow: 5px 5px 0px #000; }
-        
-        /* Footer Legal styling */
-        footer { margin-top: 40px; font-size: 0.8rem; color: #666; letter-spacing: 1px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Noir Wave — premium music production, custom beats, mixing, mastering, and audio editing.">
+  <meta name="theme-color" content="#08090b">
+  <title>Noir Wave — Producer & Beat Store</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Noir Wave home">NOIR<span>WAVE</span></a>
+    <nav aria-label="Main navigation">
+      <a href="#beats">Beats</a>
+      <a href="#services">Services</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
 
-    <!-- SECTION 1: HERO & CONNECT (Based on Screen 1 & 7) -->
-    <div class="section-container">
-        <div class="column-left">
-            <h1>Let's Work</h1>
-            <p class="subtitle">DM for quick response. Available for collaborations & ongoing projects.</p>
-            
-            <div class="social-icons">
-                <!-- Replace '#' with your actual links -->
-                <a href="#" class="icon-circle">📸</a>
-                <a href="#" class="icon-circle">✉️</a>
-                <a href="#" class="icon-circle">💬</a>
-            </div>
+  <main>
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero-photo" role="img" aria-label="Music producer working in a dark recording studio"></div>
+      <div class="hero-shade"></div>
+      <div class="hero-content">
+        <p class="eyebrow">Producer · Engineer · Sound Designer</p>
+        <h1 id="hero-title">NOIR<br><span>WAVE</span></h1>
+        <p class="hero-copy">Cinematic sound. Heavy drums. Records built to leave a mark.</p>
+        <a class="button button-primary" href="#beats">Listen to Beats <span aria-hidden="true">→</span></a>
+      </div>
+      <p class="vertical-note" aria-hidden="true">INDEPENDENT SOUND · EST. 2026</p>
+    </section>
 
-            <a href="#contact" class="btn">Start a Project &nbsp; ❯</a>
+    <section class="section beats" id="beats" aria-labelledby="beats-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Selected instrumentals</p>
+          <h2 id="beats-title">The latest <em>heat.</em></h2>
         </div>
-        <div class="column-right">
-            <div class="art-box">
-                <!-- Replace this placeholder URL with your real anime layout banner later -->
-                <img src="https://placeholder.com" alt="Studio Artwork">
-            </div>
-        </div>
-    </div>
+        <p>Preview a curated selection of available beats. Headphones recommended.</p>
+      </div>
 
-    <!-- SECTION 2: PRICING (Based on Screen 3) -->
-    <div class="section-container">
-        <div class="column-left">
-            <div class="art-box">
-                <!-- Replace this placeholder URL with your graphic dial element image later -->
-                <img src="https://placeholder.com" alt="Production Hardware Control">
-            </div>
+      <div class="player-shell">
+        <div class="now-playing">
+          <div class="cover-art" aria-hidden="true"><span>NW</span></div>
+          <div class="track-meta">
+            <p class="eyebrow">Now playing</p>
+            <h3 id="current-title">Midnight Run</h3>
+            <p id="current-style">Dark Trap · 142 BPM</p>
+          </div>
+          <button class="main-play" id="main-play" type="button" aria-label="Play Midnight Run">
+            <span class="play-icon" aria-hidden="true">▶</span>
+          </button>
         </div>
-        <div class="column-right" style="text-align: left;">
-            <h2>Pricing</h2>
-            <table class="pricing-table">
-                <tr><td><span class="price-label">Beat Lease</span></td><td class="price-value">₹500</td></tr>
-                <tr><td><span class="price-label">Custom Beat</span></td><td class="price-value">₹800 - ₹2000</td></tr>
-                <tr><td><span class="price-label">Mix & Master</span></td><td class="price-value">₹1000 - ₹2500</td></tr>
-                <tr><td><span class="price-label">Vocal Mixing</span></td><td class="price-value">₹800 - ₹2000</td></tr>
-                <tr><td><span class="price-label">Audio Editing</span></td><td class="price-value">₹500 - ₹1500</td></tr>
-                <tr><td><span class="price-label">Lessons</span></td><td class="price-value">₹400 / hour</td></tr>
-            </table>
+        <div class="timeline">
+          <span id="current-time">0:00</span>
+          <input id="progress" type="range" min="0" max="100" value="0" aria-label="Track progress">
+          <span id="duration">0:00</span>
         </div>
-    </div>
+        <div class="playlist" id="playlist" aria-label="Beat playlist">
+          <button class="track active" type="button" data-src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" data-title="Midnight Run" data-style="Dark Trap · 142 BPM">
+            <span class="track-number">01</span><span class="track-name">Midnight Run<small>Dark Trap · 142 BPM</small></span><span class="track-length">6:12</span><span class="track-action">Play</span>
+          </button>
+          <button class="track" type="button" data-src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" data-title="Velvet Smoke" data-style="Alt R&B · 96 BPM">
+            <span class="track-number">02</span><span class="track-name">Velvet Smoke<small>Alt R&amp;B · 96 BPM</small></span><span class="track-length">7:05</span><span class="track-action">Play</span>
+          </button>
+          <button class="track" type="button" data-src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" data-title="Chrome Hearts" data-style="Melodic Rap · 128 BPM">
+            <span class="track-number">03</span><span class="track-name">Chrome Hearts<small>Melodic Rap · 128 BPM</small></span><span class="track-length">5:44</span><span class="track-action">Play</span>
+          </button>
+        </div>
+        <audio id="audio" preload="metadata"></audio>
+      </div>
+    </section>
 
-    <!-- SECTION 3: AUTOMATED FORM & DISPATCH (Based on Screen 2) -->
-    <div id="contact" class="section-container" style="background: rgba(255, 255, 255, 0.55);">
-        <div class="column-left">
-            <h2>Place Order / Request Service</h2>
-            <p class="subtitle" style="margin-bottom:15px;">UPI / GPay / PhonePe / PayPal accepted worldwide. Projects confirmed upon advance deposit.</p>
-            <p style="font-size:0.9rem; font-weight:600;">⚡ Delivery Times:</p>
-            <p style="font-size:0.9rem; color:#444;">Beats: 24 hrs | Mixing: 24-48 hrs | Edits: Same day</p>
+    <section class="section services" id="services" aria-labelledby="services-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Made for your next release</p>
+          <h2 id="services-title">Studio <em>services.</em></h2>
         </div>
-        
-        <div class="column-right" style="text-align: left;">
-            <!-- Setup with Web3Forms backend API -->
-            <form action="https://web3forms.com" method="POST">
-                <!-- Paste your custom access key token inside the value="" below -->
-                <input type="hidden" name="access_key" value="YOUR_ACCESS_KEY_HERE">
-                
-                <input type="text" name="name" class="input-field" placeholder="Your Name" required>
-                <input type="email" name="email" class="input-field" placeholder="Your Email Address" required>
-                
-                <select name="service_type" class="input-field" required>
-                    <option value="" disabled selected>Select Your Required Service...</option>
-                    <option value="beat_lease">Beat Lease (₹500)</option>
-                    <option value="custom_beat">Custom Beat (₹800+)</option>
-                    <option value="mix_master">Mix & Master (₹1000+)</option>
-                    <option value="lessons">FL Studio Lessons (₹400/hr)</option>
-                </select>
-                
-                <textarea name="message" class="input-field" placeholder="Paste your Google Drive audio sample/recording upload link here, or detail your track ideas..." style="height: 100px;" required></textarea>
-                
-                <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">Order Service 🛒</button>
-            </form>
+        <p>Professional sound, straightforward pricing, and a process built around your vision.</p>
+      </div>
+      <div class="service-grid">
+        <article class="service-card featured">
+          <p class="service-index">01 / Production</p>
+          <h3>Custom Beat Production</h3>
+          <p>Original production tailored to your voice, references, and release goals.</p>
+          <ul><li>Exclusive rights</li><li>2 revisions</li><li>Tracked stems</li></ul>
+          <div class="price"><span>From</span><strong>$299</strong></div>
+          <!-- Replace # with your PayPal or Stripe payment link -->
+          <a class="button button-dark" href="#">Buy Now <span aria-hidden="true">↗</span></a>
+        </article>
+        <article class="service-card">
+          <p class="service-index">02 / Engineering</p>
+          <h3>Mixing &amp; Mastering</h3>
+          <p>Depth, clarity, impact, and a competitive master ready for every platform.</p>
+          <ul><li>Up to 40 stems</li><li>2 revisions</li><li>High-res master</li></ul>
+          <div class="price"><span>From</span><strong>$149</strong></div>
+          <!-- Replace # with your PayPal or Stripe payment link -->
+          <a class="button button-outline" href="#">Buy Now <span aria-hidden="true">↗</span></a>
+        </article>
+        <article class="service-card">
+          <p class="service-index">03 / Post</p>
+          <h3>Audio Editing</h3>
+          <p>Detailed vocal cleanup, timing, tuning, comping, and podcast post-production.</p>
+          <ul><li>Vocal tuning</li><li>Noise removal</li><li>48-hour delivery</li></ul>
+          <div class="price"><span>From</span><strong>$79</strong></div>
+          <!-- Replace # with your PayPal or Stripe payment link -->
+          <a class="button button-outline" href="#">Buy Now <span aria-hidden="true">↗</span></a>
+        </article>
+      </div>
+    </section>
+
+    <section class="section contact" id="contact" aria-labelledby="contact-title">
+      <div class="contact-copy">
+        <p class="eyebrow">Free custom inquiry</p>
+        <h2 id="contact-title">Let&apos;s make<br><em>your sound.</em></h2>
+        <p>Tell me what you&apos;re working on. I&apos;ll reply with creative direction, availability, and a clear quote.</p>
+        <a href="mailto:hello@noirwave.com">hello@noirwave.com</a>
+      </div>
+      <!-- Paste your Web3Forms action URL into the action attribute below -->
+      <form class="contact-form" action="" method="POST">
+        <div class="form-row">
+          <label>Name<input type="text" name="name" autocomplete="name" required placeholder="Your name"></label>
+          <label>Email<input type="email" name="email" autocomplete="email" required placeholder="you@email.com"></label>
         </div>
-    </div>
+        <label>What do you need?
+          <select name="service" required>
+            <option value="" selected disabled>Select a service</option>
+            <option>Custom Beat Production</option><option>Mixing &amp; Mastering</option><option>Audio Editing</option><option>Other</option>
+          </select>
+        </label>
+        <label>Project details<textarea name="message" rows="5" required placeholder="Tell me about the sound, timeline, and references..."></textarea></label>
+        <button class="button button-primary" type="submit">Send Inquiry <span aria-hidden="true">→</span></button>
+        <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+  </main>
 
-    <footer>© Eko. All rights reserved.</footer>
-
+  <footer>
+    <a class="brand" href="#top">NOIR<span>WAVE</span></a>
+    <div class="socials" aria-label="Social links"><a href="#">Instagram</a><a href="#">YouTube</a><a href="#">SoundCloud</a></div>
+    <p>© <span id="year"></span> Noir Wave. All rights reserved.</p>
+  </footer>
+  <script src="script.js"></script>
 </body>
 </html>
