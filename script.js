@@ -1,71 +1,80 @@
 const audio = document.querySelector('#audio');
-const playButton = document.querySelector('#play-button');
-const playerTime = document.querySelector('#player-time');
-const canvas = document.querySelector('#waveform');
-const ctx = canvas.getContext('2d');
-let animationFrame;
+const mainPlay = document.querySelector('#main-play');
+const playIcon = mainPlay.querySelector('.play-icon');
+const tracks = [...document.querySelectorAll('.track')];
+const currentTitle = document.querySelector('#current-title');
+const currentStyle = document.querySelector('#current-style');
+const currentTime = document.querySelector('#current-time');
+const duration = document.querySelector('#duration');
+const progress = document.querySelector('#progress');
 
-function resizeCanvas() {
-  const ratio = Math.min(window.devicePixelRatio || 1, 2);
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = Math.round(rect.width * ratio);
-  canvas.height = Math.round(rect.height * ratio);
-  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-}
-
-function drawWaveform() {
-  const width = canvas.clientWidth;
-  const height = canvas.clientHeight;
-  const time = performance.now() / 650;
-  ctx.clearRect(0, 0, width, height);
-  ctx.beginPath();
-  ctx.strokeStyle = '#bff4ff';
-  ctx.lineWidth = 2;
-  ctx.shadowColor = '#87ceeb';
-  ctx.shadowBlur = 10;
-  for (let x = 0; x <= width; x += 4) {
-    const energy = audio.paused ? 0.35 : 1;
-    const envelope = Math.sin((x / width) * Math.PI);
-    const y = height / 2 + Math.sin(x * 0.045 + time) * height * 0.28 * envelope * energy + Math.sin(x * 0.12 - time * 1.4) * 5 * energy;
-    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-  animationFrame = requestAnimationFrame(drawWaveform);
-}
+let activeTrack = tracks[0];
+audio.src = activeTrack.dataset.src;
 
 function formatTime(seconds) {
   if (!Number.isFinite(seconds)) return '0:00';
-  return `${Math.floor(seconds / 60)}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
+  const minutes = Math.floor(seconds / 60);
+  const remaining = Math.floor(seconds % 60).toString().padStart(2, '0');
+  return `${minutes}:${remaining}`;
 }
 
-playButton.addEventListener('click', async () => {
-  try {
-    if (audio.paused) await audio.play(); else audio.pause();
-  } catch {
-    playButton.textContent = '▶';
+function setPlayingState(isPlaying) {
+  playIcon.textContent = isPlaying ? 'Ⅱ' : '▶';
+  mainPlay.setAttribute('aria-label', `${isPlaying ? 'Pause' : 'Play'} ${currentTitle.textContent}`);
+  tracks.forEach((track) => {
+    track.querySelector('.track-action').textContent = track === activeTrack && isPlaying ? 'Pause' : 'Play';
+  });
+}
+
+function selectTrack(track, shouldPlay = true) {
+  const changed = track !== activeTrack;
+  if (changed) {
+    activeTrack.classList.remove('active');
+    activeTrack = track;
+    activeTrack.classList.add('active');
+    audio.src = activeTrack.dataset.src;
+    currentTitle.textContent = activeTrack.dataset.title;
+    currentStyle.textContent = activeTrack.dataset.style;
   }
+
+  if (shouldPlay) {
+    if (!changed && !audio.paused) audio.pause();
+    else audio.play().catch(() => setPlayingState(false));
+  }
+}
+
+mainPlay.addEventListener('click', () => {
+  if (audio.paused) audio.play().catch(() => setPlayingState(false));
+  else audio.pause();
 });
-audio.addEventListener('play', () => { playButton.textContent = 'Ⅱ'; playButton.setAttribute('aria-label', 'Pause demo beat'); });
-audio.addEventListener('pause', () => { playButton.textContent = '▶'; playButton.setAttribute('aria-label', 'Play demo beat'); });
-audio.addEventListener('timeupdate', () => { playerTime.textContent = formatTime(audio.currentTime); });
-document.querySelector('[data-scroll-player]').addEventListener('click', () => document.querySelector('#player').scrollIntoView({ behavior: 'smooth', block: 'center' }));
 
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach((entry) => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
-}, { threshold: 0.1 });
-document.querySelectorAll('.reveal').forEach((element) => observer.observe(element));
+tracks.forEach((track) => track.addEventListener('click', () => selectTrack(track)));
+audio.addEventListener('play', () => setPlayingState(true));
+audio.addEventListener('pause', () => setPlayingState(false));
+audio.addEventListener('loadedmetadata', () => { duration.textContent = formatTime(audio.duration); });
+audio.addEventListener('timeupdate', () => {
+  currentTime.textContent = formatTime(audio.currentTime);
+  progress.value = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+});
+audio.addEventListener('ended', () => {
+  const nextIndex = (tracks.indexOf(activeTrack) + 1) % tracks.length;
+  selectTrack(tracks[nextIndex]);
+});
+progress.addEventListener('input', () => {
+  if (audio.duration) audio.currentTime = (Number(progress.value) / 100) * audio.duration;
+});
 
-const form = document.querySelector('.contact-form');
-const status = document.querySelector('#form-status');
-form.addEventListener('submit', (event) => {
-  if (!form.getAttribute('action')) {
+document.querySelector('#year').textContent = new Date().getFullYear();
+
+const contactForm = document.querySelector('.contact-form');
+const formStatus = document.querySelector('#form-status');
+contactForm.addEventListener('submit', (event) => {
+  if (!contactForm.getAttribute('action')) {
     event.preventDefault();
-    status.textContent = 'Add your Web3Forms action URL to activate submissions.';
+    formStatus.textContent = 'Add your Web3Forms action URL to activate this form.';
   }
 });
-document.querySelectorAll('a[href="#"]').forEach((link) => link.addEventListener('click', (event) => event.preventDefault()));
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
-cancelAnimationFrame(animationFrame);
-drawWaveform();
+
+document.querySelectorAll('a[href="#"]').forEach((link) => {
+  link.addEventListener('click', (event) => event.preventDefault());
+});
