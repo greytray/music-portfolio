@@ -28,7 +28,7 @@
         <p class="eyebrow">Producer · Engineer · Sound Designer</p>
         <h1 id="hero-title">EKO</h1>
         <p class="hero-copy">Cinematic sound. Heavy drums. Records built to leave a mark.</p>
-        <a class="button button-primary" href="#beats">Listen to Beats <span aria-hidden="true">→</span></a>
+        <a class="button button-primary cta-button" href="#beats">Listen to Beats <span aria-hidden="true">→</span></a>
       </div>
       <p class="vertical-note" aria-hidden="true">INDEPENDENT SOUND · EST. 2026</p>
     </section>
@@ -106,7 +106,7 @@
       <div class="contact-copy">
         <p class="eyebrow">Free custom inquiry</p>
         <h2 id="contact-title">Let&apos;s <em>Work.</em></h2>
-        <p>Tell me what you&apos;re working on. I&apos;ll reply with creative direction, availability, and a clear quote.</p>
+        <p>Available for collaborations &amp; ongoing projects</p>
         <div class="contact-channels" aria-label="Contact Eko">
           <a href="#" aria-label="Eko on Instagram"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
           <a href="mailto:hello@eko.com" aria-label="Email Eko"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg></a>
@@ -120,23 +120,21 @@
           <label>Email<input type="email" name="email" autocomplete="email" required placeholder="you@email.com"></label>
         </div>
         <label>What do you need?
-          <select name="service" required>
-            <option value="" selected disabled>Select a service</option>
-            <option>Custom Beat Production</option><option>Mixing &amp; Mastering</option><option>Vocal Mixing</option><option>Audio Editing</option><option>Beat Lease</option><option>Production Lessons</option><option>Other</option>
-          </select>
+          <span class="select-wrap">
+            <select name="service" required>
+              <option value="" selected disabled>Select a service</option>
+              <option>Custom Beat Production</option><option>Mixing &amp; Mastering</option><option>Vocal Mixing</option><option>Audio Editing</option><option>Beat Lease</option><option>Production Lessons</option><option>Other</option>
+            </select>
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+          </span>
         </label>
         <label>Project details<textarea name="message" rows="5" required placeholder="Tell me about the sound, timeline, and references..."></textarea></label>
-        <button class="button button-primary" type="submit">Send Request <span aria-hidden="true">→</span></button>
+        <button class="button button-primary cta-button" type="submit">Send Request <span aria-hidden="true">→</span></button>
         <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
       </form>
+      <p class="contact-copyright">© <span id="year"></span> Eko. All rights reserved.</p>
     </section>
   </main>
-
-  <footer>
-    <a class="brand" href="#top">EKO</a>
-    <div class="socials" aria-label="Social links"><a href="#">Instagram</a><a href="#">YouTube</a><a href="#">SoundCloud</a></div>
-    <p>© <span id="year"></span> Eko. All rights reserved.</p>
-  </footer>
   <script src="script.js"></script>
 </body>
 </html>
