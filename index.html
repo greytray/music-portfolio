@@ -23,8 +23,7 @@
 
   <main>
     <section class="hero" id="top" aria-labelledby="hero-title">
-      <div class="hero-photo" role="img" aria-label="Music producer working in a dark recording studio"></div>
-      <div class="hero-shade"></div>
+      <div class="hero-photo" role="img" aria-label="Music producer working in a recording studio"></div>
       <div class="hero-content">
         <p class="eyebrow">Producer · Engineer · Sound Designer</p>
         <h1 id="hero-title">NOIR<br><span>WAVE</span></h1>
@@ -48,11 +47,12 @@
           <div class="cover-art" aria-hidden="true"><span>NW</span></div>
           <div class="track-meta">
             <p class="eyebrow">Now playing</p>
-            <h3 id="current-title">Midnight Run</h3>
-            <p id="current-style">Dark Trap · 142 BPM</p>
+            <h3 id="current-title">Feeling Mello</h3>
+            <p id="current-style">Original production · Available</p>
           </div>
-          <button class="main-play" id="main-play" type="button" aria-label="Play Midnight Run">
-            <span class="play-icon" aria-hidden="true">▶</span>
+          <button class="main-play" id="main-play" type="button" aria-label="Play Feeling Mello">
+            <svg class="play-icon icon-play" aria-hidden="true" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <svg class="play-icon icon-pause" aria-hidden="true" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
           </button>
         </div>
         <div class="timeline">
@@ -61,23 +61,23 @@
           <span id="duration">0:00</span>
         </div>
         <div class="playlist" id="playlist" aria-label="Beat playlist">
-          <button class="track active" type="button" data-src="./assets/feeling mello.wav" data-title="Feeling Mello" data-style="Original production">
-            <span class="track-number">01</span><span class="track-name">Feeling Mello<small>Original production</small></span><span class="track-length">—</span><span class="track-action">Play</span>
+          <button class="track active" type="button" data-src="./assets/feeling mello.wav" data-title="Feeling Mello" data-style="Original production" data-status="Available" aria-label="Play Feeling Mello">
+            <span class="track-number">01</span><span class="track-name">Feeling Mello<small>Original production <span class="track-status">Available</span></small></span><span class="track-length">—</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></span>
           </button>
-          <button class="track" type="button" data-src="./assets/broken jar mastered.mp3" data-title="Broken Jar" data-style="Mastered production">
-            <span class="track-number">02</span><span class="track-name">Broken Jar<small>Mastered production</small></span><span class="track-length">—</span><span class="track-action">Play</span>
+          <button class="track" type="button" data-src="./assets/broken jar mastered.mp3" data-title="Broken Jar" data-style="Mastered production" data-status="Available" aria-label="Play Broken Jar">
+            <span class="track-number">02</span><span class="track-name">Broken Jar<small>Mastered production <span class="track-status">Available</span></small></span><span class="track-length">—</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></span>
           </button>
-          <button class="track" type="button" data-src="./assets/Kpop beat.mp3" data-title="Kpop Beat" data-style="K-Pop production">
-            <span class="track-number">03</span><span class="track-name">Kpop Beat<small>K-Pop production</small></span><span class="track-length">—</span><span class="track-action">Play</span>
+          <button class="track" type="button" data-src="./assets/Kpop beat.mp3" data-title="Kpop Beat" data-style="K-Pop production" data-status="Preview" aria-label="Play Kpop Beat">
+            <span class="track-number">03</span><span class="track-name">Kpop Beat<small>K-Pop production <span class="track-status">Preview</span></small></span><span class="track-length">—</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></span>
           </button>
-          <button class="track" type="button" data-src="./assets/Kensuke.mp3" data-title="Kensuke" data-style="Original production">
-            <span class="track-number">04</span><span class="track-name">Kensuke<small>Original production</small></span><span class="track-length">—</span><span class="track-action">Play</span>
+          <button class="track" type="button" data-src="./assets/Kensuke.mp3" data-title="Kensuke" data-style="Original production" data-status="Available" aria-label="Play Kensuke">
+            <span class="track-number">04</span><span class="track-name">Kensuke<small>Original production <span class="track-status">Available</span></small></span><span class="track-length">—</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></span>
           </button>
-          <button class="track" type="button" data-src="./assets/K-Pop post fx.mp3" data-title="K-Pop Post FX" data-style="Post-production mix">
-            <span class="track-number">05</span><span class="track-name">K-Pop Post FX<small>Post-production mix</small></span><span class="track-length">—</span><span class="track-action">Play</span>
+          <button class="track" type="button" data-src="./assets/K-Pop post fx.mp3" data-title="K-Pop Post FX" data-style="Post-production mix" data-status="Preview" aria-label="Play K-Pop Post FX">
+            <span class="track-number">05</span><span class="track-name">K-Pop Post FX<small>Post-production mix <span class="track-status">Preview</span></small></span><span class="track-length">—</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></span>
           </button>
-          <button class="track" type="button" data-src="./assets/Aiobahn maybe last mix.mp3" data-title="Aiobahn Maybe Last Mix" data-style="Final mix">
-            <span class="track-number">06</span><span class="track-name">Aiobahn Maybe Last Mix<small>Final mix</small></span><span class="track-length">—</span><span class="track-action">Play</span>
+          <button class="track" type="button" data-src="./assets/Aiobahn maybe last mix.mp3" data-title="Aiobahn Maybe Last Mix" data-style="Final mix" data-status="Preview" aria-label="Play Aiobahn Maybe Last Mix">
+            <span class="track-number">06</span><span class="track-name">Aiobahn Maybe Last Mix<small>Final mix <span class="track-status">Preview</span></small></span><span class="track-length">—</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></span>
           </button>
         </div>
         <audio id="audio" preload="metadata"></audio>
