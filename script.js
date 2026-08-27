@@ -40,7 +40,9 @@ function setPlayingState(isPlaying) {
 
 function updateNowPlaying(track) {
   currentTitle.textContent = track.dataset.title;
-  currentStyle.textContent = `${track.dataset.style} · ${track.dataset.status}`;
+  currentStyle.textContent = track.dataset.title === 'Kensuke'
+    ? 'Soundtrack by Eko for Anime Teaser'
+    : 'Original production';
 }
 
 function selectTrack(track, shouldPlay = true) {
