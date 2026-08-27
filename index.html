@@ -345,6 +345,60 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab;
   .contact-copyright { margin-top: 64px; }
 }
 
+/* Requested visual refinements */
+body { font-family: "Work Sans", sans-serif; }
+.hero-photo, .contact { background-size: 100% 100%; }
+.hero-photo { transform: none; }
+#hero-title { color: var(--ink); text-shadow: 0 0 7px color-mix(in srgb, #8f00ff 48%, transparent); }
+
+.button, .cta-button, .service-footer a {
+  min-height: 76px;
+  border-width: 3px;
+  border-style: solid;
+  border-radius: 999px;
+  background: transparent;
+  transition: transform .13s cubic-bezier(.16, 1, .3, 1), background .13s ease, color .13s ease;
+}
+.cta-button { border-color: var(--paper); color: var(--paper); }
+.button:hover, .cta-button:hover, .service-footer a:hover,
+.button:focus-visible, .cta-button:focus-visible, .service-footer a:focus-visible {
+  background: var(--paper);
+  color: var(--ink);
+  transform: rotate(-1.5deg);
+  box-shadow: none;
+}
+.button:hover > span, .cta-button:hover > span { transform: none; }
+.service-footer a { min-height: 58px; border-color: var(--paper); background: transparent; color: var(--paper); }
+.service-footer a span { color: currentColor; }
+.service-footer a:hover span, .service-footer a:focus-visible span { color: currentColor; }
+.contact-form .cta-button { border-color: var(--ink); background: transparent; color: var(--ink); }
+.contact-form .cta-button:hover, .contact-form .cta-button:focus-visible { background: var(--paper); color: var(--ink); }
+
+.player-shell { width: min(92%, 1280px); overflow: visible; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.now-playing { padding: 24px; border: 1px solid var(--glass-border); background: var(--panel); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.timeline { padding: 22px 14px 30px; }
+.timeline input[type="range"] { height: 2px; }
+.playlist { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.track { min-height: 126px; border: 1px solid color-mix(in srgb, var(--paper) 10%, transparent); background: var(--panel); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.track-visualizer { gap: 0; justify-content: space-between; }
+.track-visualizer span { flex: 0 0 2px; min-width: 0; }
+
+.contact { align-items: center; }
+.contact-copy { align-items: flex-start; text-align: left; }
+.contact-intro { display: inline-flex; flex-direction: column; align-items: center; }
+.contact-intro > p { max-width: 440px; margin: 30px 0; color: var(--ink); text-align: center; }
+.contact-channels { justify-content: center; }
+.select-wrap svg { transition: none; }
+.select-wrap:hover svg { transform: translateY(-50%); }
+
+@media (max-width: 820px) {
+  .playlist { grid-template-columns: 1fr; }
+  .contact-copy { align-items: center; text-align: center; }
+}
+@media (max-width: 560px) {
+  .button, .cta-button { min-height: 68px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
@@ -369,7 +423,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab;
         <p class="eyebrow">Producer · Engineer · Sound Designer</p>
         <h1 id="hero-title">EKO</h1>
         <p class="hero-copy">Cinematic sound. Heavy drums. Records built to leave a mark.</p>
-        <a class="button button-primary cta-button" href="#beats">Listen to Beats <span aria-hidden="true">→</span></a>
+        <a class="button button-primary cta-button" href="#beats">Listen to Beats <span aria-hidden="true">›</span></a>
       </div>
       <p class="vertical-note" aria-hidden="true">INDEPENDENT SOUND · EST. 2026</p>
     </section>
@@ -401,7 +455,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab;
         </div>
         <div class="timeline">
           <span id="current-time">0:00</span>
-          <input id="progress" type="range" min="0" max="100" value="0" aria-label="Track progress">
+          <input id="progress" type="range" min="0" max="100" step="0.01" value="0" aria-label="Track progress">
           <span id="duration">0:00</span>
         </div>
         <div class="playlist" id="playlist" aria-label="Beat playlist">
@@ -437,24 +491,26 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab;
         <p>Professional sound, straightforward pricing, and a process built around your vision.</p>
       </div>
       <div class="service-grid">
-        <article class="service-card"><p class="service-index">01 / Bespoke</p><h3>Custom Beat Production</h3><p>An original instrumental shaped around your voice, references, and release vision.</p><div class="service-footer"><strong>From $299</strong><a href="#contact" aria-label="Request custom beat production">Request <span aria-hidden="true">↗</span></a></div></article>
-        <article class="service-card"><p class="service-index">02 / Release</p><h3>Mixing &amp; Mastering</h3><p>Dimensional, detailed mixes and competitive masters ready for every platform.</p><div class="service-footer"><strong>From $149</strong><a href="#contact" aria-label="Request mixing and mastering">Request <span aria-hidden="true">↗</span></a></div></article>
-        <article class="service-card"><p class="service-index">03 / Voice</p><h3>Vocal Mixing</h3><p>For artists with a beat and recorded vocals who need polish, balance, and presence.</p><div class="service-footer"><strong>From $99</strong><a href="#contact" aria-label="Request vocal mixing">Request <span aria-hidden="true">↗</span></a></div></article>
-        <article class="service-card"><p class="service-index">04 / Restoration</p><h3>Audio Editing</h3><p>Professional enhancement for treated podcasts, extracted acapellas, and noisy recordings.</p><div class="service-footer"><strong>From $79</strong><a href="#contact" aria-label="Request audio editing">Request <span aria-hidden="true">↗</span></a></div></article>
-        <article class="service-card"><p class="service-index">05 / Catalog</p><h3>Beat Lease</h3><p>Release-ready instrumentals with flexible licensing for independent artists.</p><div class="service-footer"><strong>From $49</strong><a href="#beats" aria-label="Browse beats to lease">Browse <span aria-hidden="true">↗</span></a></div></article>
-        <article class="service-card"><p class="service-index">06 / Mentorship</p><h3>Production Lessons</h3><p>Focused one-to-one sessions covering arrangement, sound selection, and workflow.</p><div class="service-footer"><strong>From $75</strong><a href="#contact" aria-label="Request production lessons">Request <span aria-hidden="true">↗</span></a></div></article>
+        <article class="service-card"><p class="service-index">01 / Bespoke</p><h3>Custom Beat Production</h3><p>An original instrumental shaped around your voice, references, and release vision.</p><div class="service-footer"><strong>From $299</strong><a href="#contact" aria-label="Request custom beat production">Request <span aria-hidden="true">›</span></a></div></article>
+        <article class="service-card"><p class="service-index">02 / Release</p><h3>Mixing &amp; Mastering</h3><p>Dimensional, detailed mixes and competitive masters ready for every platform.</p><div class="service-footer"><strong>From $149</strong><a href="#contact" aria-label="Request mixing and mastering">Request <span aria-hidden="true">›</span></a></div></article>
+        <article class="service-card"><p class="service-index">03 / Voice</p><h3>Vocal Mixing</h3><p>For artists with a beat and recorded vocals who need polish, balance, and presence.</p><div class="service-footer"><strong>From $99</strong><a href="#contact" aria-label="Request vocal mixing">Request <span aria-hidden="true">›</span></a></div></article>
+        <article class="service-card"><p class="service-index">04 / Restoration</p><h3>Audio Editing</h3><p>Professional enhancement for treated podcasts, extracted acapellas, and noisy recordings.</p><div class="service-footer"><strong>From $79</strong><a href="#contact" aria-label="Request audio editing">Request <span aria-hidden="true">›</span></a></div></article>
+        <article class="service-card"><p class="service-index">05 / Catalog</p><h3>Beat Lease</h3><p>Release-ready instrumentals with flexible licensing for independent artists.</p><div class="service-footer"><strong>From $49</strong><a href="#beats" aria-label="Browse beats to lease">Browse <span aria-hidden="true">›</span></a></div></article>
+        <article class="service-card"><p class="service-index">06 / Mentorship</p><h3>Production Lessons</h3><p>Focused one-to-one sessions covering arrangement, sound selection, and workflow.</p><div class="service-footer"><strong>From $75</strong><a href="#contact" aria-label="Request production lessons">Request <span aria-hidden="true">›</span></a></div></article>
       </div>
     </section>
 
     <section class="section contact" id="contact" aria-labelledby="contact-title">
       <div class="contact-copy">
         <p class="eyebrow">Free custom inquiry</p>
-        <h2 id="contact-title">Let&apos;s <em>Work</em></h2>
-        <p>Available for collaborations &amp; ongoing projects</p>
-        <div class="contact-channels" aria-label="Contact Eko">
-          <a href="#" aria-label="Eko on Instagram"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
-          <a href="mailto:hello@eko.com" aria-label="Email Eko"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg></a>
-          <a href="#" aria-label="Contact Eko on Signal"><img src="https://thesvg.org/icons/signal/default.svg" width="30" height="30" alt="" aria-hidden="true"></a>
+        <div class="contact-intro">
+          <h2 id="contact-title">Let&apos;s <em>Work</em></h2>
+          <p>Available for collaborations &amp; ongoing projects</p>
+          <div class="contact-channels" aria-label="Contact Eko">
+            <a href="#" aria-label="Eko on Instagram"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
+            <a href="mailto:hello@eko.com" aria-label="Email Eko"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg></a>
+            <a href="#" aria-label="Contact Eko on Signal"><img src="https://thesvg.org/icons/signal/default.svg" width="30" height="30" alt="" aria-hidden="true"></a>
+          </div>
         </div>
       </div>
       <!-- Paste your Web3Forms action URL into the action attribute below -->
@@ -473,7 +529,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab;
           </span>
         </label>
         <label>Project details<textarea name="message" rows="5" required placeholder="Tell me about the sound, timeline, and references..."></textarea></label>
-        <button class="button button-primary cta-button" type="submit">Send Request <span aria-hidden="true">→</span></button>
+        <button class="button button-primary cta-button" type="submit">Send Request <span aria-hidden="true">›</span></button>
         <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
       </form>
       <p class="contact-copyright">© <span id="year"></span> Eko. All rights reserved.</p>
@@ -495,6 +551,7 @@ let analyser;
 let sourceNode;
 let frequencyData;
 let visualizerFrame;
+let timelineFrame;
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const desktopPlayer = window.matchMedia('(min-width: 821px)');
 const trackVisualizer = document.createElement('span');
@@ -513,8 +570,7 @@ function renderVisualizer() {
   analyser.getByteFrequencyData(frequencyData);
   const bars = [...trackVisualizer.children];
   bars.forEach((bar, visualIndex) => {
-    const frequencyIndex = bars.length - visualIndex;
-    const sampleStart = Math.floor((frequencyIndex / bars.length) * 42);
+    const sampleStart = Math.floor((visualIndex / bars.length) * 42);
     const sampleEnd = Math.min(frequencyData.length - 1, sampleStart + 2);
     let total = 0;
     for (let index = sampleStart; index <= sampleEnd; index += 1) total += frequencyData[index] || 0;
@@ -534,7 +590,7 @@ async function ensureAudioGraph() {
       audioContext = new AudioContext();
       analyser = audioContext.createAnalyser();
       analyser.fftSize = 128;
-      analyser.smoothingTimeConstant = 0.72;
+      analyser.smoothingTimeConstant = 0.28;
       sourceNode = audioContext.createMediaElementSource(audio);
       sourceNode.connect(analyser);
       analyser.connect(audioContext.destination);
@@ -554,6 +610,22 @@ function stopVisualizer() {
   if (visualizerFrame) cancelAnimationFrame(visualizerFrame);
   visualizerFrame = undefined;
   [...trackVisualizer.children].forEach((bar) => bar.style.setProperty('--level', '.14'));
+}
+
+function renderTimeline() {
+  currentTime.textContent = formatTime(audio.currentTime);
+  progress.value = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+  if (!audio.paused) timelineFrame = requestAnimationFrame(renderTimeline);
+}
+
+function startTimeline() {
+  if (!timelineFrame) timelineFrame = requestAnimationFrame(renderTimeline);
+}
+
+function stopTimeline() {
+  if (timelineFrame) cancelAnimationFrame(timelineFrame);
+  timelineFrame = undefined;
+  renderTimeline();
 }
 
 function loadTrackDurations() {
@@ -620,10 +692,12 @@ tracks.forEach((track) => track.addEventListener('click', () => selectTrack(trac
 audio.addEventListener('play', () => {
   setPlayingState(true);
   startVisualizer();
+  startTimeline();
 });
 audio.addEventListener('pause', () => {
   setPlayingState(false);
   stopVisualizer();
+  stopTimeline();
 });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) stopVisualizer();
@@ -641,10 +715,6 @@ audio.addEventListener('loadedmetadata', () => {
   const formattedDuration = formatTime(audio.duration);
   duration.textContent = formattedDuration;
   activeTrack.querySelector('.track-length').textContent = formattedDuration;
-});
-audio.addEventListener('timeupdate', () => {
-  currentTime.textContent = formatTime(audio.currentTime);
-  progress.value = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
 });
 audio.addEventListener('ended', () => {
   const nextIndex = (tracks.indexOf(activeTrack) + 1) % tracks.length;
