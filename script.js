@@ -8,7 +8,71 @@ const duration = document.querySelector('#duration');
 const progress = document.querySelector('#progress');
 
 let activeTrack = tracks[0];
+let audioContext;
+let analyser;
+let sourceNode;
+let frequencyData;
+let visualizerFrame;
+let smoothedBass = 0.16;
+let smoothedMids = 0.12;
+const playerEnergy = document.querySelector('.player-energy');
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 audio.src = activeTrack.dataset.src;
+
+function averageRange(data, start, end) {
+  let total = 0;
+  for (let index = start; index <= end; index += 1) total += data[index] || 0;
+  return total / Math.max(1, end - start + 1) / 255;
+}
+
+function renderVisualizer() {
+  if (!analyser || audio.paused || document.hidden || reduceMotion.matches) {
+    visualizerFrame = undefined;
+    return;
+  }
+
+  analyser.getByteFrequencyData(frequencyData);
+  const bass = averageRange(frequencyData, 1, 9);
+  const mids = averageRange(frequencyData, 10, 34);
+  smoothedBass += (bass - smoothedBass) * 0.2;
+  smoothedMids += (mids - smoothedMids) * 0.26;
+  playerEnergy?.style.setProperty('--bass', Math.min(1, 0.12 + smoothedBass * 1.35).toFixed(3));
+  playerEnergy?.style.setProperty('--mids', Math.min(1, 0.1 + smoothedMids * 1.55).toFixed(3));
+  visualizerFrame = requestAnimationFrame(renderVisualizer);
+}
+
+async function ensureAudioGraph() {
+  if (!playerEnergy || reduceMotion.matches) return;
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+
+  try {
+    if (!audioContext) {
+      audioContext = new AudioContext();
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 128;
+      analyser.smoothingTimeConstant = 0.72;
+      sourceNode = audioContext.createMediaElementSource(audio);
+      sourceNode.connect(analyser);
+      analyser.connect(audioContext.destination);
+      frequencyData = new Uint8Array(analyser.frequencyBinCount);
+    }
+    if (audioContext.state === 'suspended') await audioContext.resume();
+  } catch {
+    playerEnergy.classList.add('is-static');
+  }
+}
+
+function startVisualizer() {
+  if (!visualizerFrame && !reduceMotion.matches) visualizerFrame = requestAnimationFrame(renderVisualizer);
+}
+
+function stopVisualizer() {
+  if (visualizerFrame) cancelAnimationFrame(visualizerFrame);
+  visualizerFrame = undefined;
+  playerEnergy?.style.setProperty('--bass', '.16');
+  playerEnergy?.style.setProperty('--mids', '.12');
+}
 
 function loadTrackDurations() {
   tracks.forEach((track) => {
@@ -60,18 +124,32 @@ function selectTrack(track, shouldPlay = true) {
 
   if (shouldPlay) {
     if (!changed && !audio.paused) audio.pause();
-    else audio.play().catch(() => setPlayingState(false));
+    else ensureAudioGraph().then(() => audio.play()).catch(() => setPlayingState(false));
   }
 }
 
 mainPlay.addEventListener('click', () => {
-  if (audio.paused) audio.play().catch(() => setPlayingState(false));
+  if (audio.paused) ensureAudioGraph().then(() => audio.play()).catch(() => setPlayingState(false));
   else audio.pause();
 });
 
 tracks.forEach((track) => track.addEventListener('click', () => selectTrack(track)));
-audio.addEventListener('play', () => setPlayingState(true));
-audio.addEventListener('pause', () => setPlayingState(false));
+audio.addEventListener('play', () => {
+  setPlayingState(true);
+  startVisualizer();
+});
+audio.addEventListener('pause', () => {
+  setPlayingState(false);
+  stopVisualizer();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopVisualizer();
+  else if (!audio.paused) startVisualizer();
+});
+reduceMotion.addEventListener?.('change', () => {
+  if (reduceMotion.matches) stopVisualizer();
+  else if (!audio.paused) startVisualizer();
+});
 audio.addEventListener('loadedmetadata', () => {
   const formattedDuration = formatTime(audio.duration);
   duration.textContent = formattedDuration;
