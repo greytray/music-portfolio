@@ -28,7 +28,7 @@ button, input, textarea, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 
 .site-header { position: absolute; z-index: 10; top: 0; left: 50%; width: min(calc(100% - 40px), var(--max)); transform: translateX(-50%); display: flex; align-items: center; justify-content: space-between; padding: 28px 0; border-bottom: 1px solid color-mix(in srgb, var(--paper) 22%, transparent); }
-.brand { display: inline-block; font-family: "Dela Gothic One", sans-serif; font-weight: 400; letter-spacing: 0.01em;  font-size: 1.15rem; color: var(--paper); transform: scaleY(1.15); transform-origin: center; }
+.brand { display: inline-block; font-family: "Dela Gothic One", sans-serif; line-height: 0.5; font-weight: 400; letter-spacing: 0.01em;  font-size: 1.15rem; color: var(--paper); transform: scaleY(1.15); transform-origin: center; }
 .brand span, em { color: var(--signal); font-style: normal; }
 nav { display: flex; gap: 32px; }
 nav a, .socials a { color: var(--muted); font-size: .88rem; font-weight: 600; transition: color .2s ease; }
@@ -39,12 +39,12 @@ nav a:hover, nav a:focus-visible, .socials a:hover, .socials a:focus-visible { c
 .hero-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(8,9,11,.97) 0%, rgba(8,9,11,.72) 48%, rgba(8,9,11,.22) 100%), linear-gradient(0deg, rgba(8,9,11,.92), transparent 55%); }
 .hero-content { position: relative; z-index: 1; width: min(calc(100% - 40px), var(--max)); margin: 0 auto; padding: 180px 0 88px; }
 .eyebrow { margin: 0 0 18px; color: var(--signal); font-size: .72rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
-h1, h2, h3 { display: block; font-family: "Dela Gothic One", sans-serif; margin: 0; color: var(--paper); font-weight: 400;  letter-spacing: 0.01em; transform: scaleY(1.15); transform-origin: center; }
+h1, h2, h3 { display: block; font-family: "Dela Gothic One", sans-serif; line-height: 0.5; margin: 0; color: var(--paper); font-weight: 400;  letter-spacing: 0.01em; transform: scaleY(1.15); transform-origin: center; }
 h1 { max-width: 760px; font-size: clamp(5rem, 15vw, 11.5rem); }
 h1 span { color: transparent; -webkit-text-stroke: 2px var(--paper); }
 .hero-copy { max-width: 500px; margin: 28px 0 34px; color: var(--muted); font-size: clamp(1rem, 2vw, 1.25rem); }
 .vertical-note { position: absolute; z-index: 2; right: 24px; bottom: 90px; margin: 0; color: var(--muted); font-size: .62rem; letter-spacing: .2em; writing-mode: vertical-rl; }
-.button { display: inline-block; min-width: 190px; padding: 15px 18px; border: 1px solid transparent; border-radius: 2px; color: var(--paper); font-family: "Dela Gothic One", sans-serif; font-weight: 400; letter-spacing: 0.01em;  text-align: left; cursor: pointer; transform: scaleY(1.15); transform-origin: center; transition: transform .2s ease, background .2s ease, color .2s ease; }
+.button { display: inline-block; min-width: 190px; padding: 15px 18px; border: 1px solid transparent; border-radius: 2px; color: var(--paper); font-family: "Dela Gothic One", sans-serif; line-height: 0.5; font-weight: 400; letter-spacing: 0.01em;  text-align: left; cursor: pointer; transform: scaleY(1.15); transform-origin: center; transition: transform .2s ease, background .2s ease, color .2s ease; }
 .button > span { float: right; margin-left: 28px; }
 .button:hover { transform: translateY(-2px) scaleY(1.15); }
 .button:focus-visible, .main-play:focus-visible, .track:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--signal-bright); outline-offset: 3px; }
@@ -62,7 +62,7 @@ h1 span { color: transparent; -webkit-text-stroke: 2px var(--paper); }
 .player-shell { overflow: hidden; padding: 0 28px; border: 1px solid var(--glass-border); background: var(--panel); box-shadow: 0 24px 80px rgba(75, 0, 130, 0.14); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
 .now-playing { display: grid; grid-template-columns: 160px 1fr auto; align-items: center; gap: 32px; padding: 34px 0; }
 .cover-art { aspect-ratio: 1; display: grid; place-items: center; background: linear-gradient(135deg, var(--brand-deep), var(--signal)); color: var(--paper); }
-.cover-art span { display: inline-block; font-family: "Dela Gothic One", sans-serif; font-weight: 400; font-size: 2.3rem; letter-spacing: 0.01em;  transform: rotate(-8deg) scaleY(1.15); transform-origin: center; }
+.cover-art span { display: inline-block; font-family: "Dela Gothic One", sans-serif; line-height: 0.5; font-weight: 400; font-size: 2.3rem; letter-spacing: 0.01em;  transform: rotate(-8deg) scaleY(1.15); transform-origin: center; }
 .track-meta .eyebrow { margin-bottom: 10px; }
 .track-meta h3 { font-size: clamp(2rem, 5vw, 4.2rem); }
 .track-meta > p:last-child { color: var(--muted); margin-bottom: 0; }
@@ -95,7 +95,7 @@ input[type="range"] { width: 100%; height: 3px; accent-color: var(--signal); cur
 .price { display: flex; align-items: flex-end; justify-content: space-between; margin-top: auto; margin-bottom: 20px; }
 .price span { color: var(--muted); font-size: .75rem; }
 .featured .price span { color: var(--ink); opacity: .65; }
-.price strong { display: inline-block; font-family: "Dela Gothic One", sans-serif; color: var(--paper); font-size: 2.6rem; font-weight: 400; letter-spacing: 0.01em;  transform: scaleY(1.15); transform-origin: center; }
+.price strong { display: inline-block; font-family: "Dela Gothic One", sans-serif; line-height: 0.5; color: var(--paper); font-size: 2.6rem; font-weight: 400; letter-spacing: 0.01em;  transform: scaleY(1.15); transform-origin: center; }
 
 .contact { display: grid; grid-template-columns: .9fr 1.1fr; gap: 10vw; }
 .contact-copy > p:not(.eyebrow) { max-width: 440px; color: var(--muted); margin: 30px 0; }
