@@ -644,12 +644,12 @@ function renderVisualizer() {
     const low = minFrequency * Math.pow(maxFrequency / minFrequency, index / bars.length);
     const high = minFrequency * Math.pow(maxFrequency / minFrequency, (index + 1) / bars.length);
     const energy = getEnergy(low, high);
-    const threshold = index < 10 ? .16 : .12;
-    let target = energy > threshold ? Math.min(1, (energy - threshold) * 2.75) : 0;
-    if (index < 10) target = Math.max(target, kickEnvelope * (1 - index / 14));
+    const threshold = index < 10 ? .22 : .2;
+    let target = energy > threshold ? Math.min(1, (energy - threshold) * 2.15) : 0;
+    if (index < 10 && kickEnvelope > .12) target = Math.max(target, kickEnvelope * (1 - index / 13));
     bandLevels[index] = target > bandLevels[index]
-      ? bandLevels[index] + (target - bandLevels[index]) * .88
-      : bandLevels[index] * .68;
+      ? bandLevels[index] + (target - bandLevels[index]) * .92
+      : bandLevels[index] * .58;
     bar.style.setProperty('--level', Math.max(.035, bandLevels[index]).toFixed(3));
   });
   visualizerFrame = requestAnimationFrame(renderVisualizer);
