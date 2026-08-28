@@ -347,6 +347,46 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab;
 
 /* Requested visual refinements */
 body { font-family: "Work Sans", sans-serif; }
+#beats-title em { color: #6C63E5; }
+
+/* Keep the source GIF naturally framed on mobile; crop only the desktop edges. */
+@media (min-width: 821px) {
+  .hero-photo { background-size: cover; transform: scale(1.14); }
+}
+
+.track-visualizer { background: transparent; gap: 2px; padding: 1px 2px; }
+.track-visualizer span {
+  min-width: 3px;
+  border-radius: 999px 999px 2px 2px;
+  background: #99FFFF;
+  box-shadow: 0 0 9px rgba(153, 255, 255, .42);
+  opacity: .9;
+}
+.playlist { gap: 18px; }
+
+.contact { padding-block: clamp(88px, 10vw, 132px) 12px; }
+.contact-copyright { margin-top: 10px; }
+.contact-channels a {
+  width: 108px;
+  height: 108px;
+  aspect-ratio: 1;
+  flex: 0 0 108px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+}
+.contact-channels img { display: block; }
+.contact-channels svg { display: block; }
+
+@media (max-width: 820px) {
+  .playlist { gap: 18px; }
+  .contact-channels a { width: 82px; height: 82px; flex-basis: 82px; }
+}
+@media (max-width: 560px) {
+  .contact { padding-block: 84px 12px; }
+  .contact-channels a { width: 70px; height: 70px; flex-basis: 70px; }
+}
+
+
 .hero-photo, .contact { background-size: 100% 100%; }
 .hero-photo { transform: none; }
 #hero-title { color: var(--ink); text-shadow: 0 0 7px color-mix(in srgb, #8f00ff 48%, transparent); }
@@ -382,10 +422,10 @@ body { font-family: "Work Sans", sans-serif; }
 .now-playing { padding: 24px; border: 1px solid var(--glass-border); background: var(--panel); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
 .timeline { padding: 22px 14px 30px; }
 .timeline input[type="range"] { height: 2px; }
-.playlist { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.playlist { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .track { min-height: 126px; border: 1px solid color-mix(in srgb, var(--paper) 10%, transparent); background: var(--panel); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
-.track-visualizer { gap: 0; justify-content: space-between; }
-.track-visualizer span { flex: 0 0 2px; min-width: 0; }
+.track-visualizer { gap: 2px; justify-content: space-between; background: transparent; }
+.track-visualizer span { flex: 1 1 0; min-width: 3px; border-radius: 999px 999px 2px 2px; background: #99FFFF; box-shadow: 0 0 9px rgba(153, 255, 255, .42); opacity: .9; }
 
 .hero-cta {
   border-color: var(--ink);
@@ -410,27 +450,28 @@ body { font-family: "Work Sans", sans-serif; }
   flex: 1 1 0;
   width: auto;
   min-width: 3px;
-  border-radius: 3px 3px 1px 1px;
-  background: linear-gradient(to top, var(--signal), var(--signal-bright));
-  box-shadow: 0 0 5px color-mix(in srgb, var(--signal-bright) 28%, transparent);
+  border-radius: 999px 999px 2px 2px;
+  background: #99FFFF;
+  box-shadow: 0 0 9px rgba(153, 255, 255, .42);
 }
 
 .contact {
   align-items: start;
   gap: clamp(48px, 8vw, 112px);
-  padding-block: clamp(64px, 8vw, 104px) 26px;
+  padding-block: clamp(88px, 10vw, 132px) 12px;
 }
 .contact-copy { align-items: flex-start; align-self: start; text-align: left; }
 .contact-intro { display: inline-flex; flex-direction: column; align-items: center; }
 .contact-intro > p { max-width: 520px; margin: 24px 0 30px; color: var(--ink); font-size: clamp(1.1rem, 1.8vw, 1.35rem); line-height: 1.5; text-align: center; }
 .contact-channels { justify-content: center; gap: 20px; }
-.contact-channels a { width: 112px; height: 112px; border: 3px solid var(--ink); }
+.contact-channels a { width: 108px; height: 108px; aspect-ratio: 1 / 1; flex: 0 0 108px; border: 3px solid var(--ink); border-radius: 50%; }
 .contact-channels svg, .contact-channels img { width: 46px; height: 46px; }
+.contact-channels .email-icon { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .contact-form { padding-top: 0; }
 .project-details-field { position: relative; padding-bottom: 108px; }
 .project-details-field .cta-button { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); }
 .project-details-field .cta-button:hover, .project-details-field .cta-button:focus-visible { transform: translateX(-50%) rotate(-1.5deg); }
-.contact-copyright { margin-top: 12px; }
+.contact-copyright { margin-top: 10px; }
 .select-wrap svg { transition: none; }
 .select-wrap:hover svg { transform: translateY(-50%); }
 
@@ -440,7 +481,7 @@ body { font-family: "Work Sans", sans-serif; }
 @media (max-width: 820px) {
   .playlist { grid-template-columns: 1fr; }
   .contact-copy { align-items: center; text-align: center; }
-  .contact-channels a { width: 88px; height: 88px; }
+  .contact-channels a { width: 82px; height: 82px; flex: 0 0 82px; aspect-ratio: 1 / 1; border-radius: 50%; }
   .contact-channels svg, .contact-channels img { width: 38px; height: 38px; }
 }
 @media (max-width: 560px) {
@@ -482,7 +523,7 @@ body { font-family: "Work Sans", sans-serif; }
     <section class="section beats" id="beats" aria-labelledby="beats-title">
       <div class="section-heading">
         <div>
-          <h2 id="beats-title">The Work</h2>
+          <h2 id="beats-title">The <em>Work</em></h2>
         </div>
         <p>Explore a curated selection of original productions. Headphones recommended.</p>
       </div>
@@ -556,7 +597,7 @@ body { font-family: "Work Sans", sans-serif; }
           <h2 id="contact-title">Let&apos;s <em>Work</em></h2>
           <p>Available for collaborations &amp; ongoing projects</p>
           <div class="contact-channels" aria-label="Contact Eko">
-            <a href="#" aria-label="Eko on Instagram"><img src="https://thesvg.org/icons/instagram/default.svg" width="46" height="46" alt="" aria-hidden="true"></a>
+            <a href="#" aria-label="Eko on Instagram"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/instagram/default.svg" width="46" height="46" alt="" aria-hidden="true"></a>
             <a href="mailto:hello@eko.com" aria-label="Email Eko"><svg class="email-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 6.75A2.75 2.75 0 0 1 5.75 4h12.5A2.75 2.75 0 0 1 21 6.75v10.5A2.75 2.75 0 0 1 18.25 20H5.75A2.75 2.75 0 0 1 3 17.25V6.75Z"/><path d="m4.25 6 7.75 6 7.75-6"/></svg></a>
             <a href="#" aria-label="Contact Eko on Signal"><img src="https://thesvg.org/icons/signal/default.svg" width="30" height="30" alt="" aria-hidden="true"></a>
           </div>
