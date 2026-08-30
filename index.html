@@ -7,7 +7,9 @@
   <title>Eko — Producer &amp; Audio Engineer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Dela+Gothic+One&amp;family=Work+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Dela+Gothic+One&amp;family=Work+Sans:wght@400;500;600;700&amp;display=block" rel="stylesheet">
+  <link rel="preload" as="image" href="./assets/gif artist turquoise GIF by Erica Anderson (1).gif">
+  <link rel="preload" as="image" href="./assets/gif2.gif">
   <style>
 :root {
   --ink: #0d0d11;
@@ -587,7 +589,7 @@ body { font-family: "Work Sans", sans-serif; }
       <div class="section-heading">
         <div>
           <p class="eyebrow">Made for your next release</p>
-          <h2 id="services-title">Studio <em>services</em></h2>
+          <h2 id="services-title">Studio <em>Services</em></h2>
         </div>
         <p>Professional sound, straightforward pricing, and a process built around your vision.</p>
       </div>
@@ -614,8 +616,10 @@ body { font-family: "Work Sans", sans-serif; }
           <p>DM for quick response</p>
         </div>
       </div>
-      <!-- Paste your Web3Forms action URL into the action attribute below -->
-      <form class="contact-form" action="" method="POST">
+      <form class="contact-form" action="https://api.web3forms.com/submit" method="POST">
+        <input type="hidden" name="access_key" value="2ebd4b29-1913-405e-b0ec-b3b7ef0721b3">
+        <input type="hidden" name="subject" value="New project request from Eko website">
+        <input type="hidden" name="from_name" value="Eko Website">
         <div class="form-row">
           <label>Name<input type="text" name="name" autocomplete="name" required="" placeholder="Your name"></label>
           <label>Email<input type="email" name="email" autocomplete="email" required="" placeholder="you@email.com"></label>
@@ -864,10 +868,25 @@ document.querySelector('#year').textContent = new Date().getFullYear();
 
 const contactForm = document.querySelector('.contact-form');
 const formStatus = document.querySelector('#form-status');
-contactForm.addEventListener('submit', (event) => {
-  if (!contactForm.getAttribute('action')) {
-    event.preventDefault();
-    formStatus.textContent = 'Add your Web3Forms action URL to activate this form.';
+contactForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  formStatus.textContent = 'Sending...';
+  try {
+    const formData = new FormData(contactForm);
+    const response = await fetch(contactForm.action, {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      body: formData
+    });
+    const result = await response.json();
+    if (result.success) {
+      formStatus.textContent = 'Thanks! Your request has been sent.';
+      contactForm.reset();
+    } else {
+      formStatus.textContent = 'Something went wrong. Please try again.';
+    }
+  } catch {
+    formStatus.textContent = 'Something went wrong. Please try again.';
   }
 });
 
