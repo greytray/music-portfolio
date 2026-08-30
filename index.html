@@ -339,8 +339,8 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab;
   .service-card { padding-inline: 24px; }
   .contact { padding: 92px 20px 28px; }
   .contact h2 { font-size: clamp(3rem, 12vw, 4rem); }
-  .contact-channels a { width: 80px; height: 80px; aspect-ratio: 1 / 1; }
-  .contact-channels svg, .contact-channels img { width: 42px; height: 42px; }
+  .contact-channels a { width: auto; height: auto; flex: 1 1 0; min-width: 0; aspect-ratio: 1 / 1; }
+  .contact-channels svg, .contact-channels img { width: 54%; height: auto; aspect-ratio: 1 / 1; }
   .cta-button { min-width: min(100%, 300px); min-height: 66px; padding: 18px 26px; }
   .contact-copyright { margin-top: 64px; }
 }
@@ -367,24 +367,25 @@ body { font-family: "Work Sans", sans-serif; }
 .contact { padding-block: clamp(88px, 10vw, 132px) 12px; }
 .contact-copyright { margin-top: 10px; }
 .contact-channels a {
-  width: 108px;
-  height: 108px;
+  width: auto;
+  height: auto;
+  min-width: 0;
   aspect-ratio: 1;
-  flex: 0 0 108px;
+  flex: 1 1 0;
   border: none;
   border-radius: 50%;
   box-shadow: 0 0 0 0.125rem #4D3E5C;
 }
 .contact-channels img { display: block; }
-.contact-channels svg { display: block; }
+.contact-channels svg { display: block; width: 54%; height: auto; aspect-ratio: 1 / 1; }
 
 @media (max-width: 820px) {
   .playlist { gap: 18px; }
-  .contact-channels a { width: 82px; height: 82px; flex-basis: 82px; aspect-ratio: 1 / 1; }
+  .contact-channels a { width: auto; height: auto; flex: 1 1 0; min-width: 0; aspect-ratio: 1 / 1; }
 }
 @media (max-width: 560px) {
   .contact { padding-block: 84px 12px; }
-  .contact-channels a { width: 70px; height: 70px; flex-basis: 70px; aspect-ratio: 1 / 1; }
+  .contact-channels a { width: auto; height: auto; flex: 1 1 0; min-width: 0; aspect-ratio: 1 / 1; }
 }
 
 
@@ -460,11 +461,11 @@ body { font-family: "Work Sans", sans-serif; }
   padding-block: clamp(108px, 12vw, 156px) 4px;
 }
 .contact-copy { align-items: flex-start; align-self: start; text-align: left; }
-.contact-intro { display: flex; flex-direction: column; align-items: center; gap: 24px; }
-.contact-intro > p { max-width: 520px; margin: 0; color: var(--ink); font-size: clamp(1.1rem, 1.8vw, 1.35rem); line-height: 1.5; text-align: center; }
-.contact-channels { justify-content: center; gap: 36px; }
-.contact-channels a { width: 108px; height: 108px; aspect-ratio: 1 / 1; flex: 0 0 108px; border: none; border-radius: 50%; box-shadow: 0 0 0 0.125rem #4D3E5C; }
-.contact-channels svg, .contact-channels img { width: 58px; height: 58px; }
+.contact-intro { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 28px; }
+.contact-intro > p { width: 100%; max-width: 520px; margin: 0; color: var(--ink); font-size: clamp(1.1rem, 1.8vw, 1.35rem); line-height: 1.5; text-align: center; }
+.contact-channels { width: min(100%, 396px); justify-content: center; gap: clamp(12px, 3vw, 36px); }
+.contact-channels a { width: auto; height: auto; min-width: 0; aspect-ratio: 1 / 1; flex: 1 1 0; border: none; border-radius: 50%; box-shadow: 0 0 0 0.125rem #4D3E5C; }
+.contact-channels svg, .contact-channels img { width: 54%; height: auto; aspect-ratio: 1 / 1; }
 .contact-channels .email-icon { fill: #000; stroke: none; }
 .contact-form { padding-top: 0; }
 .project-details-field { position: relative; padding-bottom: 108px; }
@@ -485,14 +486,14 @@ body { font-family: "Work Sans", sans-serif; }
   .contact-copy { align-items: center; text-align: center; }
   .contact { column-gap: 0; row-gap: 64px; }
   .contact-copyright { margin-top: -76px; }
-  .contact-channels a { width: 82px; height: 82px; flex: 0 0 82px; aspect-ratio: 1 / 1; border-radius: 50%; }
-  .contact-channels svg, .contact-channels img { width: 48px; height: 48px; }
+  .contact-channels a { width: auto; height: auto; flex: 1 1 0; min-width: 0; aspect-ratio: 1 / 1; border-radius: 50%; }
+  .contact-channels svg, .contact-channels img { width: 54%; height: auto; aspect-ratio: 1 / 1; }
 }
 @media (max-width: 560px) {
   .button, .cta-button { min-height: 68px; }
   .contact-channels { gap: 20px; }
-  .contact-channels a { width: 74px; height: 74px; aspect-ratio: 1 / 1; }
-  .contact-channels svg, .contact-channels img { width: 40px; height: 40px; }
+  .contact-channels a { width: auto; height: auto; flex-basis: 0; aspect-ratio: 1 / 1; }
+  .contact-channels svg, .contact-channels img { width: 54%; height: auto; aspect-ratio: 1 / 1; }
   .project-details-field { padding-bottom: 100px; }
 }
 
