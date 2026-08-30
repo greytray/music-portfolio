@@ -8,8 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Dela+Gothic+One&amp;family=Work+Sans:wght@400;500;600;700&amp;display=block" rel="stylesheet">
-  <link rel="preload" as="image" href="./assets/gif artist turquoise GIF by Erica Anderson (1).gif">
-  <link rel="preload" as="image" href="./assets/gif2.gif">
+  <script type="module" src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js"></script>
   <style>
 :root {
   --ink: #0d0d11;
@@ -285,9 +284,9 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab;
   .select-wrap svg { transition: transform .18s ease; }
 }
 
-.contact select { font-weight: 500; }
+.contact select { font-weight: 600; }
 @media (min-width: 821px) {
-  .contact select { font-weight: 700; }
+  .contact select { font-weight: 600; }
 }
 @media (max-width: 820px) {
   :root { --page-gutter: 24px; }
@@ -509,6 +508,60 @@ body { font-family: "Work Sans", sans-serif; }
 @media (min-width: 821px) {
   .contact-copyright { margin-top: 35px; }
 }
+
+/* === Submit button icon morph === */
+.submit-btn { position: relative; overflow: hidden; }
+.submit-btn .btn-text { transition: opacity .2s ease; }
+.submit-btn .btn-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.4em; height: 1.4em; margin-left: .5rem; }
+.submit-btn .icon-arrow, .submit-btn .icon-dots, .submit-btn .icon-lottie {
+  position: absolute; inset: 0; margin: auto; transition: opacity .25s ease, transform .25s ease;
+}
+.submit-btn .icon-arrow { width: 1.1em; height: 1.1em; opacity: 1; }
+.submit-btn .icon-dots { display: flex; gap: 4px; align-items: center; justify-content: center; opacity: 0; }
+.submit-btn .icon-dots span { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: dot-bounce .6s ease-in-out infinite; }
+.submit-btn .icon-dots span:nth-child(2) { animation-delay: .15s; }
+.submit-btn .icon-dots span:nth-child(3) { animation-delay: .3s; }
+.submit-btn .icon-lottie { width: 1.6em; height: 1.6em; opacity: 0; }
+@keyframes dot-bounce { 0%, 80%, 100% { transform: scale(.6); opacity: .4; } 40% { transform: scale(1); opacity: 1; } }
+
+.submit-btn.is-sending .btn-text { opacity: 0; }
+.submit-btn.is-sending .icon-arrow { opacity: 0; transform: scale(.5); }
+.submit-btn.is-sending .icon-dots { opacity: 1; }
+.submit-btn.is-sending .icon-lottie { opacity: 0; }
+
+.submit-btn.is-success .btn-text { opacity: 1; }
+.submit-btn.is-success .icon-arrow { opacity: 0; }
+.submit-btn.is-success .icon-dots { opacity: 0; }
+.submit-btn.is-success .icon-lottie { opacity: 1; }
+
+/* === Neon orbiting border === */
+.submit-btn-wrap { position: relative; display: inline-block; }
+.submit-btn-wrap::before {
+  content: ""; position: absolute; inset: -3px; border-radius: inherit;
+  padding: 3px; background: conic-gradient(from 0deg, #00C8FF, #8B5CF6, #00E5FF, #A855F7, #00C8FF);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0; transition: opacity .2s ease;
+}
+.submit-btn-wrap.is-orbiting::before {
+  opacity: 1; animation: orbit-border .6s linear infinite;
+}
+@keyframes orbit-border { to { transform: rotate(360deg); } }
+
+/* === Success modal === */
+.success-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
+.success-modal.is-open { pointer-events: auto; opacity: 1; }
+.success-modal-backdrop { position: absolute; inset: 0; background: rgba(13, 13, 17, .82); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.success-modal-card { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 40px 48px; border: 1px solid var(--glass-border); border-radius: 28px; background: var(--panel); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); box-shadow: 0 24px 80px rgba(0, 0, 0, .4); transform: scale(.9); transition: transform .3s cubic-bezier(.16, 1, .3, 1); }
+.success-modal.is-open .success-modal-card { transform: scale(1); }
+.success-modal-card dotlottie-wc { width: 120px; height: 120px; }
+.success-modal-card h3 { font-size: 2rem; }
+.success-modal-card p { margin: 0; color: var(--muted); text-align: center; max-width: 280px; }
+.success-modal-card .cta-button { width: auto; min-width: 140px; }
+@media (max-width: 560px) {
+  .success-modal-card { padding: 32px 28px; }
+  .success-modal-card dotlottie-wc { width: 100px; height: 100px; }
+}
   </style>
 </head>
 <body>
@@ -634,14 +687,33 @@ body { font-family: "Work Sans", sans-serif; }
           </span>
         </label>
         <label class="project-details-field">Project details<textarea name="message" rows="5" required="" placeholder="Tell me about the sound, timeline, and references..."></textarea>
-          <button class="button button-primary cta-button" type="submit">Send Request <span aria-hidden="true">›</span></button>
+          <span class="submit-btn-wrap" id="submit-wrap">
+            <button class="button button-primary cta-button submit-btn" type="submit">
+              <span class="btn-text">Send Request</span>
+              <span class="btn-icon" aria-hidden="true">
+                <svg class="icon-arrow" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                <span class="icon-dots"><span></span><span></span><span></span></span>
+                <dotlottie-wc class="icon-lottie" src="https://lottie.host/d0f0be1d-cb1f-43a8-be61-fc5331f8d353/UQIy9kSxn5.lottie" autoplay loop></dotlottie-wc>
+              </span>
+            </button>
+          </span>
         </label>
         <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
-      </form>
+      </>
       <p class="contact-copyright" style="
 ">© <span id="year">2026</span> Eko. All rights reserved.</p>
     </section>
   </main>
+
+  <div class="success-modal" id="success-modal" aria-hidden="true">
+    <div class="success-modal-backdrop"></div>
+    <div class="success-modal-card" role="dialog" aria-modal="true" aria-labelledby="success-title">
+      <dotlottie-wc id="success-lottie" src="https://lottie.host/d0f0be1d-cb1f-43a8-be61-fc5331f8d353/UQIy9kSxn5.lottie" autoplay loop></dotlottie-wc>
+      <h3 id="success-title">Success</h3>
+      <p>Your request has been sent. I'll get back to you shortly.</p>
+      <button class="button button-primary cta-button" id="close-modal" type="button">Close</button>
+    </div>
+  </div>
   <script>
 const audio = document.querySelector('#audio');
 const mainPlay = document.querySelector('#main-play');
@@ -868,9 +940,48 @@ document.querySelector('#year').textContent = new Date().getFullYear();
 
 const contactForm = document.querySelector('.contact-form');
 const formStatus = document.querySelector('#form-status');
+const submitBtn = document.querySelector('.submit-btn');
+const submitWrap = document.querySelector('#submit-wrap');
+const successModal = document.querySelector('#success-modal');
+const successLottie = document.querySelector('#success-lottie');
+const closeBtn = document.querySelector('#close-modal');
+
+function playBlip() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.2);
+  } catch {}
+}
+
+function openSuccessModal() {
+  successModal.classList.add('is-open');
+  successModal.setAttribute('aria-hidden', 'false');
+  if (successLottie && successLottie.dotLottie) {
+    successLottie.dotLottie.stop();
+    successLottie.dotLottie.play();
+  }
+}
+
+function closeSuccessModal() {
+  successModal.classList.remove('is-open');
+  successModal.setAttribute('aria-hidden', 'true');
+}
+
 contactForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  formStatus.textContent = 'Sending...';
+  submitBtn.classList.add('is-sending');
+  submitBtn.querySelector('.btn-text').textContent = 'Sending';
+  submitWrap.classList.add('is-orbiting');
+  formStatus.textContent = '';
   try {
     const formData = new FormData(contactForm);
     const response = await fetch(contactForm.action, {
@@ -880,15 +991,33 @@ contactForm.addEventListener('submit', async (event) => {
     });
     const result = await response.json();
     if (result.success) {
-      formStatus.textContent = 'Thanks! Your request has been sent.';
+      submitBtn.classList.remove('is-sending');
+      submitBtn.classList.add('is-success');
+      submitBtn.querySelector('.btn-text').textContent = 'Success';
+      submitWrap.classList.remove('is-orbiting');
+      playBlip();
+      openSuccessModal();
       contactForm.reset();
+      setTimeout(() => {
+        submitBtn.classList.remove('is-success');
+        submitBtn.querySelector('.btn-text').textContent = 'Send Request';
+      }, 4000);
     } else {
+      submitBtn.classList.remove('is-sending');
+      submitWrap.classList.remove('is-orbiting');
+      submitBtn.querySelector('.btn-text').textContent = 'Send Request';
       formStatus.textContent = 'Something went wrong. Please try again.';
     }
   } catch {
+    submitBtn.classList.remove('is-sending');
+    submitWrap.classList.remove('is-orbiting');
+    submitBtn.querySelector('.btn-text').textContent = 'Send Request';
     formStatus.textContent = 'Something went wrong. Please try again.';
   }
 });
+
+closeBtn.addEventListener('click', closeSuccessModal);
+successModal.querySelector('.success-modal-backdrop').addEventListener('click', closeSuccessModal);
 
 document.querySelectorAll('a[href="#"]').forEach((link) => {
   link.addEventListener('click', (event) => event.preventDefault());
