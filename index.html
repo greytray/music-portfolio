@@ -7,7 +7,8 @@
   <title>Eko — Producer &amp; Audio Engineer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Dela+Gothic+One&amp;family=Work+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Dela+Gothic+One&amp;family=Work+Sans:wght@400;500;600;700&amp;display=block" rel="stylesheet">
+  <link rel="preload" as="image" href="./assets/gif artist turquoise GIF by Erica Anderson (1).gif" fetchpriority="high">
   <style>
 :root {
   --ink: #0d0d11;
@@ -40,7 +41,7 @@ button, input, textarea, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 
 .site-header { position: absolute; z-index: 10; top: 0; left: 50%; width: calc(100% - (var(--page-gutter) * 2)); transform: translateX(-50%); display: flex; align-items: center; justify-content: space-between; padding: 28px 0; border-bottom: 1px solid color-mix(in srgb, var(--paper) 22%, transparent); }
-.brand { display: inline-block; font-family: "Dela Gothic One", cursive; line-height: 1.15; font-weight: 400; letter-spacing: 0.01em; font-size: 1.15rem; color: var(--paper); }
+.brand { display: inline-block; font-family: "Dela Gothic One", sans-serif; line-height: 1.15; font-weight: 400; letter-spacing: 0.01em; font-size: 1.15rem; color: var(--paper); }
 .brand span, em { color: var(--signal); font-style: normal; }
 nav { display: flex; gap: 32px; }
 nav a { color: var(--muted); font-size: .88rem; font-weight: 600; transition: color .2s ease; }
@@ -52,12 +53,12 @@ nav a:hover, nav a:focus-visible { color: var(--signal); }
 .hero-content { position: relative; z-index: 1; width: calc(100% - (var(--page-gutter) * 2)); margin: 0 auto; padding: 180px 0 88px; }
 .eyebrow, label, .service-index, .track-name small, .track-number, .track-length, .timeline, .form-status, .contact-copyright, .service-footer strong, .service-footer a, .hero-copy, .section-heading > p, .contact-copy > p:not(.eyebrow) { font-family: "Work Sans", "DM Sans", sans-serif; }
 .eyebrow { margin: 0 0 18px; color: var(--signal); font-size: .72rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
-h1, h2, h3 { display: block; font-family: "Dela Gothic One", cursive; line-height: 1.15; margin: 0; color: var(--paper); font-weight: 400; letter-spacing: 0.01em; }
+h1, h2, h3 { display: block; font-family: "Dela Gothic One", sans-serif; line-height: 1.15; margin: 0; color: var(--paper); font-weight: 400; letter-spacing: 0.01em; }
 h1 { max-width: 760px; font-size: clamp(5rem, 15vw, 11.5rem); }
 h1 span { color: transparent; -webkit-text-stroke: 2px var(--paper); }
 .hero-copy { max-width: 500px; margin: 28px 0 34px; color: var(--muted); font-size: clamp(1rem, 2vw, 1.25rem); }
 .vertical-note { position: absolute; z-index: 2; right: 24px; bottom: 90px; margin: 0; color: var(--muted); font-size: .62rem; letter-spacing: .2em; writing-mode: vertical-rl; }
-.button { display: inline-block; min-width: 190px; padding: 15px 18px; border: 1px solid transparent; border-radius: 2px; color: var(--paper); font-family: "Dela Gothic One", cursive; line-height: 1.15; font-weight: 400; letter-spacing: 0.01em; text-align: left; cursor: pointer; transition: transform .2s ease, background .2s ease, color .2s ease; }
+.button { display: inline-block; min-width: 190px; padding: 15px 18px; border: 1px solid transparent; border-radius: 2px; color: var(--paper); font-family: "Dela Gothic One", sans-serif; line-height: 1.15; font-weight: 400; letter-spacing: 0.01em; text-align: left; cursor: pointer; transition: transform .2s ease, background .2s ease, color .2s ease; }
 .button > span { float: none; margin: 0 -0.125em 0 0.75rem; font-size: 1em; }
 .button:hover { transform: translateY(-2px); }
 .button:focus-visible, .main-play:focus-visible, .track:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--signal-bright); outline-offset: 3px; }
@@ -75,7 +76,7 @@ h1 span { color: transparent; -webkit-text-stroke: 2px var(--paper); }
 .player-shell { overflow: hidden; padding: 0 28px; border: 1px solid var(--glass-border); background: var(--panel); box-shadow: 0 24px 80px rgba(75, 0, 130, 0.14); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
 .now-playing { display: grid; grid-template-columns: 160px minmax(0, 1fr) auto; align-items: center; gap: 32px; padding: 34px 0; }
 .cover-art { aspect-ratio: 1; display: grid; place-items: center; background: linear-gradient(135deg, var(--brand-deep), var(--signal)); color: var(--paper); box-shadow: 0 16px 48px rgba(0, 0, 0, .26); }
-.cover-art span { display: inline-block; font-family: "Dela Gothic One", cursive; line-height: 1.15; font-weight: 400; font-size: 2.3rem; letter-spacing: 0.01em; transform: rotate(-8deg); transform-origin: center; }
+.cover-art span { display: inline-block; font-family: "Dela Gothic One", sans-serif; line-height: 1.15; font-weight: 400; font-size: 2.3rem; letter-spacing: 0.01em; transform: rotate(-8deg); transform-origin: center; }
 .track-meta { min-width: 0; }
 .track-meta .eyebrow { margin-bottom: 10px; }
 .track-meta h3 { overflow-wrap: anywhere; font-size: clamp(2rem, 5vw, 4.2rem); }
@@ -119,7 +120,7 @@ input[type="range"] { width: 100%; height: 3px; accent-color: var(--signal); cur
 .price { display: flex; align-items: flex-end; justify-content: space-between; margin-top: auto; margin-bottom: 20px; }
 .price span { color: var(--muted); font-size: .75rem; }
 .featured .price span { color: var(--ink); opacity: .65; }
-.price strong { display: inline-block; font-family: "Dela Gothic One", cursive; line-height: 1.15; color: var(--paper); font-size: 2.6rem; font-weight: 400; letter-spacing: 0.01em; }
+.price strong { display: inline-block; font-family: "Dela Gothic One", sans-serif; line-height: 1.15; color: var(--paper); font-size: 2.6rem; font-weight: 400; letter-spacing: 0.01em; }
 
 .contact { width: 100%; max-width: none; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 10vw; padding-inline: var(--page-gutter); background-image: url("./assets/gif2.gif"); background-repeat: no-repeat; background-position: center center; background-size: auto 100%; }
 .contact h2 { color: var(--ink); }
@@ -177,7 +178,7 @@ select option { background: var(--panel); }
 }
 
 /* Fluid, centered presentation */
-.hero-photo img { object-fit: cover; transform: scale(1.12); }
+.hero-photo { background-size: 100% 100%; }
 .hero-content { display: flex; flex-direction: column; align-items: center; text-align: center; }
 .hero-copy { margin-inline: auto; }
 h1 { max-width: none; }
@@ -331,7 +332,7 @@ body { font-family: "Work Sans", sans-serif; }
 
 /* Keep the source GIF naturally framed on mobile; crop only the desktop edges. */
 @media (min-width: 821px) {
-  .hero-photo img { object-fit: cover; transform: scale(1.14); }
+  .hero-photo { background-size: 100% 100%; }
 }
 
 .track-visualizer { background: transparent; gap: 2px; padding: 1px 2px; }
@@ -370,7 +371,7 @@ body { font-family: "Work Sans", sans-serif; }
 
 
 .contact { background-size: 100% 100%; }
-.hero-photo img { object-fit: fill; transform: none; }
+.hero-photo { background-size: 100% 100%; filter: none; transform: none; animation: none; transition: none; }
 #hero-title { color: var(--ink); text-shadow: 0 0 7px color-mix(in srgb, #8f00ff 48%, transparent); }
 
 .button, .cta-button, .service-footer a {
@@ -388,7 +389,7 @@ body { font-family: "Work Sans", sans-serif; }
   border-radius: 2.5rem;
   background: transparent;
   text-align: center;
-  font-family: "Dela Gothic One", cursive;
+  font-family: "Dela Gothic One", sans-serif;
   font-size: 1.125rem;
   font-weight: 400;
   letter-spacing: 0.01em;
@@ -539,9 +540,7 @@ body { font-family: "Work Sans", sans-serif; }
 
   <main>
     <section class="hero" id="top" aria-labelledby="hero-title">
-      <div class="hero-photo">
-        <img src="./assets/gif artist turquoise GIF by Erica Anderson (1).gif" alt="Music producer working in a recording studio" decoding="async">
-      </div>
+      <div class="hero-photo" role="img" aria-label="Music producer working in a recording studio"></div>
       <div class="hero-content">
         <p class="eyebrow">Producer · Engineer · Sound Designer</p>
         <h1 id="hero-title">EKO</h1>
