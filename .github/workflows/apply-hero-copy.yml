@@ -1,0 +1,26 @@
+name: Apply hero copy
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  update:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace hero copy
+        run: |
+          sed -i 's#<p class="eyebrow">Producer · Engineer · Sound Designer</p>#<p class="eyebrow">Music Producer</p>#' index.html
+          sed -i 's#<h1 id="hero-title">EKO</h1>#<h1 id="hero-title">Music Producer</h1>#' index.html
+          sed -i 's#<p class="hero-copy">Cinematic sound. Heavy drums. Records built to leave a mark.</p>#<p class="hero-copy">Beats, Mixing \&amp; Vocal Production<br>Focused on clean, impactful sound with fast delivery</p>#' index.html
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git rm .github/workflows/apply-hero-copy.yml .github/workflows/update-hero-copy.yml
+          git diff --cached --check
+          git commit -m "Update hero copy"
+          git push
