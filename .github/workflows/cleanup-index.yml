@@ -1,0 +1,80 @@
+name: Cleanup index
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cleanup
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text()
+          # Remove only demonstrably redundant/dead markup and declarations.
+          s = s.replace('  --safe-edge: max(18px, env(safe-area-inset-left));\n', '')
+          s = s.replace('          <div class="player-energy" aria-hidden="true">\n            <span></span><span></span><span></span><span></span><span></span>\n          </div>\n', '')
+          s = s.replace('          <span class="track-visualizer" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>', '')
+          s = s.replace('.track-status { padding: 2px 7px; border: 1px solid var(--glass-border); border-radius: 999px; color: var(--paper); font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }\n', '')
+          s = s.replace('h1 span { color: transparent; -webkit-text-stroke: 2px var(--paper); }\n', '')
+          s = s.replace('.player-energy span { transform: scaleY(.24); }\n', '')
+          # Remove exact duplicate root-level rules while preserving the final occurrence.
+          style_start = s.index('<style>') + len('<style>')
+          style_end = s.index('</style>', style_start)
+          css = s[style_start:style_end]
+          def dedupe_root(css):
+              out=[]; i=0; start=0; depth=0; blocks=[]
+              while i < len(css):
+                  if css[i] == '{': depth += 1
+                  elif css[i] == '}': depth -= 1
+                  if css[i] == '}' and depth == 0:
+                      chunk = css[start:i+1]
+                      if '{' in chunk and not chunk.lstrip().startswith('@'):
+                          blocks.append(chunk)
+                      out.append(chunk); start=i+1
+                  i += 1
+              seen=set(); keep=[]
+              # Work backwards so the last identical root rule wins.
+              for chunk in reversed(out):
+                  key=' '.join(chunk.split())
+                  if chunk.lstrip().startswith('@'):
+                      keep.append(chunk); continue
+                  if key in seen:
+                      continue
+                  seen.add(key); keep.append(chunk)
+              return ''.join(reversed(keep))
+          css = dedupe_root(css)
+          s = s[:style_start] + css + s[style_end:]
+          p.write_text(s)
+          PY
+      - name: Validate
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+          s = Path('index.html').read_text()
+          assert s.count('<style>') == 1 and s.count('</style>') == 1
+          assert s.count('<script>') == 1 and s.count('</script>') == 1
+          assert 'class="player-energy"' not in s
+          assert s.count('class="track-visualizer"') == 1
+          print(f'index.html: {len(s)} bytes, {len(s.splitlines())} lines')
+          PY
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Tidy index.html and remove redundant code'
+          git push
+      - name: Remove workflow
+        if: always()
+        run: |
+          rm -f .github/workflows/cleanup-index.yml
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m 'Remove temporary cleanup workflow'
+          git push
