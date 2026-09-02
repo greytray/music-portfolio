@@ -1,0 +1,57 @@
+name: Fix hero text contrast
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Improve hero text contrast only
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          replacements = {
+              'nav a { color: var(--muted); font-size: .88rem; font-weight: 600; transition: color .2s ease; }':
+              'nav a { color: #17151f; font-size: .88rem; font-weight: 600; transition: color .2s ease; }',
+              'nav a:hover, nav a:focus-visible { color: var(--signal); }':
+              'nav a:hover, nav a:focus-visible { color: #4b0082; }',
+              '.hero .eyebrow { color: #b8b3ff; }':
+              '.hero .eyebrow { color: #352a78; }',
+              '.hero-copy { max-width: 500px; margin: 28px 0 34px; color: #e2e2ec; font-size: clamp(1rem, 2vw, 1.25rem); }':
+              '.hero-copy { max-width: 500px; margin: 28px 0 34px; color: #15151c; font-size: clamp(1rem, 2vw, 1.25rem); }',
+              '.vertical-note { position: absolute; z-index: 2; right: 24px; bottom: 90px; margin: 0; color: #d0d0dd; font-size: .62rem; letter-spacing: .2em; writing-mode: vertical-rl; }':
+              '.vertical-note { position: absolute; z-index: 2; right: 24px; bottom: 90px; margin: 0; color: #17151f; font-size: .62rem; letter-spacing: .2em; writing-mode: vertical-rl; }',
+          }
+
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'Expected rule not found: {old}')
+              text = text.replace(old, new, 1)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Remove temporary workflow and commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-hero-text-contrast.yml
+          git add index.html
+          git diff --cached --check
+          git commit -m "Fix hero text contrast"
+          git push
