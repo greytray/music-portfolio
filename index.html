@@ -511,6 +511,9 @@ body { font-family: "Work Sans", sans-serif; }
   .contact-copyright { margin-top: 35px; }
 }
 
+/* Hero title refinement */
+#hero-title { max-width: none; white-space: nowrap; font-size: clamp(2.1rem, 9vw, 9.5rem); }
+
 /* === Success modal === */
 .success-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
 .success-modal.is-open { pointer-events: auto; opacity: 1; }
@@ -545,7 +548,7 @@ body { font-family: "Work Sans", sans-serif; }
         <img src="./assets/c1.gif" alt="Music producer working in a recording studio" decoding="async">
       </div>
       <div class="hero-content">
-        <p class="eyebrow">Music Producer</p>
+        <p class="eyebrow">Producer · Engineer · Sound Designer</p>
         <h1 id="hero-title">Music Producer</h1>
         <p class="hero-copy">Beats, Mixing &amp; Vocal Production<br>Focused on clean, impactful sound with fast delivery</p>
         <a class="button button-primary cta-button hero-cta" href="#beats">Listen to Tracks <span aria-hidden="true">›</span></a>
