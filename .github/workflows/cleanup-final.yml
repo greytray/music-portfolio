@@ -22,7 +22,6 @@ jobs:
               end = s.find('</span></span></button>', start)
               if end != -1:
                   end += len('</span></span></button>')
-                  # Remove only the static visualizer attached to the first track; JS creates it at runtime.
                   s = s[:start] + '</button>' + s[end:]
           s = s.replace('.hero-photo img { object-fit: fill; transform: none; filter: none; }\n', '')
           s = s.replace('@media (min-width: 821px) {\n  .hero-photo img { object-fit: fill; transform: none; }\n}\n\n', '')
@@ -38,7 +37,7 @@ jobs:
           assert '#hero-title' in s and 'white-space: nowrap' in s
           assert 'href="./assets/c1.gif"' in s
           assert 'https://api.web3forms.com/submit' in s
-          assert s.count('style="--level: 0; --active: 0;"') == 0
+          assert 'style="--level: 0; --active: 0;"' not in s
           print('Validation passed')
           PY
       - name: Commit cleanup
