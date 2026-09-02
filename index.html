@@ -20,7 +20,6 @@
   --brand-deep: #4b0082;
   --glass-border: rgba(255, 255, 255, 0.12);
   --page-gutter: clamp(20px, 4vw, 72px);
-  --safe-edge: max(18px, env(safe-area-inset-left));
 }
 
 * { box-sizing: border-box; }
@@ -56,7 +55,6 @@ nav a:hover, nav a:focus-visible { color: #4b0082; }
 .hero .eyebrow { color: #352a78; }
 h1, h2, h3 { display: block; font-family: "Dela Gothic One", sans-serif; line-height: 1.15; margin: 0; color: var(--paper); font-weight: 400; letter-spacing: 0.01em; }
 h1 { max-width: 760px; font-size: clamp(5rem, 15vw, 11.5rem); }
-h1 span { color: transparent; -webkit-text-stroke: 2px var(--paper); }
 .hero-copy { max-width: 500px; margin: 28px 0 34px; color: #15151c; font-size: clamp(1rem, 2vw, 1.25rem); }
 .vertical-note { position: absolute; z-index: 2; right: 24px; bottom: 90px; margin: 0; color: #17151f; font-size: .62rem; letter-spacing: .2em; writing-mode: vertical-rl; }
 .button { display: inline-block; min-width: 190px; padding: 15px 18px; border: 1px solid transparent; border-radius: 2px; color: var(--paper); font-family: "Dela Gothic One", sans-serif; line-height: 1.15; font-weight: 400; letter-spacing: 0.01em; text-align: left; cursor: pointer; transition: transform .2s ease, background .2s ease, color .2s ease; }
@@ -99,7 +97,6 @@ input[type="range"] { width: 100%; height: 3px; accent-color: var(--signal); cur
 .track.active .track-number, .track.active .track-action { color: var(--signal-bright); }
 .track-name { min-width: 0; font-weight: 700; }
 .track-name small { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--muted); font-weight: 400; }
-.track-status { padding: 2px 7px; border: 1px solid var(--glass-border); border-radius: 999px; color: var(--paper); font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .track-number, .track-length, .track-action { color: var(--muted); font-size: .78rem; }
 .track-action { display: grid; place-items: center; justify-self: end; width: 36px; height: 36px; border: 1px solid transparent; border-radius: 50%; transition: border-color .3s ease, background .3s ease; }
 .track:hover .track-action { border-color: var(--glass-border); background: color-mix(in srgb, var(--paper) 6%, transparent); }
@@ -246,7 +243,6 @@ h1 { max-width: none; }
 .player-shell { width: min(92%, 1280px); margin-inline: auto; padding: clamp(12px, 2vw, 22px); }
 .now-playing { grid-template-columns: 150px minmax(0, 1fr) auto; gap: clamp(18px, 3vw, 38px); }
 .player-energy { display: none; }
-.timeline input[type="range"] { height: 2px; }
 input[type="range"]::-webkit-slider-thumb { width: 20px; height: 20px; cursor: grab; }
 input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab; }
 
@@ -504,7 +500,6 @@ body { font-family: "Work Sans", sans-serif; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
-  .player-energy span { transform: scaleY(.24); }
 }
 
 @media (min-width: 821px) {
@@ -529,8 +524,7 @@ body { font-family: "Work Sans", sans-serif; }
 .success-modal-card .cta-button { width: auto; min-width: 140px; }
 @media (max-width: 560px) {
   .success-modal-card { padding: 32px 28px; }
-}
-  </style>
+}</style>
 </head>
 <body>
   <header class="site-header">
@@ -571,9 +565,6 @@ body { font-family: "Work Sans", sans-serif; }
             <h3 id="current-title">Feeling Mello</h3>
             <p id="current-style">Original production</p>
           </div>
-          <div class="player-energy" aria-hidden="true">
-            <span></span><span></span><span></span><span></span><span></span>
-          </div>
           <button class="main-play" id="main-play" type="button" aria-label="Play Feeling Mello">
             <svg class="play-icon icon-play" aria-hidden="true" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
             <svg class="play-icon icon-pause" aria-hidden="true" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"></path></svg>
@@ -587,7 +578,7 @@ body { font-family: "Work Sans", sans-serif; }
         <div class="playlist" id="playlist" aria-label="Beat playlist">
           <button class="track active" type="button" data-src="./assets/feeling mello.wav" data-title="Feeling Mello" data-style="Original production" aria-label="Play Feeling Mello">
             <span class="track-number">01</span><span class="track-name">Feeling Mello<small>Original production</small></span><span class="track-length">0:44</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"></path></svg></span>
-          <span class="track-visualizer" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span><span class="track-visualizer" aria-hidden="true"><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span></span></button>
+<span class="track-visualizer" aria-hidden="true"><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span><span style="--level: 0; --active: 0;"></span></span></button>
           <button class="track" type="button" data-src="./assets/broken jar mastered.mp3" data-title="Broken Jar" data-style="Mastered production" aria-label="Play Broken Jar">
             <span class="track-number">02</span><span class="track-name">Broken Jar<small>Mastered production</small></span><span class="track-length">0:38</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"></path></svg></span>
           </button>
