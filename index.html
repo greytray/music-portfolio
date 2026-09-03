@@ -409,6 +409,23 @@ body { font-family: "Work Sans", sans-serif; }
 @media (max-width: 820px) { .process-grid, .pricing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .delivery-layout { grid-template-columns: 1fr; } .process-section, .pricing-section, .delivery-section { padding-block: 88px; } }
 @media (max-width: 560px) { .process-grid, .pricing-grid { grid-template-columns: 1fr; } .process-card { min-height: 0; } .pricing-card { min-height: 400px; } .delivery-step { grid-template-columns: 44px minmax(0, 1fr); gap: 16px; } .delivery-step-number { width: 40px; height: 40px; } .process-section, .pricing-section, .delivery-section { padding-inline: 20px; } }
 
+/* CHANGE-003 — Pricing presentation */
+.pricing-table { width: min(100%, 1120px); margin: 0 auto; border-top: 1px solid color-mix(in srgb, var(--paper) 16%, transparent); }
+.pricing-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, .42fr); align-items: center; gap: 28px; min-height: 86px; padding: 18px 8px; border-bottom: 1px solid color-mix(in srgb, var(--paper) 11%, transparent); font-family: "Work Sans", sans-serif; }
+.pricing-row > span { color: var(--paper); font-size: clamp(1rem, 1.7vw, 1.25rem); font-weight: 600; }
+.pricing-row > strong { color: var(--paper); font-family: "Dela Gothic One", sans-serif; font-size: clamp(1.15rem, 2.2vw, 1.75rem); font-weight: 400; line-height: 1.2; text-align: right; }
+.pricing-header { min-height: 48px; padding-block: 8px; border-bottom-color: color-mix(in srgb, var(--signal) 38%, transparent); }
+.pricing-header > span { color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.pricing-header > span:last-child { text-align: right; }
+.pricing-row:not(.pricing-header) { transition: background-color .2s ease, padding-inline .2s ease; }
+.pricing-row:not(.pricing-header):hover { padding-inline: 18px; background: color-mix(in srgb, var(--signal) 8%, transparent); }
+.pricing-row:not(.pricing-header):hover > strong { color: var(--signal-bright); }
+@media (max-width: 560px) {
+  .pricing-row { grid-template-columns: minmax(0, 1fr) auto; gap: 16px; min-height: 72px; padding-inline: 2px; }
+  .pricing-row > strong { font-size: 1rem; }
+  .pricing-row:not(.pricing-header):hover { padding-inline: 8px; }
+}
+
 .success-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
 .success-modal.is-open { pointer-events: auto; opacity: 1; }
 .success-modal-backdrop { position: absolute; inset: 0; background: rgba(13, 13, 17, .82); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
@@ -430,13 +447,9 @@ body { font-family: "Work Sans", sans-serif; }
     <nav aria-label="Main navigation">
       <a href="#beats">Beats</a>
       <a href="#services">Services</a>
-      <a href="#process">Process</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#delivery">Delivery</a>
       <a href="#contact">Contact</a>
     </nav>
   </header>
-
   <main>
     <section class="hero" id="top" aria-labelledby="hero-title">
       <div class="hero-photo"><img src="./assets/c1.gif" alt="Music producer working in a recording studio" decoding="async"></div>
@@ -447,7 +460,6 @@ body { font-family: "Work Sans", sans-serif; }
         <a class="button button-primary cta-button hero-cta" href="#beats">Listen to Tracks <span aria-hidden="true">›</span></a>
       </div>
     </section>
-
     <section class="section beats" id="beats" aria-labelledby="beats-title">
       <div class="section-heading"><div><h2 id="beats-title">The <em>Work</em></h2></div><p>Explore a curated selection of original productions. Headphones recommended.</p></div>
       <div class="player-shell">
@@ -457,14 +469,13 @@ body { font-family: "Work Sans", sans-serif; }
           <button class="track active" type="button" data-src="./assets/feeling mello.wav" data-title="Feeling Mello" data-style="Original production" aria-label="Play Feeling Mello"><span class="track-number">01</span><span class="track-name">Feeling Mello<small>Original production</small></span><span class="track-length">0:44</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"></path></svg></span></button>
           <button class="track" type="button" data-src="./assets/broken jar mastered.mp3" data-title="Broken Jar" data-style="Mastered production" aria-label="Play Broken Jar"><span class="track-number">02</span><span class="track-name">Broken Jar<small>Mastered production</small></span><span class="track-length">0:38</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"></path></svg></span></button>
           <button class="track" type="button" data-src="./assets/Kpop beat.mp3" data-title="Kpop Beat" data-style="K-Pop production" aria-label="Play Kpop Beat"><span class="track-number">03</span><span class="track-name">Kpop Beat<small>K-Pop production</small></span><span class="track-length">1:14</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"></path></svg></span></button>
-          <button class="track" type="button" data-src="./assets/Kensuke.mp3" data-title="Kensuke" data-style="Original production" aria-label="Play Kensuke"><span class="track-number">04</span><span class="track-name">Kensuke<small>Original production</small></span><span class="track-length">0:45</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14h-4zM14 5h4v14h-4z"></path></svg></span></button>
+          <button class="track" type="button" data-src="./assets/Kensuke.mp3" data-title="Kensuke" data-style="Original production" aria-label="Play Kensuke"><span class="track-number">04</span><span class="track-name">Kensuke<small>Original production</small></span><span class="track-length">0:45</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"></path></svg></span></button>
           <button class="track" type="button" data-src="./assets/K-Pop post fx.mp3" data-title="K-Pop Post FX" data-style="Post-production mix" aria-label="Play K-Pop Post FX"><span class="track-number">05</span><span class="track-name">K-Pop Post FX<small>Post-production mix</small></span><span class="track-length">0:14</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"></path></svg></span></button>
           <button class="track" type="button" data-src="./assets/Aiobahn maybe last mix.mp3" data-title="Aiobahn Maybe Last Mix" data-style="Final mix" aria-label="Play Aiobahn Maybe Last Mix"><span class="track-number">06</span><span class="track-name">Aiobahn Maybe Last Mix<small>Final mix</small></span><span class="track-length">0:53</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"></path></svg></span></button>
         </div>
         <audio id="audio" preload="metadata" src="./assets/feeling mello.wav"></audio>
       </div>
     </section>
-
     <section class="section services" id="services" aria-labelledby="services-title">
       <div class="section-heading"><div><p class="eyebrow">Made for your next release</p><h2 id="services-title">Studio <em>Services</em></h2></div><p>Professional sound, straightforward pricing, and a process built around your vision.</p></div>
       <div class="service-grid">
@@ -476,7 +487,6 @@ body { font-family: "Work Sans", sans-serif; }
         <article class="service-card"><p class="service-index">06 / Mentorship</p><h3>Production Lessons</h3><p>Focused one-to-one sessions covering arrangement, sound selection, and workflow.</p><div class="service-footer"><strong>From $75</strong><a href="#contact" aria-label="Request production lessons">Request <span aria-hidden="true">›</span></a></div></article>
       </div>
     </section>
-
     <section class="process-section" id="process" aria-labelledby="process-title">
       <div class="section-heading"><div><p class="eyebrow">How the work is made</p><h2 id="process-title">The <em>Process</em></h2></div><p>Six simple principles that keep the work original, focused, and ready for release.</p></div>
       <div class="process-grid">
@@ -488,16 +498,18 @@ body { font-family: "Work Sans", sans-serif; }
         <article class="process-card"><span class="process-mark">06 / Release</span><h3>Ready To Release</h3><p>Final files are prepared cleanly so the finished record is ready for its next step.</p></article>
       </div>
     </section>
-
     <section class="pricing-section" id="pricing" aria-labelledby="pricing-title">
-      <div class="section-heading"><div><p class="eyebrow">Straightforward starting points</p><h2 id="pricing-title"><em>Pricing</em></h2></div><p>Clear starting prices for the core services. Exact quotes can change with project scope.</p></div>
-      <div class="pricing-grid">
-        <article class="pricing-card featured"><p class="pricing-kicker">01 / Production</p><h3>Custom Beat</h3><p>An original instrumental built around your sound and release.</p><ul class="pricing-list"><li>Custom production</li><li>Arrangement built for the song</li><li>Release-ready mix</li></ul><strong class="pricing-amount">From $299</strong><p class="pricing-note">Starting price</p></article>
-        <article class="pricing-card"><p class="pricing-kicker">02 / Release</p><h3>Mix + Master</h3><p>A finished mix with a polished master for your release.</p><ul class="pricing-list"><li>Professional mix</li><li>Mastering</li><li>Final release files</li></ul><strong class="pricing-amount">From $149</strong><p class="pricing-note">Starting price</p></article>
-        <article class="pricing-card"><p class="pricing-kicker">03 / Voice</p><h3>Vocal Mix</h3><p>Clean, present vocals balanced into your existing production.</p><ul class="pricing-list"><li>Vocal editing</li><li>Mixing and processing</li><li>Final vocal balance</li></ul><strong class="pricing-amount">From $99</strong><p class="pricing-note">Starting price</p></article>
+      <div class="section-heading"><div><p class="eyebrow">Straightforward pricing</p><h2 id="pricing-title"><em>Pricing</em></h2></div><p>Clear rates for the core services. Simple pricing for the work you need.</p></div>
+      <div class="pricing-table" role="table" aria-label="Service pricing">
+        <div class="pricing-row pricing-header" role="row"><span role="columnheader">Service</span><span role="columnheader">Price</span></div>
+        <div class="pricing-row" role="row"><span role="cell">Beat Lease</span><strong role="cell">₹500</strong></div>
+        <div class="pricing-row" role="row"><span role="cell">Custom Beat</span><strong role="cell">₹800 – ₹2000</strong></div>
+        <div class="pricing-row" role="row"><span role="cell">Mix &amp; Master</span><strong role="cell">₹1000 – ₹2500</strong></div>
+        <div class="pricing-row" role="row"><span role="cell">Vocal Mixing</span><strong role="cell">₹800 – ₹2000</strong></div>
+        <div class="pricing-row" role="row"><span role="cell">Audio Editing</span><strong role="cell">₹500 – ₹1500</strong></div>
+        <div class="pricing-row" role="row"><span role="cell">Lessons</span><strong role="cell">₹400 / hour</strong></div>
       </div>
     </section>
-
     <section class="delivery-section" id="delivery" aria-labelledby="delivery-title">
       <div class="section-heading"><div><p class="eyebrow">From request to final files</p><h2 id="delivery-title">Delivery <em>&amp;</em><br>Payment</h2></div><p>A straightforward handoff with the important details clear before work begins.</p></div>
       <div class="delivery-layout">
@@ -513,12 +525,11 @@ body { font-family: "Work Sans", sans-serif; }
         </aside>
       </div>
     </section>
-
     <section class="section contact" id="contact" aria-labelledby="contact-title">
       <div class="contact-copy"><div class="contact-intro"><h2 id="contact-title">Let&rsquo;s <em>Work</em></h2><p>Available for collaborations &amp; ongoing projects</p><div class="contact-channels" aria-label="Contact Eko">
-        <a href="#" aria-label="Eko on Instagram"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-instagram" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.9 3.9 0 0 0-1.417.923A3.9 3.9 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.9 3.9 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.299c-.04-.851-.175-1.433-.372-1.941a3.9 3.9 0 0 0-.923-1.417A3.9 3.9 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.443.01 10.172 0 7.998 0zm-.717 1.442h.718c2.136 0 2.389.007 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599s.453.546.598.92c.11.281.24.705.275 1.485.039.843.047 1.096.047 3.231s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.5 2.5 0 0 1-.599.919c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.5 2.5 0 0 1-.92-.598 2.5 2.5 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-1.096-.046-3.233s.008-2.388.046-3.231c.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92s.546-.453.92-.598c.282-.11.705-.24 1.485-.276.738-.034 1.024-.044 2.515-.045zm4.988 1.328a.96.96 0 1 0 0 1.92.96.96 0 0 0 0-1.92m-4.27 1.122a4.109 4.109 0 1 0 0 8.217 4.109 4.109 0 0 0 0-8.217m0 1.441a2.667 2.667 0 1 1 0 5.334 2.667 2.667 0 0 1 0-5.334"/></svg></a>
+        <a href="#" aria-label="Eko on Instagram"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-instagram" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.9 3.9 0 0 0-1.417.923A3.9 3.9 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.9 3.9 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.299c-.04-.851-.175-1.433-.372-1.941a3.9 3.9 0 0 0-.923-1.417A3.9 3.9 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.443.01 10.172 0 7.998 0zm-.717 1.442h.718c2.136 0 2.389.007 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599s.453.546.598.92c.11.281.24.705.275 1.485.039.843.047 1.096.047 3.231s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.5 2.5 0 0 1-.599.919c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.5 2.5 0 0 1-.92-.598 2.5 2.5 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-2.388-.046-3.233s.008-2.388.046-3.231c.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92s.546-.453.92-.598c.282-.11.705-.24 1.485-.276.738-.034 1.024-.044 2.515-.045zm4.988 1.328a.96.96 0 1 0 0 1.92.96.96 0 0 0 0-1.92m-4.27 1.122a4.109 4.109 0 1 0 0 8.217 4.109 4.109 0 0 0 0-8.217m0 1.441a2.667 2.667 0 1 1 0 5.334 2.667 2.667 0 0 1 0-5.334"/></svg></a>
         <a href="mailto:hello@eko.com" aria-label="Email Eko"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-envelope" viewBox="0 0 16 16" aria-hidden="true"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 1-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741M1 11.105l4.708-2.897L1 5.383z"/></svg></a>
-        <a href="#" aria-label="Contact Eko on Signal"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-signal" viewBox="0 0 16 16" aria-hidden="true"><path d="m6.08.234.179.727a7.3 7.3 0 0 0-2.01.832l-.383-.643A7.9 7.9 0 0 1 6.079.234zm3.84 0L9.742.96a7.3 7.3 0 0 1 2.01.832l.388-.643A8 8 0 0 0 9.92.234m-8.77 3.63a8 8 0 0 0-.916 2.215l.727.18a7.3 7.3 0 0 1 .832-2.01l-.643-.386zM.75 8a7 7 0 0 1 .081-1.086L.091 6.8a8 8 0 0 0 0 2.398l.74-.112A7 7 0 0 1 .75 8m11.384 6.848-.384-.64a7.2 7.2 0 0 1-2.007.831l.18.728a8 8 0 0 0 2.211-.919M15.251 8q0 .547-.082 1.086l.74.112a8 8 0 0 0 0-2.398l-.74.114q.082.54.082 1.086m.516 1.918-.728-.18a7.3 7.3 0 0 1-.832 2.012l.643.387a8 8 0 0 0 .917-2.219m-6.68 5.25c-.72.11-1.453.11-2.173 0l-.112.742a8 8 0 0 0 2.396 0l-.112-.741zm4.75-2.868a7.2 7.2 0 0 1-1.537 1.534l.446.605a8 8 0 0 0 1.695-1.689zM12.3 2.163c.587.432 1.105.95 1.537 1.537l.604-.45a8 8 0 0 0-1.69-1.691zM2.163 3.7A7.2 7.2 0 0 1 3.7 2.163l-.45-.604a8 8 0 0 0-1.691 1.69l.604.45zm12.688.163-.644.387c.377.623.658 1.3.832 2.007l.728-.18a8 8 0 0 0-.916-2.214M6.913.831a7.3 7.3 0 0 1 2.172 0l.112-.74a8 8 0 0 0-2.396 0zM2.547 14.64 1 15l.36-1.549-.729-.17-.361 1.548a.75.75 0 0 0 .9.902l1.548-.357zM.786 12.612l.732.168.25-1.073A7.2 7.2 0 0 1 .96 9.74l-.727.18a8 8 0 0 0 .736 1.902l-.184.79zm3.5 1.623-1.073.25.17.731.79-.184c.6.327 1.239.574 1.902.737l.18-.728a7.2 7.2 0 0 1-1.962-.811zM8 1.5a6.5 6.5 0 0 0-6.498 6.502 6.5 6.5 0 0 0 .998 3.455l-.625 2.668L4.54 13.5a6.502 6.502 0 0 0 6.93-11A6.5 6.5 0 0 0 8 1.5"/></svg></a>
+        <a href="#" aria-label="Contact Eko on Signal"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-signal" viewBox="0 0 16 16" aria-hidden="true"><path d="m6.08.234.179.727a7.3 7.3 0 0 0-2.01.832l-.383-.643A7.9 7.9 0 0 1 6.079.234zm3.84 0L9.742.96a7.3 7.3 0 0 1 2.01.832l.388-.643A8 8 0 0 0 9.92.234m-8.77 3.63a8 8 0 0 0-.916 2.215l.727.18a7.3 7.3 0 0 1 .832-2.01l-.643-.386zM.75 8a7 7 0 0 1 .081-1.086L.091 6.8a8 8 0 0 0 0 2.398l.74-.112A7 7 0 0 1 .75 8m11.384 6.848-.384-.64a7.2 7.2 0 0 1-2.007.831l.18.728a8 8 0 0 0 2.211-.919M15.251 8q0 .547-.082 1.086l.74.112a8 8 0 0 0 0 2.398l-.74.114q.082.54.082 1.086m.516 1.918-.728-.18a7.3 7.3 0 0 1-.832 2.012l.643.387a8 8 0 0 0 .917-2.219m-6.68 5.25c-.72.11-1.453.11-2.173 0l-.112.742a8 8 0 0 0 2.396 0l-.112-.741zm4.75-2.868a7.2 7.2 0 0 1-1.537 1.534l.446.605a8 8 0 0 0 1.695-1.689zM12.3 2.163c.587.432 1.105.95 1.537 1.537l.604-.45a8 8 0 0 0-1.69-1.691zM2.163 3.7A7.2 7.2 0 0 1 3.7 2.163l-.45-.604a8 8 0 0 0-1.691 1.69l.604.45zm12.688.163-.644.387c.377.623.658 1.3.832 2.007l.728-.18a8 8 0 0 0-.916-2.214M6.913.831a7.3 7.3 0 0 1 2.172 0l.112-.74a8 8 0 0 0-2.396 0zM2.547 14.64 1 15l.36-1.549-.729-.17-.361 1.548a.75.75 0 0 0 .9.902l1.548-.357zM.786 12.612l.732.168.25-1.073A7.2 7.2 0 0 1 .96 9.74l-.727.18a8 8 0 0 0 .736 1.902l-.184.79zm3.5 1.623-1.073.25.17.731.79-.184c.6.327 1.239.574 1.902.737l.18-.728a7.2 7.2 0 0 1-1.962-.811zM8 1.5a6.5 6.5 0 0 0-6.498 6.502 6.5 6.5 0 0 0 .998 3.455l-.625 2.668L4.54 13.5a6.502 6.502 0 0 0 6.93-11A6.5 6.5 0 0 0 8 1.5"/></svg></a>
       </div><p>DM for quick response</p></div></div>
       <form class="contact-form" action="https://api.web3forms.com/submit" method="POST">
         <input type="hidden" name="access_key" value="2ebd4b29-1913-405e-b0ec-b3b7ef0721b3"><input type="hidden" name="subject" value="New project request from Eko website"><input type="hidden" name="from_name" value="Eko Website">
@@ -530,7 +541,6 @@ body { font-family: "Work Sans", sans-serif; }
       <p class="contact-copyright" style="">© <span id="year">2026</span> Eko. All rights reserved.</p>
     </section>
   </main>
-
   <div class="success-modal" id="success-modal" aria-hidden="true"><div class="success-modal-backdrop"></div><div class="success-modal-card" role="dialog" aria-modal="true" aria-labelledby="success-title"><div class="success-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg></div><h3 id="success-title">Success</h3><p>Your request has been sent. I'll get back to you shortly.</p><button class="button button-primary cta-button" id="close-modal" type="button">Close</button></div></div>
   <script>
 const audio = document.querySelector('#audio');
