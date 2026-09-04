@@ -39,6 +39,14 @@ This file is the AI-facing change registry for the website repository.
 - **Pricing:** Uses the existing service starting prices already present on the site; no new pricing figures were invented for this change.
 - **Rollback:** Restore the parent checkpoint `STABLE-001` if the complete change needs to be removed.
 
+### CHANGE-003 — Fix mobile view: premium spacing, sizing, and hero vertical centering
+- **Date:** 2026-09-04
+- **Description:** Improved the mobile (≤820px) experience across the entire site. The hero section title and subtitle are now vertically centered instead of bottom-aligned. Adjusted font sizes, spacing, padding, and section rhythm for a premium feel on small screens. Desktop view (≥821px) is completely untouched — all changes are scoped to mobile-only media queries.
+- **Files:** `index.html`, `CHANGELOG.md`
+- **Parent:** `CHANGE-002`
+- **Status:** EXPERIMENTAL
+- **Rollback:** Remove the `CHANGE-003` CSS block (the two `@media` queries labeled `CHANGE-003`) from `index.html`.
+
 ## Future Change Protocol
 
 For every future website change:
