@@ -220,15 +220,19 @@ export function initHiddenPageArchitecture() {
     });
   });
 
-  // Attach smooth scrolling buttons with fast kinetic easing
+  // Attach smooth scrolling buttons with luxury pillowy easing
   document.querySelectorAll('[data-scroll-to]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       const targetId = btn.dataset.scrollTo;
       if (currentOpenViewId) {
         closeCurrentView();
+        requestAnimationFrame(() => {
+          fastSmoothScrollTo(targetId === 'top' ? 0 : targetId);
+        });
+      } else {
+        fastSmoothScrollTo(targetId === 'top' ? 0 : targetId);
       }
-      fastSmoothScrollTo(targetId === 'top' ? 0 : targetId);
     });
   });
 
