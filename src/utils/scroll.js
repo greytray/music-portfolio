@@ -79,6 +79,14 @@ export function fastSmoothScrollTo(target, options = {}) {
   targetY = Math.max(0, Math.min(targetY, maxScroll));
   const distance = targetY - startY;
 
+  // Respect reduced-motion preferences
+  if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (isWindow) window.scrollTo(0, targetY);
+    else container.scrollTop = targetY;
+    if (typeof options.onComplete === 'function') options.onComplete();
+    return;
+  }
+
   // Already at destination
   if (Math.abs(distance) < 2) {
     if (isWindow) window.scrollTo(0, targetY);
@@ -87,18 +95,23 @@ export function fastSmoothScrollTo(target, options = {}) {
     return;
   }
 
-  // Snappy timing: scales smoothly with distance (260ms - 460ms max)
+  // Premium dynamic duration: calibrated for luxurious, cinematic feel (480ms - 880ms)
+  // Gives enough time for the gentle ease-in launch, swift fluid glide, and silky soft settling
   const absDist = Math.abs(distance);
   const duration = typeof options.duration === 'number'
     ? options.duration
-    : Math.min(460, Math.max(260, 220 + Math.log10(Math.max(10, absDist)) * 75));
+    : Math.min(880, Math.max(480, 420 + Math.sqrt(absDist) * 8.5));
 
   const startTime = performance.now();
 
-  // Premium curve: Quartic ease-out (1 - (1 - t)^3.6).
-  // High initial speed, direct transit through the majority of distance,
-  // with a tight, refined deceleration settling only near the finish.
-  const easeOutNearEnd = (t) => 1 - Math.pow(1 - t, 3.6);
+  // Premium website scroll curve: EaseInOutCubic
+  // Smooth, gradual acceleration at the start, sleek swift transit through the middle,
+  // and an elegant, soft deceleration tail right as it settles onto the destination.
+  const easeInOutCubic = (t) => {
+    return t < 0.5
+      ? 4 * t * t * t
+      : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  };
 
   let isCancelled = false;
 
@@ -133,7 +146,7 @@ export function fastSmoothScrollTo(target, options = {}) {
 
     const elapsed = now - startTime;
     const progress = Math.min(1, elapsed / duration);
-    const ease = easeOutNearEnd(progress);
+    const ease = easeInOutCubic(progress);
     const currentY = startY + distance * ease;
 
     if (isWindow) {
