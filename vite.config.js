@@ -12,14 +12,7 @@ function copyAssetsPlugin() {
         if (!fs.existsSync(destDir)) {
           fs.mkdirSync(destDir, { recursive: true });
         }
-        const files = fs.readdirSync(srcDir);
-        for (const file of files) {
-          const srcFile = path.join(srcDir, file);
-          const destFile = path.join(destDir, file);
-          if (fs.statSync(srcFile).isFile()) {
-            fs.copyFileSync(srcFile, destFile);
-          }
-        }
+        fs.cpSync(srcDir, destDir, { recursive: true, force: true });
       }
     },
   };
