@@ -53,13 +53,20 @@ export function fastSmoothScrollTo(target, options = {}) {
 
   // 3. Perform Smooth Scroll exactly to section start
   if (el) {
-    const rect = el.getBoundingClientRect();
-    const targetY = Math.max(0, Math.round(rect.top + window.scrollY + (options.offset || 0)));
-    window.scrollTo({
-      top: targetY,
-      left: 0,
-      behavior
-    });
+    if (options.offset) {
+      const rect = el.getBoundingClientRect();
+      const targetY = Math.max(0, Math.round(rect.top + window.scrollY + options.offset));
+      window.scrollTo({
+        top: targetY,
+        left: 0,
+        behavior
+      });
+    } else {
+      el.scrollIntoView({
+        behavior,
+        block: 'start'
+      });
+    }
   } else if (typeof target === 'number') {
     window.scrollTo({
       top: target,
