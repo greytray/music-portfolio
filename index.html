@@ -518,11 +518,11 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
 .contact-form .cta-button { width: min(17rem, 100%); height: 4rem; line-height: calc(4rem - 2px); font-size: 1.225rem; border-color: #000; color: #fff; background: #000; box-shadow: 0 0 0 0.1875rem #000; }
 .contact-form .cta-button:hover, .contact-form .cta-button:focus-visible { background: #FFFF00; color: #000; border-color: #000; box-shadow: 0 0 0 0.1875rem #000; transform: scale(1.04); }
 .contact-form .cta-button:hover > span, .contact-form .cta-button:focus-visible > span { color: #000; }
-.beats, #showcase { contain: layout paint; isolation: isolate; transform: translateZ(0); will-change: transform; scroll-margin-top: 24px; }
+.beats, #showcase { contain: layout paint; isolation: isolate; transform: translateZ(0); will-change: transform; }
 .player-shell { width: min(92%, 1280px); overflow: visible; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; transform: translateZ(0); }
 .now-playing { padding: 24px; border: 1px solid var(--glass-border); background: var(--panel); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); transform: translateZ(0); backface-visibility: hidden; }
-.timeline { padding: 22px 14px 30px; }
-.timeline input[type="range"] { height: 2px; }
+.timeline { padding: 22px 14px 30px; user-select: none; -webkit-user-select: none; }
+.timeline input[type="range"] { width: 100%; height: 28px; background: transparent; accent-color: var(--signal); cursor: pointer; touch-action: none; margin: -13px 0; padding: 0; }
 .playlist { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .track { min-height: 126px; border: 1px solid color-mix(in srgb, var(--paper) 10%, transparent); background: var(--panel); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); transform: translateZ(0); backface-visibility: hidden; }
 .track-visualizer { gap: 2px; justify-content: space-between; background: transparent; }
@@ -789,6 +789,19 @@ async function ensureAudioGraph() {
 function startVisualizer() { if (!visualizerFrame && !reduceMotion.matches) visualizerFrame = requestAnimationFrame(renderVisualizer); }
 function stopVisualizer() { if (visualizerFrame) cancelAnimationFrame(visualizerFrame); visualizerFrame = undefined; bandLevels.fill(0); kickEnvelope = 0; previousKickEnergy = 0; [...trackVisualizer.children].forEach((bar) => { bar.style.setProperty('--level', '0'); bar.style.setProperty('--active', '0'); }); }
 let isSeeking = false;
+let seekPendingLock = false;
+let pendingSeekTarget = null;
+let seekReleaseTimer = null;
+
+const KNOWN_DURATIONS = {
+  './assets/audio/feeling mello.mp3': 44,
+  './assets/audio/broken jar mastered.mp3': 38,
+  './assets/audio/Kpop beat.mp3': 74,
+  './assets/audio/Kensuke.mp3': 45,
+  './assets/audio/K-Pop post fx.mp3': 14,
+  './assets/audio/Aiobahn maybe last mix.mp3': 53
+};
+
 function parseTimeString(str) {
   if (!str) return 0;
   const parts = str.trim().split(':').map(Number);
@@ -797,72 +810,206 @@ function parseTimeString(str) {
 }
 function getTrackDuration() {
   if (Number.isFinite(audio.duration) && audio.duration > 0) return audio.duration;
+  if (activeTrack && KNOWN_DURATIONS[activeTrack.dataset.src]) return KNOWN_DURATIONS[activeTrack.dataset.src];
   const lengthEl = activeTrack ? activeTrack.querySelector('.track-length') : null;
   if (lengthEl && lengthEl.textContent) {
     const parsed = parseTimeString(lengthEl.textContent);
     if (parsed > 0) return parsed;
   }
-  return 0;
+  return 44;
 }
 function renderTimeline() {
-  if (!isSeeking) {
+  if (!isSeeking && !seekPendingLock && !audio.seeking) {
     currentTime.textContent = formatTime(audio.currentTime);
     const dur = getTrackDuration();
-    progress.value = (dur > 0 && Number.isFinite(dur)) ? (audio.currentTime / dur) * 100 : 0;
+    progress.value = (dur > 0 && Number.isFinite(dur)) ? Math.min(100, (audio.currentTime / dur) * 100) : 0;
   }
   if (!audio.paused) timelineFrame = requestAnimationFrame(renderTimeline);
 }
 function startTimeline() { if (!timelineFrame) timelineFrame = requestAnimationFrame(renderTimeline); }
 function stopTimeline() { if (timelineFrame) cancelAnimationFrame(timelineFrame); timelineFrame = undefined; renderTimeline(); }
-function loadTrackDurations() { tracks.forEach((track) => { const metadataAudio = new Audio(); metadataAudio.preload = 'metadata'; metadataAudio.src = track.dataset.src; metadataAudio.addEventListener('loadedmetadata', () => { if (Number.isFinite(metadataAudio.duration) && metadataAudio.duration > 0) track.querySelector('.track-length').textContent = formatTime(metadataAudio.duration); }, { once: true }); }); }
-function formatTime(seconds) { if (!Number.isFinite(seconds) || seconds < 0) return '0:00'; const minutes = Math.floor(seconds / 60); const remaining = Math.floor(seconds % 60).toString().padStart(2, '0'); return `${minutes}:${remaining}`; }
-function setPlayingState(isPlaying) { mainPlay.classList.toggle('is-playing', isPlaying); mainPlay.setAttribute('aria-label', `${isPlaying ? 'Pause' : 'Play'} ${currentTitle.textContent}`); tracks.forEach((track) => { const isCurrent = track === activeTrack; track.classList.toggle('is-playing', isCurrent && isPlaying); track.setAttribute('aria-label', `${isCurrent && isPlaying ? 'Pause' : 'Play'} ${track.dataset.title}`); }); }
-function updateNowPlaying(track) { currentTitle.textContent = track.dataset.title; currentStyle.textContent = track.dataset.title === 'Kensuke' ? 'Soundtrack by Eko for Anime Teaser' : 'Original production'; }
-function selectTrack(track, shouldPlay = true) { const changed = track !== activeTrack; if (changed) { activeTrack.classList.remove('active'); activeTrack = track; activeTrack.classList.add('active'); activeTrack.append(trackVisualizer); audio.src = activeTrack.dataset.src; currentTime.textContent = '0:00'; const fallbackDur = activeTrack.querySelector('.track-length')?.textContent || '0:00'; duration.textContent = fallbackDur; progress.value = 0; updateNowPlaying(activeTrack); } if (shouldPlay) { if (!changed && !audio.paused) audio.pause(); else ensureAudioGraph().then(() => audio.play()).catch(() => setPlayingState(false)); } }
-mainPlay.addEventListener('click', () => { if (audio.paused) ensureAudioGraph().then(() => audio.play()).catch(() => setPlayingState(false)); else audio.pause(); });
+function loadTrackDurations() {
+  tracks.forEach((track) => {
+    const metadataAudio = new Audio();
+    metadataAudio.preload = 'metadata';
+    metadataAudio.src = track.dataset.src;
+    metadataAudio.addEventListener('loadedmetadata', () => {
+      if (Number.isFinite(metadataAudio.duration) && metadataAudio.duration > 0) {
+        KNOWN_DURATIONS[track.dataset.src] = metadataAudio.duration;
+        track.querySelector('.track-length').textContent = formatTime(metadataAudio.duration);
+      }
+    }, { once: true });
+  });
+}
+function formatTime(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+  const minutes = Math.floor(seconds / 60);
+  const remaining = Math.floor(seconds % 60).toString().padStart(2, '0');
+  return `${minutes}:${remaining}`;
+}
+function setPlayingState(isPlaying) {
+  mainPlay.classList.toggle('is-playing', isPlaying);
+  mainPlay.setAttribute('aria-label', `${isPlaying ? 'Pause' : 'Play'} ${currentTitle.textContent}`);
+  tracks.forEach((track) => {
+    const isCurrent = track === activeTrack;
+    track.classList.toggle('is-playing', isCurrent && isPlaying);
+    track.setAttribute('aria-label', `${isCurrent && isPlaying ? 'Pause' : 'Play'} ${track.dataset.title}`);
+  });
+}
+function updateNowPlaying(track) {
+  currentTitle.textContent = track.dataset.title;
+  currentStyle.textContent = track.dataset.title === 'Kensuke' ? 'Soundtrack by Eko for Anime Teaser' : 'Original production';
+}
+function selectTrack(track, shouldPlay = true) {
+  const changed = track !== activeTrack;
+  if (changed) {
+    activeTrack.classList.remove('active');
+    activeTrack = track;
+    activeTrack.classList.add('active');
+    activeTrack.append(trackVisualizer);
+    audio.src = activeTrack.dataset.src;
+    currentTime.textContent = '0:00';
+    const fallbackDur = activeTrack.querySelector('.track-length')?.textContent || '0:00';
+    duration.textContent = fallbackDur;
+    progress.value = 0;
+    isSeeking = false;
+    seekPendingLock = false;
+    pendingSeekTarget = null;
+    clearTimeout(seekReleaseTimer);
+    updateNowPlaying(activeTrack);
+  }
+  if (shouldPlay) {
+    if (!changed && !audio.paused) audio.pause();
+    else ensureAudioGraph().then(() => audio.play()).catch(() => setPlayingState(false));
+  }
+}
+mainPlay.addEventListener('click', () => {
+  if (audio.paused) ensureAudioGraph().then(() => audio.play()).catch(() => setPlayingState(false));
+  else audio.pause();
+});
 tracks.forEach((track) => track.addEventListener('click', () => selectTrack(track)));
 audio.addEventListener('play', () => { setPlayingState(true); startVisualizer(); startTimeline(); });
 audio.addEventListener('pause', () => { setPlayingState(false); stopVisualizer(); stopTimeline(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopVisualizer(); else if (!audio.paused) startVisualizer(); });
 reduceMotion.addEventListener?.('change', () => { if (reduceMotion.matches) stopVisualizer(); else if (!audio.paused) startVisualizer(); });
 desktopPlayer.addEventListener?.('change', () => { if (!desktopPlayer.matches) stopVisualizer(); else if (!audio.paused) ensureAudioGraph().then(startVisualizer); });
-audio.addEventListener('loadedmetadata', () => { if (Number.isFinite(audio.duration) && audio.duration > 0) { const formattedDuration = formatTime(audio.duration); duration.textContent = formattedDuration; activeTrack.querySelector('.track-length').textContent = formattedDuration; } });
-audio.addEventListener('timeupdate', () => { if (!isSeeking && audio.paused) renderTimeline(); });
-audio.addEventListener('seeked', () => { if (!isSeeking) renderTimeline(); });
-audio.addEventListener('ended', () => { const nextIndex = (tracks.indexOf(activeTrack) + 1) % tracks.length; selectTrack(tracks[nextIndex]); });
 
-function applySeek() {
-  const dur = getTrackDuration();
-  if (dur > 0 && Number.isFinite(dur)) {
-    const targetTime = Math.max(0, Math.min(dur, (Number(progress.value) / 100) * dur));
-    audio.currentTime = targetTime;
-    currentTime.textContent = formatTime(targetTime);
+const applyPendingSeekIfAny = () => {
+  if (pendingSeekTarget !== null) {
+    try {
+      audio.currentTime = pendingSeekTarget;
+    } catch (e) {}
+    pendingSeekTarget = null;
   }
+};
+audio.addEventListener('loadedmetadata', () => {
+  if (Number.isFinite(audio.duration) && audio.duration > 0) {
+    KNOWN_DURATIONS[activeTrack.dataset.src] = audio.duration;
+    const formattedDuration = formatTime(audio.duration);
+    duration.textContent = formattedDuration;
+    activeTrack.querySelector('.track-length').textContent = formattedDuration;
+  }
+  applyPendingSeekIfAny();
+});
+audio.addEventListener('canplay', applyPendingSeekIfAny);
+
+audio.addEventListener('timeupdate', () => {
+  if (!isSeeking && !seekPendingLock && !audio.seeking && audio.paused) renderTimeline();
+});
+audio.addEventListener('seeked', () => {
+  seekPendingLock = false;
+  isSeeking = false;
+  clearTimeout(seekReleaseTimer);
+  if (audio.paused) renderTimeline();
+});
+audio.addEventListener('ended', () => {
+  const nextIndex = (tracks.indexOf(activeTrack) + 1) % tracks.length;
+  selectTrack(tracks[nextIndex]);
+});
+
+function executeSeek(targetPercent) {
+  const dur = getTrackDuration();
+  if (dur <= 0 || !Number.isFinite(dur)) return;
+
+  const fraction = Math.max(0, Math.min(100, targetPercent)) / 100;
+  const targetTime = Math.max(0, Math.min(Math.max(0, dur - 0.25), fraction * dur));
+
+  seekPendingLock = true;
+  currentTime.textContent = formatTime(targetTime);
+  progress.value = (targetTime / dur) * 100;
+
+  if (audio.readyState >= 1) {
+    try {
+      audio.currentTime = targetTime;
+      pendingSeekTarget = null;
+    } catch (err) {
+      pendingSeekTarget = targetTime;
+    }
+  } else {
+    pendingSeekTarget = targetTime;
+  }
+
+  clearTimeout(seekReleaseTimer);
+  seekReleaseTimer = setTimeout(() => {
+    seekPendingLock = false;
+    isSeeking = false;
+  }, 250);
 }
-progress.addEventListener('pointerdown', () => { isSeeking = true; });
-progress.addEventListener('mousedown', () => { isSeeking = true; });
-progress.addEventListener('touchstart', () => { isSeeking = true; }, { passive: true });
+
+progress.addEventListener('pointerdown', () => {
+  isSeeking = true;
+  seekPendingLock = true;
+  clearTimeout(seekReleaseTimer);
+});
+progress.addEventListener('mousedown', () => {
+  isSeeking = true;
+  seekPendingLock = true;
+  clearTimeout(seekReleaseTimer);
+});
+progress.addEventListener('touchstart', () => {
+  isSeeking = true;
+  seekPendingLock = true;
+  clearTimeout(seekReleaseTimer);
+}, { passive: true });
+
 progress.addEventListener('input', () => {
   isSeeking = true;
+  seekPendingLock = true;
+  clearTimeout(seekReleaseTimer);
   const dur = getTrackDuration();
   if (dur > 0 && Number.isFinite(dur)) {
-    const previewTime = (Number(progress.value) / 100) * dur;
+    const fraction = Math.max(0, Math.min(100, Number(progress.value))) / 100;
+    const previewTime = Math.max(0, Math.min(Math.max(0, dur - 0.25), fraction * dur));
     currentTime.textContent = formatTime(previewTime);
   }
 });
+
 progress.addEventListener('change', () => {
-  applySeek();
-  isSeeking = false;
+  executeSeek(Number(progress.value));
 });
-const onPointerUp = () => {
+
+const onGlobalPointerUp = () => {
   if (isSeeking) {
-    applySeek();
-    isSeeking = false;
+    executeSeek(Number(progress.value));
   }
 };
-window.addEventListener('pointerup', onPointerUp);
-window.addEventListener('mouseup', onPointerUp);
-window.addEventListener('touchend', onPointerUp);
+window.addEventListener('pointerup', onGlobalPointerUp);
+window.addEventListener('mouseup', onGlobalPointerUp);
+window.addEventListener('touchend', onGlobalPointerUp);
+
+const timelineContainer = document.querySelector('.timeline');
+if (timelineContainer) {
+  timelineContainer.addEventListener('click', (e) => {
+    if (e.target === progress) return;
+    const rect = progress.getBoundingClientRect();
+    if (e.clientX >= rect.left && e.clientX <= rect.right) {
+      const pct = ((e.clientX - rect.left) / rect.width) * 100;
+      progress.value = pct;
+      executeSeek(pct);
+    }
+  });
+}
+
 updateNowPlaying(activeTrack);
 loadTrackDurations();
 document.querySelector('#year').textContent = new Date().getFullYear();

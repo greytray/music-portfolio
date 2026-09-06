@@ -344,6 +344,8 @@ export function createBuyBeatsView({ navigateTo }) {
   }
 
   let isStoreSeeking = false;
+  let storeSeekPendingLock = false;
+  let storeSeekReleaseTimer = null;
 
   function getStoreDuration() {
     if (Number.isFinite(storeAudio.duration) && storeAudio.duration > 0) return storeAudio.duration;
@@ -354,12 +356,22 @@ export function createBuyBeatsView({ navigateTo }) {
     return 0;
   }
 
-  function applyStoreSeek() {
+  function applyStoreSeek(targetPercent) {
     const dur = getStoreDuration();
     if (dur > 0 && Number.isFinite(dur)) {
-      const targetTime = Math.max(0, Math.min(dur, (Number(storeSeek.value) / 100) * dur));
-      storeAudio.currentTime = targetTime;
+      const fraction = Math.max(0, Math.min(100, targetPercent)) / 100;
+      const targetTime = Math.max(0, Math.min(Math.max(0, dur - 0.25), fraction * dur));
+      storeSeekPendingLock = true;
       storeTimeCur.textContent = formatTime(targetTime);
+      storeSeek.value = (targetTime / dur) * 100;
+      try {
+        storeAudio.currentTime = targetTime;
+      } catch (e) {}
+      clearTimeout(storeSeekReleaseTimer);
+      storeSeekReleaseTimer = setTimeout(() => {
+        storeSeekPendingLock = false;
+        isStoreSeeking = false;
+      }, 250);
     }
   }
 
@@ -370,9 +382,15 @@ export function createBuyBeatsView({ navigateTo }) {
     }
   });
 
+  storeAudio.addEventListener('seeked', () => {
+    storeSeekPendingLock = false;
+    isStoreSeeking = false;
+    clearTimeout(storeSeekReleaseTimer);
+  });
+
   storeAudio.addEventListener('timeupdate', () => {
     const dur = getStoreDuration();
-    if (!isStoreSeeking && dur > 0) {
+    if (!isStoreSeeking && !storeSeekPendingLock && !storeAudio.seeking && dur > 0) {
       storeTimeCur.textContent = formatTime(storeAudio.currentTime);
       storeTimeDur.textContent = formatTime(dur);
       storeSeek.value = (storeAudio.currentTime / dur) * 100;
@@ -393,28 +411,41 @@ export function createBuyBeatsView({ navigateTo }) {
     renderBeats();
   });
 
-  storeSeek.addEventListener('pointerdown', () => { isStoreSeeking = true; });
-  storeSeek.addEventListener('mousedown', () => { isStoreSeeking = true; });
-  storeSeek.addEventListener('touchstart', () => { isStoreSeeking = true; }, { passive: true });
+  storeSeek.addEventListener('pointerdown', () => {
+    isStoreSeeking = true;
+    storeSeekPendingLock = true;
+    clearTimeout(storeSeekReleaseTimer);
+  });
+  storeSeek.addEventListener('mousedown', () => {
+    isStoreSeeking = true;
+    storeSeekPendingLock = true;
+    clearTimeout(storeSeekReleaseTimer);
+  });
+  storeSeek.addEventListener('touchstart', () => {
+    isStoreSeeking = true;
+    storeSeekPendingLock = true;
+    clearTimeout(storeSeekReleaseTimer);
+  }, { passive: true });
 
   storeSeek.addEventListener('input', () => {
     isStoreSeeking = true;
+    storeSeekPendingLock = true;
+    clearTimeout(storeSeekReleaseTimer);
     const dur = getStoreDuration();
     if (dur > 0 && Number.isFinite(dur)) {
-      const previewTime = (Number(storeSeek.value) / 100) * dur;
+      const fraction = Math.max(0, Math.min(100, Number(storeSeek.value))) / 100;
+      const previewTime = Math.max(0, Math.min(Math.max(0, dur - 0.25), fraction * dur));
       storeTimeCur.textContent = formatTime(previewTime);
     }
   });
 
   storeSeek.addEventListener('change', () => {
-    applyStoreSeek();
-    isStoreSeeking = false;
+    applyStoreSeek(Number(storeSeek.value));
   });
 
   const onStorePointerUp = () => {
     if (isStoreSeeking) {
-      applyStoreSeek();
-      isStoreSeeking = false;
+      applyStoreSeek(Number(storeSeek.value));
     }
   };
   window.addEventListener('pointerup', onStorePointerUp);
@@ -426,6 +457,9 @@ export function createBuyBeatsView({ navigateTo }) {
     storeAudio.currentTime = 0;
     currentPlayingBeat = null;
     storePlayerBar.style.display = 'none';
+    clearTimeout(storeSeekReleaseTimer);
+    isStoreSeeking = false;
+    storeSeekPendingLock = false;
     renderBeats();
   });
 
