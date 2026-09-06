@@ -54,6 +54,7 @@ h1 { max-width: 760px; font-size: clamp(5rem, 15vw, 11.5rem); }
 .button-dark { background: var(--signal); color: var(--paper); width: 100%; }
 .button-outline { border-color: var(--glass-border); background: rgba(255, 255, 255, 0.04); color: var(--paper); width: 100%; }
 .button-outline:hover { background: var(--signal); color: var(--paper); }
+.section, .hero, .process-section { scroll-margin-top: clamp(60px, 8vw, 100px); }
 .section { width: calc(100% - (var(--page-gutter) * 2)); margin: 0 auto; padding: 112px 0; }
 .section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 48px; margin-bottom: 52px; }
 .section-heading h2, .contact h2 { font-size: clamp(3rem, 7vw, 6.2rem); }
@@ -822,6 +823,27 @@ window.pauseLandingPlayer = () => {
     stopTimeline();
   }
 };
+window.scrollStudioTo = function(targetId) {
+  if (!targetId) return;
+  if (typeof window.closeCurrentView === 'function') {
+    window.closeCurrentView(true);
+  }
+  if (targetId === 'top') {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+  const targetEl = document.getElementById(targetId);
+  if (targetEl) {
+    targetEl.scrollIntoView({ behavior: 'smooth' });
+  }
+};
+document.querySelectorAll('[data-scroll-to]').forEach((btn) => {
+  btn.addEventListener('click', (event) => {
+    event.preventDefault();
+    const dest = btn.dataset.scrollTo;
+    window.scrollStudioTo(dest);
+  });
+});
 document.querySelectorAll('a[href="#"]').forEach((link) => { link.addEventListener('click', (event) => event.preventDefault()); });
   </script>
 
