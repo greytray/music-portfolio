@@ -1,4 +1,5 @@
 import { ordersStore } from '../store/ordersStore.js';
+import { fastSmoothScrollTo } from '../utils/scroll.js';
 
 export function createSendAudioView({ navigateTo }) {
   const container = document.createElement('div');
@@ -228,7 +229,7 @@ export function createSendAudioView({ navigateTo }) {
 
     newOrderId.textContent = createdOrder.id;
     successBanner.style.display = 'block';
-    successBanner.scrollIntoView({ behavior: 'smooth' });
+    fastSmoothScrollTo(successBanner);
 
     btnGotoOrder.onclick = () => {
       navigateTo('orders');

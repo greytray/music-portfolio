@@ -1,4 +1,5 @@
 import { cartStore } from './store/cartStore.js';
+import { fastSmoothScrollTo } from './utils/scroll.js';
 
 // Dynamic modules registry for on-demand lazy loading
 const VIEW_LOADERS = {
@@ -156,8 +157,7 @@ export function initHiddenPageArchitecture() {
         navigateTo: (dest) => {
           if (dest === 'top' || dest === 'showcase' || dest === 'contact' || dest === 'services') {
             closeCurrentView();
-            const targetSec = document.getElementById(dest === 'top' ? 'top' : dest);
-            if (targetSec) targetSec.scrollIntoView({ behavior: 'smooth' });
+            fastSmoothScrollTo(dest === 'top' ? 0 : dest);
           } else {
             openView(dest);
           }
@@ -220,7 +220,7 @@ export function initHiddenPageArchitecture() {
     });
   });
 
-  // Attach smooth scrolling buttons
+  // Attach smooth scrolling buttons with fast kinetic easing
   document.querySelectorAll('[data-scroll-to]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -228,10 +228,7 @@ export function initHiddenPageArchitecture() {
       if (currentOpenViewId) {
         closeCurrentView();
       }
-      const targetEl = document.getElementById(targetId);
-      if (targetEl) {
-        targetEl.scrollIntoView({ behavior: 'smooth' });
-      }
+      fastSmoothScrollTo(targetId === 'top' ? 0 : targetId);
     });
   });
 
@@ -254,6 +251,7 @@ export function initHiddenPageArchitecture() {
     } else if (currentOpenViewId) {
       // Hash changed to landing section like #showcase, #services, #contact
       closeCurrentView(false);
+      fastSmoothScrollTo(rawHash === 'top' ? 0 : rawHash);
     }
   }
 
