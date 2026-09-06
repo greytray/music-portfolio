@@ -154,8 +154,10 @@ export function initHiddenPageArchitecture() {
       // Create view element passing navigation helper
       const viewElement = factoryFn({
         navigateTo: (dest) => {
-          if (dest === 'top' || dest === 'showcase' || dest === 'contact' || dest === 'services' || dest === 'process') {
-            scrollToSection(dest);
+          if (dest === 'top' || dest === 'showcase' || dest === 'contact' || dest === 'services') {
+            closeCurrentView();
+            const targetSec = document.getElementById(dest === 'top' ? 'top' : dest);
+            if (targetSec) targetSec.scrollIntoView({ behavior: 'smooth' });
           } else {
             openView(dest);
           }
@@ -209,50 +211,7 @@ export function initHiddenPageArchitecture() {
     }
   }
 
-  // Smooth scroll handler for landing page sections without adding hash to URL
-  function scrollToSection(targetId) {
-    if (!targetId) return;
-
-    // 1. If a full-screen view is open, close it cleanly without hash
-    if (currentOpenViewId) {
-      closeCurrentView(true);
-    }
-
-    // 2. Perform smooth scrolling to the target section
-    if (targetId === 'top') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-
-    const targetEl = document.getElementById(targetId);
-    if (targetEl) {
-      const header = document.querySelector('.site-header');
-      const headerOffset = header ? header.offsetHeight + 16 : 64;
-      const elementTop = targetEl.getBoundingClientRect().top + window.pageYOffset;
-      const scrollDestination = Math.max(0, elementTop - headerOffset);
-
-      window.scrollTo({
-        top: scrollDestination,
-        behavior: 'smooth'
-      });
-    }
-  }
-
-  // Expose on window for components or external triggers
-  window.scrollToSection = scrollToSection;
-  window.closeCurrentView = closeCurrentView;
-  window.openStudioView = openView;
-
-  // Attach smooth scroll buttons (Showcase, Services, Contact, Brand Home, CTAs)
-  document.querySelectorAll('[data-scroll-to]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const targetId = btn.dataset.scrollTo;
-      scrollToSection(targetId);
-    });
-  });
-
-  // Attach nav dynamic view triggers (Buy Beats, Sessions, Send Audio, Orders, Cart)
+  // Attach nav buttons
   document.querySelectorAll('[data-view-trigger]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();

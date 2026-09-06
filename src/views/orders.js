@@ -32,7 +32,7 @@ export function createOrdersView({ navigateTo }) {
         <h3>Need revisions or additional formats?</h3>
         <p>All mixing &amp; mastering packages include 2 free revision cycles. Need an instrumental bounce, acapella stem, or TV mix? Send a message with your Order ID.</p>
         <div class="support-actions">
-          <button type="button" class="btn-outline-sm" id="btn-order-contact">Contact Studio Support</button>
+          <a href="#contact" class="btn-outline-sm" id="btn-order-contact">Contact Studio Support</a>
         </div>
       </div>
     </div>
