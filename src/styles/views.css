@@ -1,0 +1,1949 @@
+/* ==========================================================================
+   Full-Screen Hidden Views & Navigation Architecture
+   ========================================================================== */
+
+/* Prevent background scroll when full-screen view is active */
+body.modal-open {
+  overflow: hidden !important;
+  touch-action: none;
+  height: 100vh;
+}
+
+/* --------------------------------------------------------------------------
+   Navigation Bar Enhancements
+   -------------------------------------------------------------------------- */
+.site-header {
+  position: absolute;
+  z-index: 10;
+  top: 0;
+  left: 50%;
+  width: calc(100% - (var(--page-gutter) * 2));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--paper) 22%, transparent);
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 1.8vw, 28px);
+  flex-wrap: nowrap;
+}
+
+nav a, .nav-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: #17151f;
+  font-family: "Work Sans", sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
+nav a:hover, nav a:focus-visible,
+.nav-btn:hover, .nav-btn:focus-visible {
+  color: #4b0082;
+  background: color-mix(in srgb, var(--paper) 55%, transparent);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+/* Dynamic Links Subtle Accent */
+.nav-btn.nav-dynamic {
+  font-weight: 600;
+}
+
+/* Nav Cart Icon Button */
+.nav-cart-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  border-radius: 999px;
+  padding: 7px 14px;
+  color: #17151f;
+  font-weight: 700;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-cart-btn:hover {
+  background: #17151f;
+  color: #ffffff;
+  border-color: #17151f;
+  transform: scale(1.04);
+}
+
+.nav-cart-btn:hover .nav-cart-icon {
+  stroke: #ffffff;
+}
+
+.nav-cart-icon {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+.nav-cart-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--signal);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.nav-cart-badge.has-items {
+  background: #007fff;
+  transform: scale(1.08);
+}
+
+@media (max-width: 980px) {
+  .site-header {
+    width: calc(100% - 32px);
+    padding-block: 16px;
+  }
+  nav {
+    overflow-x: auto;
+    max-width: calc(100% - 70px);
+    padding-block: 4px;
+    gap: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar {
+    display: none;
+  }
+  nav a, .nav-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+  .nav-cart-btn {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Full-Screen Hidden View Container
+   -------------------------------------------------------------------------- */
+.fullscreen-view-container {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: #0d0d11;
+  color: #ffffff;
+  display: none;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  opacity: 0;
+  transition: opacity 0.22s ease-in-out;
+}
+
+.fullscreen-view-container.is-open {
+  display: flex;
+  opacity: 1;
+}
+
+/* Sticky Top Navigation Bar inside full screen */
+.fullscreen-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px var(--page-gutter);
+  background: rgba(13, 13, 17, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.btn-back-studio {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 10px 22px;
+  color: #ffffff;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-back-studio span.arrow {
+  font-size: 1.1rem;
+  transition: transform 0.2s ease;
+}
+
+.btn-back-studio:hover {
+  background: #FFFF00;
+  color: #000000;
+  border-color: #000000;
+  transform: translateX(-4px);
+  box-shadow: 0 0 0 2px #000000;
+}
+
+.btn-back-studio:hover span.arrow {
+  transform: translateX(-3px);
+}
+
+.view-brand-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+}
+
+.view-brand-indicator span.eko {
+  color: #ffffff;
+}
+
+.view-brand-indicator span.sep {
+  color: rgba(255, 255, 255, 0.24);
+}
+
+.view-brand-indicator span.view-name {
+  color: var(--signal-bright);
+  font-family: "Work Sans", sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.topbar-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbar-cart-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 9px 18px;
+  color: #ffffff;
+  font-family: "Work Sans", sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.topbar-cart-btn:hover {
+  background: var(--signal);
+  border-color: var(--signal-bright);
+}
+
+/* Full screen view scrollable body content */
+.fullscreen-view-body {
+  flex: 1;
+  width: min(100%, 1320px);
+  margin-inline: auto;
+  padding: 48px var(--page-gutter) 120px;
+}
+
+/* Loading skeleton for on-demand loading */
+.view-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 18px;
+  color: var(--muted);
+}
+
+.view-loading-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--signal-bright);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --------------------------------------------------------------------------
+   Shared View Components
+   -------------------------------------------------------------------------- */
+.view-hero {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto 52px;
+}
+
+.view-pill-tag {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgba(108, 99, 229, 0.15);
+  border: 1px solid rgba(108, 99, 229, 0.35);
+  color: var(--signal-bright);
+  font-family: "Work Sans", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.view-title {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: clamp(2.4rem, 5vw, 4.4rem);
+  line-height: 1.12;
+  margin: 0 0 16px;
+  color: #ffffff;
+}
+
+.view-subtitle {
+  color: var(--muted);
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  line-height: 1.6;
+  margin: 0 auto;
+  max-width: 680px;
+}
+
+.view-section-label {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.35rem;
+  margin: 0 0 20px;
+  color: #ffffff;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 64px 24px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+/* Buttons */
+.btn-primary-sm {
+  background: var(--signal);
+  color: #ffffff;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 12px 24px;
+  font-family: "Work Sans", sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.btn-primary-sm:hover {
+  background: var(--signal-bright);
+  transform: translateY(-2px);
+}
+
+.btn-outline-sm {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-family: "Work Sans", sans-serif;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.btn-outline-sm:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   1. Buy Beats View
+   -------------------------------------------------------------------------- */
+.store-player-bar {
+  position: sticky;
+  top: 76px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 24px;
+  margin-bottom: 32px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(75, 0, 130, 0.85), rgba(24, 23, 35, 0.95));
+  border: 1px solid rgba(108, 99, 229, 0.45);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(16px);
+}
+
+.store-player-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 220px;
+}
+
+.store-player-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  background: var(--signal-bright);
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 1.1rem;
+}
+
+.store-player-info strong {
+  display: block;
+  font-size: 1rem;
+  color: #ffffff;
+}
+
+.store-player-info span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.store-player-scrub {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.store-player-scrub input[type="range"] {
+  flex: 1;
+  height: 4px;
+  accent-color: var(--signal-bright);
+}
+
+.store-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+}
+
+.genre-tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.genre-tab {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 8px 18px;
+  color: var(--muted);
+  font-family: "Work Sans", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.genre-tab:hover, .genre-tab.active {
+  background: var(--signal);
+  color: #ffffff;
+  border-color: var(--signal);
+}
+
+.store-search-wrap {
+  position: relative;
+  width: min(100%, 320px);
+}
+
+.store-search-wrap svg {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  color: var(--muted);
+}
+
+.store-search-wrap input {
+  width: 100%;
+  padding: 10px 14px 10px 42px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.9rem;
+}
+
+.store-search-wrap input:focus {
+  border-color: var(--signal-bright);
+  outline: none;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.beats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 72px;
+}
+
+.beat-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 24px 28px;
+  background: rgba(24, 23, 35, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  transition: all 0.25s ease;
+}
+
+.beat-card:hover {
+  background: rgba(36, 34, 52, 0.8);
+  border-color: rgba(108, 99, 229, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
+.beat-card.is-playing {
+  border-color: var(--signal-bright);
+  background: rgba(45, 38, 76, 0.85);
+  box-shadow: 0 0 0 1px var(--signal-bright);
+}
+
+.beat-main-col {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex: 1;
+}
+
+.beat-play-btn {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--signal);
+  border: none;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.beat-play-btn:hover, .beat-play-btn.playing {
+  background: var(--signal-bright);
+  transform: scale(1.08);
+}
+
+.beat-info {
+  flex: 1;
+}
+
+.beat-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 6px;
+}
+
+.beat-name {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.45rem;
+  margin: 0;
+  color: #ffffff;
+}
+
+.beat-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.beat-desc {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin: 0 0 10px;
+}
+
+.beat-specs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.spec-tag {
+  color: #ffffff;
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.spec-tag strong {
+  color: var(--signal-bright);
+}
+
+.beat-tag {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.beat-buy-col {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.beat-license-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.beat-license-selector label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+.license-dropdown {
+  background: #171520;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-buy-beat {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--signal);
+  color: #ffffff;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 22px;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-buy-beat:hover {
+  background: #FFFF00;
+  color: #000000;
+  transform: translateY(-2px);
+}
+
+.btn-buy-beat.added {
+  background: #00ffaa;
+  color: #000000;
+}
+
+/* Licensing guide section */
+.licensing-section {
+  padding-top: 48px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.licensing-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.licensing-header h2 {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 2rem;
+  margin: 0 0 10px;
+}
+
+.licensing-header p {
+  color: var(--muted);
+  max-width: 580px;
+  margin: 0 auto;
+}
+
+.license-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.license-card {
+  position: relative;
+  background: rgba(24, 23, 35, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 30px 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.license-card.featured {
+  border-color: var(--signal-bright);
+  background: rgba(38, 33, 66, 0.85);
+  box-shadow: 0 16px 40px rgba(0, 127, 255, 0.12);
+}
+
+.lic-badge {
+  position: absolute;
+  top: -12px;
+  left: 24px;
+  background: var(--signal-bright);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+.lic-name {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.3rem;
+  margin-bottom: 12px;
+}
+
+.lic-price {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 2.4rem;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+
+.lic-price span {
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-family: "Work Sans", sans-serif;
+}
+
+.lic-desc {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 24px;
+}
+
+.lic-perks {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+/* --------------------------------------------------------------------------
+   2. Sessions View
+   -------------------------------------------------------------------------- */
+.sessions-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.session-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.session-type-card {
+  background: rgba(24, 23, 35, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.session-type-card:hover {
+  background: rgba(35, 33, 50, 0.8);
+  border-color: rgba(108, 99, 229, 0.4);
+  transform: translateY(-2px);
+}
+
+.session-type-card.active {
+  border-color: var(--signal-bright);
+  background: rgba(42, 36, 72, 0.9);
+  box-shadow: 0 0 0 1px var(--signal-bright);
+}
+
+.sess-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.sess-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--signal-bright);
+  margin-bottom: 6px;
+}
+
+.sess-title {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.sess-price-block {
+  text-align: right;
+}
+
+.sess-price {
+  display: block;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.6rem;
+  color: #ffffff;
+}
+
+.sess-dur {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.sess-desc {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.sess-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.booking-panel-shell {
+  background: rgba(24, 23, 35, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 32px;
+}
+
+.dates-scroll-wrap {
+  overflow-x: auto;
+  padding-bottom: 10px;
+  margin-bottom: 24px;
+}
+
+.dates-scroll {
+  display: flex;
+  gap: 10px;
+}
+
+.date-chip {
+  flex: 0 0 auto;
+  width: 72px;
+  padding: 12px 6px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.date-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.date-chip.active {
+  background: var(--signal);
+  border-color: var(--signal-bright);
+}
+
+.date-weekday {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.date-chip.active .date-weekday {
+  color: #ffffff;
+}
+
+.date-num {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.35rem;
+}
+
+.date-month {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.date-chip.active .date-month {
+  color: #ffffff;
+}
+
+.time-slots-wrap {
+  margin-bottom: 24px;
+}
+
+.input-label {
+  display: block;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.time-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.time-slot-chip {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.time-slot-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.time-slot-chip.active {
+  background: var(--signal);
+  border-color: var(--signal-bright);
+}
+
+.booking-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.booking-form input,
+.booking-form select,
+.booking-form textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+.booking-form input:focus,
+.booking-form select:focus,
+.booking-form textarea:focus {
+  border-color: var(--signal-bright);
+  outline: none;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.booking-summary-box {
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 24px;
+}
+
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.05rem;
+  margin-bottom: 6px;
+}
+
+.summary-line strong {
+  font-family: "Dela Gothic One", sans-serif;
+  color: var(--signal-bright);
+  font-size: 1.3rem;
+}
+
+.summary-sub {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* --------------------------------------------------------------------------
+   3. Send Audio View
+   -------------------------------------------------------------------------- */
+.send-audio-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.dropzone {
+  border: 2px dashed rgba(108, 99, 229, 0.4);
+  border-radius: 24px;
+  background: rgba(24, 23, 35, 0.5);
+  padding: 48px 24px;
+  text-align: center;
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.dropzone.drag-over, .dropzone:hover {
+  background: rgba(45, 38, 76, 0.6);
+  border-color: var(--signal-bright);
+}
+
+.dropzone-icon {
+  color: var(--signal-bright);
+  margin-bottom: 16px;
+}
+
+.dropzone h3 {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.3rem;
+  margin: 0 0 8px;
+}
+
+.dropzone p {
+  color: var(--muted);
+  font-size: 0.88rem;
+  max-width: 380px;
+  margin: 0 auto 20px;
+}
+
+.btn-select-files {
+  padding: 10px 22px;
+  font-size: 0.88rem;
+}
+
+.file-list-wrap {
+  margin-top: 24px;
+  background: rgba(24, 23, 35, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.file-list-title {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.file-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.file-ext {
+  padding: 3px 8px;
+  background: var(--signal);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.file-name {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.file-size {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.file-item-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.file-status {
+  font-size: 0.78rem;
+  color: #00ffaa;
+  font-weight: 600;
+}
+
+.btn-remove-file {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.btn-remove-file:hover {
+  color: #ff6b6b;
+}
+
+.audio-prep-tips {
+  margin-top: 28px;
+  padding: 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.audio-prep-tips h4 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  color: #ffffff;
+}
+
+.audio-prep-tips ul {
+  padding-left: 18px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.audio-prep-tips code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--signal-bright);
+}
+
+.details-panel-shell {
+  background: rgba(24, 23, 35, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 32px;
+}
+
+.project-brief-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.project-brief-form input,
+.project-brief-form select,
+.project-brief-form textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #ffffff;
+  font-size: 0.95rem;
+}
+
+.project-brief-form input:focus,
+.project-brief-form select:focus,
+.project-brief-form textarea:focus {
+  border-color: var(--signal-bright);
+  outline: none;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.audio-success-banner {
+  margin-top: 40px;
+  background: linear-gradient(135deg, rgba(75, 0, 130, 0.85), rgba(24, 23, 35, 0.95));
+  border: 1px solid var(--signal-bright);
+  border-radius: 20px;
+  padding: 28px;
+}
+
+.success-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.success-check-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #00ffaa;
+  color: #000000;
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   4. Orders View
+   -------------------------------------------------------------------------- */
+.orders-lookup-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 640px;
+  margin: 0 auto 48px;
+}
+
+.lookup-input-wrap {
+  flex: 1;
+  position: relative;
+}
+
+.lookup-input-wrap svg {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  color: var(--muted);
+}
+
+.lookup-input-wrap input {
+  width: 100%;
+  padding: 14px 16px 14px 48px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.95rem;
+}
+
+.lookup-input-wrap input:focus {
+  border-color: var(--signal-bright);
+  outline: none;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.orders-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 64px;
+}
+
+.order-card {
+  background: rgba(24, 23, 35, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 22px;
+  padding: 30px;
+}
+
+.order-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.order-id-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  background: rgba(108, 99, 229, 0.2);
+  color: var(--signal-bright);
+  font-family: "Work Sans", sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.order-title {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.45rem;
+  margin: 0 0 6px;
+}
+
+.order-client {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.order-status-badge {
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.status-delivered {
+  background: rgba(0, 255, 170, 0.15);
+  color: #00ffaa;
+  border: 1px solid rgba(0, 255, 170, 0.35);
+}
+
+.status-progress {
+  background: rgba(0, 127, 255, 0.15);
+  color: var(--signal-bright);
+  border: 1px solid rgba(0, 127, 255, 0.35);
+}
+
+/* Order Stepper */
+.order-stepper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  padding: 20px 0;
+  margin-bottom: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.step-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.step-done .step-circle {
+  background: #00ffaa;
+  color: #000000;
+}
+
+.step-active .step-circle {
+  background: var(--signal-bright);
+  color: #ffffff;
+  box-shadow: 0 0 12px var(--signal-bright);
+}
+
+.step-pending .step-circle {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+}
+
+.step-label {
+  display: block;
+  font-size: 0.82rem;
+  color: #ffffff;
+}
+
+.step-pending .step-label {
+  color: var(--muted);
+}
+
+.step-time {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.order-details-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.order-notes-col h4 {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.order-notes-col p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 580px;
+}
+
+.order-action-col {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-download-order {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--signal);
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 12px 22px;
+  font-family: "Work Sans", sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.btn-download-order:hover {
+  background: var(--signal-bright);
+  transform: translateY(-2px);
+}
+
+.in-prod-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--signal-bright);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.pulse-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--signal-bright);
+  animation: pulse-dot 1.5s infinite;
+}
+
+@keyframes pulse-dot {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 127, 255, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 127, 255, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 127, 255, 0); }
+}
+
+.orders-support-footer {
+  text-align: center;
+}
+
+.support-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.support-card h3 {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.25rem;
+  margin: 0 0 10px;
+}
+
+.support-card p {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin: 0 0 20px;
+}
+
+/* --------------------------------------------------------------------------
+   5. Cart View
+   -------------------------------------------------------------------------- */
+.cart-layout {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.cart-items-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.cart-items-header h2 {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+.btn-clear-cart {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.btn-clear-cart:hover {
+  color: #ff6b6b;
+}
+
+.cart-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.cart-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: rgba(24, 23, 35, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  padding: 20px 24px;
+}
+
+.cart-item-cat {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--signal-bright);
+}
+
+.cart-item-title {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.2rem;
+  margin: 4px 0;
+}
+
+.cart-item-tier {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.cart-item-controls {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.qty-stepper {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 4px 8px;
+}
+
+.btn-qty {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.qty-num {
+  padding: 0 8px;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.cart-item-price {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.35rem;
+  color: #ffffff;
+  min-width: 70px;
+  text-align: right;
+}
+
+.btn-remove-cart-item {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.btn-remove-cart-item:hover {
+  color: #ff6b6b;
+}
+
+.cart-continue-wrap {
+  margin-top: 20px;
+}
+
+.cart-summary-card {
+  background: rgba(24, 23, 35, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 24px;
+  padding: 32px;
+}
+
+.cart-summary-card h3 {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.4rem;
+  margin: 0 0 20px;
+}
+
+.summary-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.sum-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.sum-row strong {
+  color: #ffffff;
+}
+
+.sum-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 6px 0;
+}
+
+.sum-total-row {
+  font-size: 1.15rem;
+  color: #ffffff;
+}
+
+.sum-total-row .total-price {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.8rem;
+  color: #00ffaa;
+}
+
+.promo-wrap {
+  margin-bottom: 28px;
+}
+
+.promo-input-row {
+  display: flex;
+  gap: 10px;
+}
+
+.promo-input-row input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #ffffff;
+  font-size: 0.88rem;
+}
+
+.btn-apply-promo {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 0 16px;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-apply-promo:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.promo-msg {
+  font-size: 0.8rem;
+  margin: 6px 0 0;
+}
+
+.checkout-form h4 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.checkout-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.checkout-form input[type="text"],
+.checkout-form input[type="email"] {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #ffffff;
+  font-size: 0.92rem;
+}
+
+.payment-radios {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.pay-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  cursor: pointer;
+  margin: 0 !important;
+  color: #ffffff !important;
+  font-size: 0.88rem !important;
+}
+
+.pay-option input[type="radio"] {
+  accent-color: var(--signal-bright);
+}
+
+.checkout-guarantee {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 14px;
+}
+
+.cart-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 3.5rem;
+  margin-bottom: 16px;
+}
+
+.cart-empty-state h2 {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 2.2rem;
+  margin: 0 0 10px;
+}
+
+.cart-empty-state p {
+  color: var(--muted);
+  max-width: 480px;
+  margin: 0 0 28px;
+  font-size: 1.05rem;
+}
+
+.empty-actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.checkout-confirmed-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+}
+
+.confirmed-card {
+  max-width: 580px;
+  background: rgba(24, 23, 35, 0.85);
+  border: 1px solid var(--signal-bright);
+  border-radius: 28px;
+  padding: 48px 36px;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+.confirmed-check {
+  width: 64px;
+  height: 64px;
+  background: #00ffaa;
+  color: #000000;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 auto 20px;
+}
+
+.confirmed-card h2 {
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 2.2rem;
+  margin: 0 0 12px;
+}
+
+.confirmed-card p {
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+
+.confirmed-order-id {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-size: 1.05rem;
+  margin-bottom: 32px;
+}
+
+.confirmed-order-id strong {
+  color: var(--signal-bright);
+  font-family: "Work Sans", sans-serif;
+}
+
+.confirmed-actions {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Adjustments
+   -------------------------------------------------------------------------- */
+@media (max-width: 980px) {
+  .sessions-layout,
+  .send-audio-grid,
+  .cart-layout {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .beat-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .beat-buy-col {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .fullscreen-topbar {
+    padding-inline: 16px;
+  }
+  .fullscreen-view-body {
+    padding-inline: 16px;
+  }
+}

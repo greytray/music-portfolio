@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Dela+Gothic+One&amp;family=Work+Sans:wght@400;500;600;700&amp;display=block" rel="stylesheet">
   <link rel="preload" as="image" href="./assets/c1.gif" fetchpriority="high">
+  <link rel="stylesheet" href="./src/styles/views.css">
   <style>
 :root {
   --ink: #0d0d11;
@@ -368,9 +369,22 @@ body { font-family: "Work Sans", sans-serif; }
   <header class="site-header">
     <a class="brand" href="#top" aria-label="Eko home">EKO</a>
     <nav aria-label="Main navigation">
-      <a href="#beats">Beats</a>
-      <a href="#services">Services</a>
-      <a href="#contact">Contact</a>
+      <a href="#showcase" id="nav-showcase">Showcase</a>
+      <a href="#services" id="nav-services">Services</a>
+      <button type="button" class="nav-btn nav-dynamic" data-view-trigger="beats" id="nav-buy-beats">Buy Beats</button>
+      <button type="button" class="nav-btn nav-dynamic" data-view-trigger="sessions" id="nav-sessions">Sessions</button>
+      <button type="button" class="nav-btn nav-dynamic" data-view-trigger="send-audio" id="nav-send-audio">Send Audio</button>
+      <button type="button" class="nav-btn nav-dynamic" data-view-trigger="orders" id="nav-orders">Orders</button>
+      <a href="#contact" id="nav-contact">Contact</a>
+      <button type="button" class="nav-cart-btn" data-view-trigger="cart" id="nav-cart" aria-label="Shopping Cart">
+        <svg class="nav-cart-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        <span>Cart</span>
+        <span class="nav-cart-badge" id="nav-cart-badge">0</span>
+      </button>
     </nav>
   </header>
   <main>
@@ -380,10 +394,10 @@ body { font-family: "Work Sans", sans-serif; }
         <p class="eyebrow">Producer · Engineer · Sound Designer</p>
         <h1 id="hero-title">Music Producer</h1>
         <p class="hero-copy">Beats, Mixing &amp; Vocal Production<br>Focused on clean, impactful sound with fast delivery</p>
-        <a class="button button-primary cta-button hero-cta" href="#beats">Listen to Tracks <span aria-hidden="true">›</span></a>
+        <a class="button button-primary cta-button hero-cta" href="#showcase">Listen to Tracks <span aria-hidden="true">›</span></a>
       </div>
     </section>
-    <section class="section beats" id="beats" aria-labelledby="beats-title">
+    <section class="section beats" id="showcase" aria-labelledby="beats-title">
       <div class="section-heading"><div><h2 id="beats-title">The <em>Work</em></h2></div><p>Explore a curated selection of original productions. Headphones recommended.</p></div>
       <div class="player-shell">
         <div class="now-playing"><div class="cover-art" aria-hidden="true"><span>NW</span></div><div class="track-meta"><p class="eyebrow">Now playing</p><h3 id="current-title">Feeling Mello</h3><p id="current-style">Original production</p></div><button class="main-play" id="main-play" type="button" aria-label="Play Feeling Mello"><svg class="play-icon icon-play" aria-hidden="true" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="play-icon icon-pause" aria-hidden="true" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H-4z"></path></svg></button></div>
@@ -531,7 +545,45 @@ function closeSuccessModal() { successModal.classList.remove('is-open'); success
 contactForm.addEventListener('submit', async (event) => { event.preventDefault(); submitBtn.textContent = 'Sending...'; formStatus.textContent = ''; try { const formData = new FormData(contactForm); const response = await fetch(contactForm.action, { method: 'POST', headers: { 'Accept': 'application/json' }, body: formData }); const result = await response.json(); if (result.success) { submitBtn.textContent = 'Success'; playBlip(); openSuccessModal(); contactForm.reset(); setTimeout(() => { submitBtn.textContent = 'Send Request '; const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; submitBtn.appendChild(arrow); }, 4000); } else { submitBtn.textContent = 'Send Request '; const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; submitBtn.appendChild(arrow); formStatus.textContent = 'Something went wrong. Please try again.'; } } catch { submitBtn.textContent = 'Send Request '; const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; submitBtn.appendChild(arrow); formStatus.textContent = 'Something went wrong. Please try again.'; } });
 closeBtn.addEventListener('click', closeSuccessModal);
 successModal.querySelector('.success-modal-backdrop').addEventListener('click', closeSuccessModal);
+window.pauseLandingPlayer = () => {
+  if (audio && !audio.paused) {
+    audio.pause();
+    setPlayingState(false);
+    stopVisualizer();
+    stopTimeline();
+  }
+};
 document.querySelectorAll('a[href="#"]').forEach((link) => { link.addEventListener('click', (event) => event.preventDefault()); });
   </script>
+
+  <!-- Full-Screen Hidden Page Architecture -->
+  <aside class="fullscreen-view-container" id="fullscreen-view-container" aria-label="Full-screen view" role="dialog" aria-modal="true">
+    <header class="fullscreen-topbar">
+      <button type="button" class="btn-back-studio" id="btn-back-to-studio" aria-label="Close and return to Studio">
+        <span class="arrow" aria-hidden="true">←</span>
+        <span>Back to Studio</span>
+      </button>
+      <div class="view-brand-indicator" aria-hidden="true">
+        <span class="eko">EKO</span>
+        <span class="sep">/</span>
+        <span class="view-name" id="fullscreen-view-title">View</span>
+      </div>
+      <div class="topbar-right-actions">
+        <button type="button" class="topbar-cart-btn" id="topbar-cart-btn" aria-label="Open Cart">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span>Cart (<span id="topbar-cart-badge">0</span>)</span>
+        </button>
+      </div>
+    </header>
+    <div class="fullscreen-view-body" id="fullscreen-view-body">
+      <!-- Dynamic content loaded on demand -->
+    </div>
+  </aside>
+
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>
