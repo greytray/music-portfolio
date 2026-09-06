@@ -280,7 +280,7 @@ export function createCartView({ navigateTo }) {
       paymentMethod: payMethod,
       status: 'Delivered',
       currentStage: 5,
-      downloadUrl: items[0].beatId ? './assets/showcase/broken jar mastered.mp3' : null,
+      downloadUrl: items[0].beatId ? './assets/audio/broken jar mastered.mp3' : null,
       downloadName: `${items[0].title.replace(/\s+/g, '_')}_Master.mp3`,
       notes: `Payment completed via ${payMethod}. Stems & license agreement issued to ${buyerEmail}.`
     });

@@ -13,7 +13,7 @@ const INITIAL_ORDERS = [
     client: 'Alex Rivera',
     email: 'alex@riverasound.com',
     amount: 149,
-    downloadUrl: './assets/showcase/broken jar mastered.mp3',
+    downloadUrl: './assets/audio/broken jar mastered.mp3',
     downloadName: 'Broken_Jar_Mastered_24bit.mp3',
     notes: 'Checked loudness at -14 LUFS integrated. Cleaned low-mid resonances and widened side image.',
     timeline: [
@@ -34,7 +34,7 @@ const INITIAL_ORDERS = [
     client: 'Studio Kroma',
     email: 'kroma@animeworks.jp',
     amount: 99,
-    downloadUrl: './assets/showcase/Kensuke.mp3',
+    downloadUrl: './assets/audio/Kensuke.mp3',
     downloadName: 'Kensuke_Instrumental_WAV.mp3',
     notes: 'Premium WAV license valid for streaming up to 250,000 plays and sync usage for video teaser.',
     timeline: [
