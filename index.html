@@ -1,6 +1,156 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <!-- SAFE TARGETED UPDATE REQUIRED: change only ./assets/audio/feeling mello.wav to ./assets/audio/feeling mello.mp3 -->
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Eko — premium music production, custom beats, mixing, mastering, audio editing, and production lessons.">
+  <meta name="theme-color" content="#0D0D11">
+  <title>Eko — Producer &amp; Audio Engineer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Dela+Gothic+One&amp;family=Work+Sans:wght@400;500;600;700&amp;display=block" rel="stylesheet">
+  <link rel="preload" as="image" href="./assets/backgrounds/c1.gif" fetchpriority="high">
+  <link rel="stylesheet" href="./src/styles/views.css">
+  <style>
+:root {
+  --ink: #0d0d11;
+  --panel: rgba(24, 23, 35, 0.64);
+  --muted: #a7a7b4;
+  --paper: #ffffff;
+  --signal: #6c63e5;
+  --signal-bright: #007fff;
+  --brand-deep: #4b0082;
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --page-gutter: clamp(20px, 4vw, 72px);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; background: var(--ink); }
+body { margin: 0; background: radial-gradient(circle at 18% 24%, color-mix(in srgb, var(--brand-deep) 30%, transparent) 0, transparent 38%), radial-gradient(circle at 82% 62%, color-mix(in srgb, var(--signal) 18%, transparent) 0, transparent 34%), var(--ink); background-attachment: fixed; color: var(--paper); font-family: "DM Sans", sans-serif; line-height: 1.55; }
+a { color: inherit; text-decoration: none; }
+button, input, textarea, select { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+.site-header { position: absolute; z-index: 10; top: 0; left: 50%; width: calc(100% - (var(--page-gutter) * 2)); transform: translateX(-50%); display: flex; align-items: center; justify-content: space-between; padding: 28px 0; border-bottom: 1px solid color-mix(in srgb, var(--paper) 22%, transparent); }
+.brand { display: inline-block; font-family: "Dela Gothic One", sans-serif; line-height: 1.15; font-weight: 400; letter-spacing: 0.01em; font-size: 1.15rem; color: var(--paper); }
+.brand span, em { color: var(--signal); font-style: normal; }
+nav { display: flex; gap: 32px; }
+nav a { color: #17151f; font-size: .88rem; font-weight: 600; transition: color .2s ease; }
+nav a:hover, nav a:focus-visible { color: #4b0082; }
+.hero { position: relative; min-height: 100svh; display: flex; align-items: flex-end; overflow: hidden; }
+.hero-photo { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.hero-photo img { display: block; width: 100%; height: 100%; object-fit: fill; object-position: center; transform: none; filter: none; will-change: auto; }
+.hero-content { position: relative; z-index: 1; width: calc(100% - (var(--page-gutter) * 2)); margin: 0 auto; padding: 180px 0 88px; }
+.eyebrow, label, .service-index, .track-name small, .track-number, .track-length, .timeline, .form-status, .contact-copyright, .service-footer strong, .service-footer a, .hero-copy, .section-heading > p, .contact-copy > p:not(.eyebrow) { font-family: "Work Sans", "DM Sans", sans-serif; }
+.eyebrow { margin: 0 0 18px; color: var(--signal); font-size: .72rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
+.hero .eyebrow { color: #352a78; }
+h1, h2, h3 { display: block; font-family: "Dela Gothic One", sans-serif; line-height: 1.15; margin: 0; color: var(--paper); font-weight: 400; letter-spacing: 0.01em; }
+h1 { max-width: 760px; font-size: clamp(5rem, 15vw, 11.5rem); }
+.hero-copy { max-width: 500px; margin: 28px 0 34px; color: #15151c; font-size: clamp(1rem, 2vw, 1.25rem); }
+.vertical-note { position: absolute; z-index: 2; right: 24px; bottom: 90px; margin: 0; color: #17151f; font-size: .62rem; letter-spacing: .2em; writing-mode: vertical-rl; }
+.button { display: inline-block; min-width: 190px; padding: 15px 18px; border: 1px solid transparent; border-radius: 2px; color: var(--paper); font-family: "Dela Gothic One", sans-serif; line-height: 1.15; font-weight: 400; letter-spacing: 0.01em; text-align: left; cursor: pointer; transition: transform .2s ease, background .2s ease, color .2s ease; }
+.button > span { float: none; margin: 0 -0.125em 0 0.75rem; font-size: 1em; }
+.button:hover { transform: translateY(-2px); }
+.button:focus-visible, .main-play:focus-visible, .track:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--signal-bright); outline-offset: 3px; }
+.button-primary { background: var(--signal); color: var(--paper); }
+.button-primary:hover { background: var(--signal-bright); }
+.button-dark { background: var(--signal); color: var(--paper); width: 100%; }
+.button-outline { border-color: var(--glass-border); background: rgba(255, 255, 255, 0.04); color: var(--paper); width: 100%; }
+.button-outline:hover { background: var(--signal); color: var(--paper); }
+.section { width: calc(100% - (var(--page-gutter) * 2)); margin: 0 auto; padding: 112px 0; }
+.section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 48px; margin-bottom: 52px; }
+.section-heading h2, .contact h2 { font-size: clamp(3rem, 7vw, 6.2rem); }
+.section-heading > p { max-width: 380px; margin: 0; color: var(--muted); }
+.player-shell { overflow: hidden; padding: 0 28px; border: 1px solid var(--glass-border); background: var(--panel); box-shadow: 0 24px 80px rgba(75, 0, 130, 0.14); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.now-playing { display: grid; grid-template-columns: 160px minmax(0, 1fr) auto; align-items: center; gap: 32px; padding: 34px 0; }
+.cover-art { aspect-ratio: 1; display: grid; place-items: center; background: linear-gradient(135deg, var(--brand-deep), var(--signal)); color: var(--paper); box-shadow: 0 16px 48px rgba(0, 0, 0, .26); }
+.cover-art span { display: inline-block; font-family: "Dela Gothic One", sans-serif; line-height: 1.15; font-weight: 400; font-size: 2.3rem; letter-spacing: 0.01em; transform: rotate(-8deg); transform-origin: center; }
+.track-meta { min-width: 0; }
+.track-meta .eyebrow { margin-bottom: 10px; }
+.track-meta h3 { overflow-wrap: anywhere; font-size: clamp(2rem, 5vw, 4.2rem); }
+.track-meta > p:last-child { color: var(--muted); margin-bottom: 0; }
+.main-play { width: 76px; height: 76px; display: grid; place-items: center; border: 1px solid var(--glass-border); border-radius: 50%; background: var(--signal); color: var(--paper); cursor: pointer; transition: transform .3s ease, background .3s ease, box-shadow .3s ease; }
+.main-play:hover { background: var(--signal-bright); transform: scale(1.06); box-shadow: 0 0 0 8px color-mix(in srgb, var(--signal) 18%, transparent); }
+.play-icon, .track-action svg { width: 24px; height: 24px; fill: currentColor; }
+.icon-pause { display: none; }
+.is-playing .icon-play { display: none; }
+.is-playing .icon-pause { display: block; }
+.timeline { display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; gap: 14px; padding: 0 0 28px; color: var(--muted); font-size: .75rem; }
+input[type="range"] { width: 100%; height: 3px; accent-color: var(--signal); cursor: pointer; }
+.playlist { border-top: 1px solid color-mix(in srgb, var(--paper) 14%, transparent); }
+.track { position: relative; width: 100%; display: grid; grid-template-columns: 45px minmax(0, 1fr) 60px 48px; align-items: center; gap: 12px; padding: 20px 12px; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--paper) 10%, transparent); background: transparent; color: var(--paper); text-align: left; cursor: pointer; transition: background .3s ease, transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease; }
+.track::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 2px; background: var(--signal); transform: scaleY(0); transition: transform .3s ease; }
+.track:hover { z-index: 1; background: color-mix(in srgb, var(--signal) 10%, var(--panel)); transform: translateX(6px); box-shadow: -12px 0 40px rgba(0, 0, 0, .18); }
+.track:hover::before, .track.active::before { transform: scaleY(1); }
+.track.active { background: color-mix(in srgb, var(--signal) 8%, var(--panel)); }
+.track.active .track-number, .track.active .track-action { color: var(--signal-bright); }
+.track-name { min-width: 0; font-weight: 700; }
+.track-name small { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--muted); font-weight: 400; }
+.track-number, .track-length, .track-action { color: var(--muted); font-size: .78rem; }
+.track-action { display: grid; place-items: center; justify-self: end; width: 36px; height: 36px; border: 1px solid transparent; border-radius: 50%; transition: border-color .3s ease, background .3s ease; }
+.track:hover .track-action { border-color: var(--glass-border); background: color-mix(in srgb, var(--paper) 6%, transparent); }
+.track-action svg { width: 17px; height: 17px; }
+.services { width: 100%; max-width: none; padding: 112px var(--page-gutter); background: transparent; }
+.service-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.service-card { display: flex; flex-direction: column; min-height: 520px; padding: 34px; border: 1px solid var(--glass-border); background: var(--panel); box-shadow: 0 20px 60px rgba(75, 0, 130, 0.1); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.service-card:last-child { border-right: 1px solid var(--glass-border); }
+.service-card.featured { border-color: color-mix(in srgb, var(--signal) 48%, transparent); background: color-mix(in srgb, var(--signal) 14%, var(--panel)); color: var(--paper); }
+.service-index { margin: 0 0 58px; color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.featured .service-index { color: var(--signal-bright); opacity: 1; }
+.service-card h3 { max-width: 300px; font-size: 2.2rem; }
+.service-card > p:not(.service-index) { color: var(--muted); }
+.featured > p:not(.service-index) { color: var(--muted); opacity: 1; }
+.service-card ul { margin: 24px 0 36px; padding: 0; list-style: none; color: var(--muted); font-size: .9rem; }
+.featured ul { color: var(--paper); }
+.service-card li { padding: 9px 0; border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent); }
+.price { display: flex; align-items: flex-end; justify-content: space-between; margin-top: auto; margin-bottom: 20px; }
+.price span { color: var(--muted); font-size: .75rem; }
+.featured .price span { color: var(--ink); opacity: .65; }
+.price strong { display: inline-block; font-family: "Dela Gothic One", sans-serif; line-height: 1.15; color: var(--paper); font-size: 2.6rem; font-weight: 400; letter-spacing: 0.01em; }
+.contact { width: 100%; max-width: none; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 10vw; padding-inline: var(--page-gutter); background-image: url("./assets/backgrounds/gif2.gif"); background-repeat: no-repeat; background-position: center center; background-size: auto 100%; }
+.contact h2 { color: var(--ink); }
+.contact .eyebrow { color: var(--brand-deep); }
+.contact-copy > p:not(.eyebrow) { max-width: 440px; color: var(--ink); margin: 30px 0; }
+.contact-copy > a { border-bottom: 1px solid var(--brand-deep); color: var(--brand-deep); font-weight: 700; }
+.contact-form { display: flex; flex-direction: column; gap: 24px; padding-top: 8px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.contact label { color: var(--ink); }
+label { display: flex; flex-direction: column; gap: 9px; color: var(--muted); font-size: .76rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.contact input, .contact textarea, .contact select { border-bottom-color: color-mix(in srgb, var(--ink) 42%, transparent); color: var(--ink); font-weight: 600; }
+.contact input::placeholder, .contact textarea::placeholder { color: color-mix(in srgb, var(--ink) 72%, transparent); }
+input, textarea, select { width: 100%; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--paper) 24%, transparent); border-radius: 0; padding: 12px 0; background: transparent; color: var(--paper); font-size: 1rem; letter-spacing: 0; text-transform: none; }
+textarea { resize: vertical; }
+select option { background: var(--panel); }
+.contact-form .button { align-self: flex-start; }
+.form-status { min-height: 1.5em; margin: 0; color: var(--ink); }
+</style>
 </head>
+<body>
+  <div id="top"></div>
+  <header class="site-header">
+    <a class="brand" href="#top">Eko<span>.</span></a>
+    <nav aria-label="Primary navigation"><a href="#showcase">Showcase</a><a href="#services">Services</a><a href="#contact">Contact</a></nav>
+  </header>
+  <main>
+    <section class="hero" id="hero">
+      <div class="hero-photo"><img src="./assets/backgrounds/c1.gif" alt=""></div>
+      <div class="hero-content"><p class="eyebrow">Music Producer</p><h1 id="hero-title">Music Producer</h1><p class="hero-copy">Beats, Mixing &amp; Vocal Production</p><a class="button button-primary" href="#showcase">Listen to work <span>→</span></a></div>
+      <p class="vertical-note">ORIGINAL MUSIC / PROFESSIONAL PRODUCTION</p>
+    </section>
+    <section class="section" id="showcase">
+      <div class="section-heading"><div><p class="eyebrow">Selected work</p><h2>Showcase</h2></div><p>A selection of original productions, mixes, and soundtrack work.</p></div>
+      <div class="player-shell">
+        <div class="now-playing"><div class="cover-art"><span>EKO</span></div><div class="track-meta"><p class="eyebrow">Now playing</p><h3 id="current-title">Feeling Mello</h3><p id="current-style">Original production</p></div><button class="main-play" id="main-play" type="button" aria-label="Play Feeling Mello"><svg class="icon-play play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause play-icon" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H14z"></path></svg></button></div>
+        <div class="timeline"><span id="current-time">0:00</span><input id="progress" type="range" min="0" max="100" step="0.01" value="0" aria-label="Track progress"><span id="duration">0:44</span></div>
+        <div class="playlist" id="playlist" aria-label="Beat playlist">
+          <button class="track active" type="button" data-src="./assets/audio/feeling mello.mp3" data-title="Feeling Mello" data-style="Original production" aria-label="Play Feeling Mello"><span class="track-number">01</span><span class="track-name">Feeling Mello<small>Original production</small></span><span class="track-length">0:44</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H6z"></path></svg></span></button>
+          <button class="track" type="button" data-src="./assets/audio/broken jar mastered.mp3" data-title="Broken Jar" data-style="Mastered production" aria-label="Play Broken Jar"><span class="track-number">02</span><span class="track-name">Broken Jar<small>Mastered production</small></span><span class="track-length">0:38</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H6z"></path></svg></span></button>
+          <button class="track" type="button" data-src="./assets/audio/Kpop beat.mp3" data-title="Kpop Beat" data-style="K-Pop production" aria-label="Play Kpop Beat"><span class="track-number">03</span><span class="track-name">Kpop Beat<small>K-Pop production</small></span><span class="track-length">1:14</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H6z"></path></svg></span></button>
+          <button class="track" type="button" data-src="./assets/audio/Kensuke.mp3" data-title="Kensuke" data-style="Original production" aria-label="Play Kensuke"><span class="track-number">04</span><span class="track-name">Kensuke<small>Original production</small></span><span class="track-length">0:45</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H6z"></path></svg></span></button>
+          <button class="track" type="button" data-src="./assets/audio/K-Pop post fx.mp3" data-title="K-Pop Post FX" data-style="Post-production mix" aria-label="Play K-Pop Post FX"><span class="track-number">05</span><span class="track-name">K-Pop Post FX<small>Post-production mix</small></span><span class="track-length">0:14</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H6z"></path></svg></span></button>
+          <button class="track" type="button" data-src="./assets/audio/Aiobahn maybe last mix.mp3" data-title="Aiobahn Maybe Last Mix" data-style="Final mix" aria-label="Play Aiobahn Maybe Last Mix"><span class="track-number">06</span><span class="track-name">Aiobahn Maybe Last Mix<small>Final mix</small></span><span class="track-length">0:53</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H6z"></path></svg></span></button>
+        </div>
+        <audio id="audio" preload="metadata" src="./assets/audio/feeling mello.mp3"></audio>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="./src/main.js"></script>
+</body>
 </html>
