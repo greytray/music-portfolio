@@ -36,12 +36,59 @@ export function createOrdersView({ navigateTo }) {
         </div>
       </div>
     </div>
+
+    <!-- License Certificate Modal -->
+    <div class="cert-modal" id="cert-modal" style="display: none; position: fixed; inset: 0; z-index: 10000; align-items: center; justify-content: center; background: rgba(13, 13, 17, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 20px;">
+      <div class="cert-card" style="position: relative; max-width: 520px; width: 100%; background: #171520; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 24px; padding: 36px; box-shadow: 0 24px 80px rgba(0,0,0,0.6);">
+        <button type="button" id="btn-close-cert" aria-label="Close certificate" style="position: absolute; top: 16px; right: 16px; background: transparent; border: none; color: #ffffff; font-size: 1.5rem; cursor: pointer; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%;">&times;</button>
+        <div style="text-align: center; margin-bottom: 22px;">
+          <span style="font-family: 'Work Sans', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--signal-bright);">Official Certificate of Authenticity</span>
+          <h3 id="cert-title" style="font-family: 'Dela Gothic One', sans-serif; font-size: 1.5rem; margin: 10px 0 6px;">License Certificate</h3>
+          <p id="cert-order-id" style="color: var(--signal); font-weight: 700; font-size: 0.95rem; margin: 0;"></p>
+        </div>
+        <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px; margin-bottom: 24px; font-size: 0.9rem; line-height: 1.6;">
+          <p style="margin: 0 0 10px;"><strong>Issued To:</strong> <span id="cert-client"></span></p>
+          <p style="margin: 0 0 10px;"><strong>Production Title:</strong> <span id="cert-work"></span></p>
+          <p style="margin: 0 0 10px;"><strong>Terms &amp; Clearance:</strong> Fully cleared for worldwide commercial broadcast, streaming, and synchronized media distribution.</p>
+          <p style="margin: 0; color: var(--muted); font-size: 0.82rem;">Issued by Eko Audio Studios · Verified Lossless Delivery</p>
+        </div>
+        <div style="text-align: center;">
+          <button type="button" class="btn-primary-sm" id="btn-cert-dismiss" style="min-width: 140px; padding: 12px 24px; border-radius: 999px;">Close Certificate</button>
+        </div>
+      </div>
+    </div>
   `;
 
   const searchInput = container.querySelector('#order-search-input');
   const searchBtn = container.querySelector('#btn-search-orders');
   const ordersContent = container.querySelector('#orders-content');
   const btnOrderContact = container.querySelector('#btn-order-contact');
+  const certModal = container.querySelector('#cert-modal');
+  const certOrderId = container.querySelector('#cert-order-id');
+  const certClient = container.querySelector('#cert-client');
+  const certWork = container.querySelector('#cert-work');
+  const btnCloseCert = container.querySelector('#btn-close-cert');
+  const btnCertDismiss = container.querySelector('#btn-cert-dismiss');
+
+  function openCertModal(order) {
+    if (!certModal) return;
+    certOrderId.textContent = `#${order.id}`;
+    certClient.textContent = `${order.client} (${order.email})`;
+    certWork.textContent = order.title;
+    certModal.style.display = 'flex';
+  }
+
+  function closeCertModal() {
+    if (certModal) certModal.style.display = 'none';
+  }
+
+  if (btnCloseCert) btnCloseCert.addEventListener('click', closeCertModal);
+  if (btnCertDismiss) btnCertDismiss.addEventListener('click', closeCertModal);
+  if (certModal) {
+    certModal.addEventListener('click', (e) => {
+      if (e.target === certModal) closeCertModal();
+    });
+  }
 
   function renderOrders(filterQuery = '') {
     const allOrders = ordersStore.getOrders();
@@ -129,7 +176,7 @@ export function createOrdersView({ navigateTo }) {
         const orderId = btn.dataset.order;
         const ord = allOrders.find(o => o.id === orderId);
         if (ord) {
-          alert(`License Certificate #${ord.id}\nIssued to: ${ord.client}\nWork: ${ord.title}\nTerms: Fully cleared for commercial broadcast & streaming. Issued by Eko Audio Studios.`);
+          openCertModal(ord);
         }
       });
     });

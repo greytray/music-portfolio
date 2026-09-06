@@ -220,6 +220,21 @@ export function initHiddenPageArchitecture() {
     });
   });
 
+  // Attach smooth scrolling buttons
+  document.querySelectorAll('[data-scroll-to]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = btn.dataset.scrollTo;
+      if (currentOpenViewId) {
+        closeCurrentView();
+      }
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+  });
+
   // Handle URL hash changes (Back / Forward buttons)
   window.addEventListener('popstate', handleHashRouting);
   window.addEventListener('hashchange', handleHashRouting);

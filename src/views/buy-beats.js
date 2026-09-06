@@ -13,7 +13,7 @@ export function createBuyBeatsView({ navigateTo }) {
       bpm: 110,
       key: 'C Maj',
       duration: '0:44',
-      src: './assets/audio/feeling mello.wav',
+      src: './assets/audio/feeling mello.mp3',
       tags: ['Smooth', 'Guitar', 'Warm Drums', 'Relaxed'],
       description: 'Lush Rhodes chords, organic rimshots, and a laid-back melodic groove built for reflective verses.',
       prices: { mp3: 49, wav: 99, stems: 199, exclusive: 599 }
