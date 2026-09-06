@@ -782,14 +782,37 @@ async function ensureAudioGraph() {
 }
 function startVisualizer() { if (!visualizerFrame && !reduceMotion.matches) visualizerFrame = requestAnimationFrame(renderVisualizer); }
 function stopVisualizer() { if (visualizerFrame) cancelAnimationFrame(visualizerFrame); visualizerFrame = undefined; bandLevels.fill(0); kickEnvelope = 0; previousKickEnergy = 0; [...trackVisualizer.children].forEach((bar) => { bar.style.setProperty('--level', '0'); bar.style.setProperty('--active', '0'); }); }
-function renderTimeline() { currentTime.textContent = formatTime(audio.currentTime); progress.value = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0; if (!audio.paused) timelineFrame = requestAnimationFrame(renderTimeline); }
+let isSeeking = false;
+function parseTimeString(str) {
+  if (!str) return 0;
+  const parts = str.trim().split(':').map(Number);
+  if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) return parts[0] * 60 + parts[1];
+  return 0;
+}
+function getTrackDuration() {
+  if (Number.isFinite(audio.duration) && audio.duration > 0) return audio.duration;
+  const lengthEl = activeTrack ? activeTrack.querySelector('.track-length') : null;
+  if (lengthEl && lengthEl.textContent) {
+    const parsed = parseTimeString(lengthEl.textContent);
+    if (parsed > 0) return parsed;
+  }
+  return 0;
+}
+function renderTimeline() {
+  if (!isSeeking) {
+    currentTime.textContent = formatTime(audio.currentTime);
+    const dur = getTrackDuration();
+    progress.value = (dur > 0 && Number.isFinite(dur)) ? (audio.currentTime / dur) * 100 : 0;
+  }
+  if (!audio.paused) timelineFrame = requestAnimationFrame(renderTimeline);
+}
 function startTimeline() { if (!timelineFrame) timelineFrame = requestAnimationFrame(renderTimeline); }
 function stopTimeline() { if (timelineFrame) cancelAnimationFrame(timelineFrame); timelineFrame = undefined; renderTimeline(); }
-function loadTrackDurations() { tracks.forEach((track) => { const metadataAudio = new Audio(); metadataAudio.preload = 'metadata'; metadataAudio.src = track.dataset.src; metadataAudio.addEventListener('loadedmetadata', () => { track.querySelector('.track-length').textContent = formatTime(metadataAudio.duration); }, { once: true }); }); }
-function formatTime(seconds) { if (!Number.isFinite(seconds)) return '0:00'; const minutes = Math.floor(seconds / 60); const remaining = Math.floor(seconds % 60).toString().padStart(2, '0'); return `${minutes}:${remaining}`; }
+function loadTrackDurations() { tracks.forEach((track) => { const metadataAudio = new Audio(); metadataAudio.preload = 'metadata'; metadataAudio.src = track.dataset.src; metadataAudio.addEventListener('loadedmetadata', () => { if (Number.isFinite(metadataAudio.duration) && metadataAudio.duration > 0) track.querySelector('.track-length').textContent = formatTime(metadataAudio.duration); }, { once: true }); }); }
+function formatTime(seconds) { if (!Number.isFinite(seconds) || seconds < 0) return '0:00'; const minutes = Math.floor(seconds / 60); const remaining = Math.floor(seconds % 60).toString().padStart(2, '0'); return `${minutes}:${remaining}`; }
 function setPlayingState(isPlaying) { mainPlay.classList.toggle('is-playing', isPlaying); mainPlay.setAttribute('aria-label', `${isPlaying ? 'Pause' : 'Play'} ${currentTitle.textContent}`); tracks.forEach((track) => { const isCurrent = track === activeTrack; track.classList.toggle('is-playing', isCurrent && isPlaying); track.setAttribute('aria-label', `${isCurrent && isPlaying ? 'Pause' : 'Play'} ${track.dataset.title}`); }); }
 function updateNowPlaying(track) { currentTitle.textContent = track.dataset.title; currentStyle.textContent = track.dataset.title === 'Kensuke' ? 'Soundtrack by Eko for Anime Teaser' : 'Original production'; }
-function selectTrack(track, shouldPlay = true) { const changed = track !== activeTrack; if (changed) { activeTrack.classList.remove('active'); activeTrack = track; activeTrack.classList.add('active'); activeTrack.append(trackVisualizer); audio.src = activeTrack.dataset.src; currentTime.textContent = '0:00'; duration.textContent = '0:00'; progress.value = 0; updateNowPlaying(activeTrack); } if (shouldPlay) { if (!changed && !audio.paused) audio.pause(); else ensureAudioGraph().then(() => audio.play()).catch(() => setPlayingState(false)); } }
+function selectTrack(track, shouldPlay = true) { const changed = track !== activeTrack; if (changed) { activeTrack.classList.remove('active'); activeTrack = track; activeTrack.classList.add('active'); activeTrack.append(trackVisualizer); audio.src = activeTrack.dataset.src; currentTime.textContent = '0:00'; const fallbackDur = activeTrack.querySelector('.track-length')?.textContent || '0:00'; duration.textContent = fallbackDur; progress.value = 0; updateNowPlaying(activeTrack); } if (shouldPlay) { if (!changed && !audio.paused) audio.pause(); else ensureAudioGraph().then(() => audio.play()).catch(() => setPlayingState(false)); } }
 mainPlay.addEventListener('click', () => { if (audio.paused) ensureAudioGraph().then(() => audio.play()).catch(() => setPlayingState(false)); else audio.pause(); });
 tracks.forEach((track) => track.addEventListener('click', () => selectTrack(track)));
 audio.addEventListener('play', () => { setPlayingState(true); startVisualizer(); startTimeline(); });
@@ -797,9 +820,43 @@ audio.addEventListener('pause', () => { setPlayingState(false); stopVisualizer()
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopVisualizer(); else if (!audio.paused) startVisualizer(); });
 reduceMotion.addEventListener?.('change', () => { if (reduceMotion.matches) stopVisualizer(); else if (!audio.paused) startVisualizer(); });
 desktopPlayer.addEventListener?.('change', () => { if (!desktopPlayer.matches) stopVisualizer(); else if (!audio.paused) ensureAudioGraph().then(startVisualizer); });
-audio.addEventListener('loadedmetadata', () => { const formattedDuration = formatTime(audio.duration); duration.textContent = formattedDuration; activeTrack.querySelector('.track-length').textContent = formattedDuration; });
+audio.addEventListener('loadedmetadata', () => { if (Number.isFinite(audio.duration) && audio.duration > 0) { const formattedDuration = formatTime(audio.duration); duration.textContent = formattedDuration; activeTrack.querySelector('.track-length').textContent = formattedDuration; } });
+audio.addEventListener('timeupdate', () => { if (!isSeeking && audio.paused) renderTimeline(); });
+audio.addEventListener('seeked', () => { if (!isSeeking) renderTimeline(); });
 audio.addEventListener('ended', () => { const nextIndex = (tracks.indexOf(activeTrack) + 1) % tracks.length; selectTrack(tracks[nextIndex]); });
-progress.addEventListener('input', () => { if (audio.duration) audio.currentTime = (Number(progress.value) / 100) * audio.duration; });
+
+function applySeek() {
+  const dur = getTrackDuration();
+  if (dur > 0 && Number.isFinite(dur)) {
+    const targetTime = Math.max(0, Math.min(dur, (Number(progress.value) / 100) * dur));
+    audio.currentTime = targetTime;
+    currentTime.textContent = formatTime(targetTime);
+  }
+}
+progress.addEventListener('pointerdown', () => { isSeeking = true; });
+progress.addEventListener('mousedown', () => { isSeeking = true; });
+progress.addEventListener('touchstart', () => { isSeeking = true; }, { passive: true });
+progress.addEventListener('input', () => {
+  isSeeking = true;
+  const dur = getTrackDuration();
+  if (dur > 0 && Number.isFinite(dur)) {
+    const previewTime = (Number(progress.value) / 100) * dur;
+    currentTime.textContent = formatTime(previewTime);
+  }
+});
+progress.addEventListener('change', () => {
+  applySeek();
+  isSeeking = false;
+});
+const onPointerUp = () => {
+  if (isSeeking) {
+    applySeek();
+    isSeeking = false;
+  }
+};
+window.addEventListener('pointerup', onPointerUp);
+window.addEventListener('mouseup', onPointerUp);
+window.addEventListener('touchend', onPointerUp);
 updateNowPlaying(activeTrack);
 loadTrackDurations();
 document.querySelector('#year').textContent = new Date().getFullYear();

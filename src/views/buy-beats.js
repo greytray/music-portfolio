@@ -343,11 +343,39 @@ export function createBuyBeatsView({ navigateTo }) {
     renderBeats();
   }
 
+  let isStoreSeeking = false;
+
+  function getStoreDuration() {
+    if (Number.isFinite(storeAudio.duration) && storeAudio.duration > 0) return storeAudio.duration;
+    if (currentPlayingBeat && currentPlayingBeat.duration) {
+      const parts = currentPlayingBeat.duration.split(':').map(Number);
+      if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) return parts[0] * 60 + parts[1];
+    }
+    return 0;
+  }
+
+  function applyStoreSeek() {
+    const dur = getStoreDuration();
+    if (dur > 0 && Number.isFinite(dur)) {
+      const targetTime = Math.max(0, Math.min(dur, (Number(storeSeek.value) / 100) * dur));
+      storeAudio.currentTime = targetTime;
+      storeTimeCur.textContent = formatTime(targetTime);
+    }
+  }
+
+  storeAudio.addEventListener('loadedmetadata', () => {
+    const dur = getStoreDuration();
+    if (dur > 0) {
+      storeTimeDur.textContent = formatTime(dur);
+    }
+  });
+
   storeAudio.addEventListener('timeupdate', () => {
-    if (storeAudio.duration) {
+    const dur = getStoreDuration();
+    if (!isStoreSeeking && dur > 0) {
       storeTimeCur.textContent = formatTime(storeAudio.currentTime);
-      storeTimeDur.textContent = formatTime(storeAudio.duration);
-      storeSeek.value = (storeAudio.currentTime / storeAudio.duration) * 100;
+      storeTimeDur.textContent = formatTime(dur);
+      storeSeek.value = (storeAudio.currentTime / dur) * 100;
     }
   });
 
@@ -365,11 +393,33 @@ export function createBuyBeatsView({ navigateTo }) {
     renderBeats();
   });
 
+  storeSeek.addEventListener('pointerdown', () => { isStoreSeeking = true; });
+  storeSeek.addEventListener('mousedown', () => { isStoreSeeking = true; });
+  storeSeek.addEventListener('touchstart', () => { isStoreSeeking = true; }, { passive: true });
+
   storeSeek.addEventListener('input', () => {
-    if (storeAudio.duration) {
-      storeAudio.currentTime = (storeSeek.value / 100) * storeAudio.duration;
+    isStoreSeeking = true;
+    const dur = getStoreDuration();
+    if (dur > 0 && Number.isFinite(dur)) {
+      const previewTime = (Number(storeSeek.value) / 100) * dur;
+      storeTimeCur.textContent = formatTime(previewTime);
     }
   });
+
+  storeSeek.addEventListener('change', () => {
+    applyStoreSeek();
+    isStoreSeeking = false;
+  });
+
+  const onStorePointerUp = () => {
+    if (isStoreSeeking) {
+      applyStoreSeek();
+      isStoreSeeking = false;
+    }
+  };
+  window.addEventListener('pointerup', onStorePointerUp);
+  window.addEventListener('mouseup', onStorePointerUp);
+  window.addEventListener('touchend', onStorePointerUp);
 
   storeStopBtn.addEventListener('click', () => {
     storeAudio.pause();
