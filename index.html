@@ -119,38 +119,797 @@ input, textarea, select { width: 100%; border: 0; border-bottom: 1px solid color
 textarea { resize: vertical; }
 select option { background: var(--panel); }
 .contact-form .button { align-self: flex-start; }
-.form-status { min-height: 1.5em; margin: 0; color: var(--ink); }
-</style>
+.form-status { min-height: 1.5em; margin: 0; color: var(--signal); }
+.cta-button { min-width: clamp(230px, 24vw, 340px); padding: 16px 24px; border: 2px solid currentColor; border-radius: 999px; background: transparent; color: var(--paper); text-align: center; transition: transform .25s cubic-bezier(.16, 1, .3, 1), background .25s ease, color .25s ease, box-shadow .25s ease; }
+.cta-button:hover { background: var(--paper); color: var(--ink); transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0, 0, 0, .2); }
+.contact-form .cta-button { color: var(--ink); }
+.contact-form .cta-button:hover { background: var(--ink); color: var(--paper); }
+.contact-copyright { grid-column: 1 / -1; margin: 56px 0 0; padding-top: 28px; border-top: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); color: var(--ink); font-size: .72rem; text-align: center; }
+@media (min-width: 1200px) { .contact { background-size: 100% 100%; } }
+@media (max-width: 820px) { nav { display: none; } .vertical-note { display: none; } .hero-content { padding-bottom: 64px; } .section { padding: 80px 0; } .contact { padding-inline: 20px; } .section-heading { align-items: flex-start; flex-direction: column; gap: 22px; } .now-playing { grid-template-columns: 105px 1fr auto; gap: 18px; } .main-play { width: 58px; height: 58px; } .service-grid { grid-template-columns: 1fr; } .service-card { min-height: 470px; border-right: 0; border-bottom: 1px solid color-mix(in srgb, var(--paper) 15%, transparent); } .service-card:last-child { border-bottom: 0; } .contact { grid-template-columns: 1fr; gap: 64px; } .contact h2 { font-size: clamp(3rem, 12vw, 5rem); white-space: normal; } .contact-copyright { margin-top: 20px; } }
+@media (max-width: 560px) { h1 { font-size: clamp(4.2rem, 25vw, 7rem); } .now-playing { grid-template-columns: 76px 1fr; } .main-play { grid-column: 1 / -1; width: 100%; height: 48px; border-radius: 2px; } .track { grid-template-columns: 30px minmax(0, 1fr) 38px 34px; padding-inline: 10px; gap: 6px; } .track-action { width: 32px; height: 32px; } .form-row { grid-template-columns: 1fr; gap: 24px; } .service-card { padding: 28px 24px; } }
+.hero-photo img { object-fit: fill; transform: none; filter: none; }
+.hero-content { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.hero-copy { margin-inline: auto; }
+h1 { max-width: none; }
+.section-heading { align-items: center; flex-direction: column; text-align: center; gap: 18px; }
+.section-heading > p { max-width: 46ch; }
+.player-shell { border-radius: 32px; padding: 18px; }
+.now-playing { padding: 24px; border-radius: 24px; background: color-mix(in srgb, var(--paper) 5%, transparent); }
+.cover-art { border-radius: 20px; }
+.track-meta { text-align: center; }
+.timeline { padding: 22px 14px; }
+.main-play .play-icon { width: 34px; height: 34px; }
+.playlist { display: flex; flex-direction: column; gap: 12px; border-top: 0; }
+.track { isolation: isolate; overflow: hidden; border: 1px solid color-mix(in srgb, var(--paper) 8%, transparent); border-radius: 999px; padding: 17px 20px; transition: transform .38s cubic-bezier(.16, 1, .3, 1), border-color .25s ease, background .25s ease, box-shadow .38s ease; }
+.track::before { content: ""; z-index: -1; inset: 0; width: 100%; border-radius: inherit; background: linear-gradient(100deg, transparent 15%, color-mix(in srgb, var(--signal-bright) 30%, transparent) 48%, transparent 80%); opacity: 0; transform: translateX(-110%); transition: none; }
+.track:hover { z-index: 1; border-color: color-mix(in srgb, var(--signal-bright) 55%, transparent); background: color-mix(in srgb, var(--signal) 14%, var(--panel)); transform: translateY(-4px) scale(1.012); box-shadow: 0 14px 30px rgba(0, 0, 0, .24); }
+.track:hover::before { opacity: 1; animation: track-sweep .75s cubic-bezier(.16, 1, .3, 1); }
+.track.active { border-color: color-mix(in srgb, var(--signal-bright) 70%, var(--paper)); background: linear-gradient(110deg, color-mix(in srgb, var(--signal) 38%, var(--panel)), color-mix(in srgb, var(--signal-bright) 18%, var(--panel))); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--paper) 14%, transparent), 0 12px 30px rgba(0, 0, 0, .2); animation: active-track-pulse 1.4s ease-in-out infinite alternate; }
+.track.active .track-number { color: var(--paper); }
+.track.active .track-action { border-color: color-mix(in srgb, var(--paper) 32%, transparent); background: color-mix(in srgb, var(--paper) 12%, transparent); color: var(--paper); transform: scale(1.08); }
+.track-status { display: none; }
+@keyframes track-sweep { from { transform: translateX(-110%); } to { transform: translateX(110%); } }
+@keyframes active-track-pulse { from { transform: scale(1); } to { transform: scale(1.008); } }
+.service-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(14px, 1.5vw, 24px); }
+.service-card { min-height: 380px; padding: clamp(24px, 2.4vw, 38px); border-radius: 28px; transition: transform .35s ease, border-color .35s ease, background .35s ease; }
+.service-card:hover { transform: translateY(-8px); border-color: color-mix(in srgb, var(--signal) 44%, transparent); }
+.service-index { margin-bottom: 38px; }
+.service-card h3 { max-width: none; text-align: center; font-size: clamp(1.5rem, 2.2vw, 2.25rem); }
+.service-card > p:not(.service-index) { text-align: center; }
+.service-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: auto; padding-top: 26px; border-top: 1px solid var(--glass-border); }
+.service-footer strong { font-size: .9rem; }
+.service-footer a { color: var(--signal-bright); font-weight: 700; }
+.contact-copy { text-align: center; }
+.contact h2 { white-space: nowrap; }
+.contact-copy > p:not(.eyebrow) { margin-inline: auto; }
+.contact-channels { display: flex; justify-content: center; gap: 14px; }
+.contact-channels a { width: 64px; height: 64px; display: grid; place-items: center; border: none; border-radius: 50%; color: #000; box-shadow: 0 0 0 0.1875rem #000; transition: transform .125s ease, background-color .125s ease, color .125s ease, border-color .125s ease; }
+.contact-channels a:hover { transform: translateY(-16.5%); background: #FFFF00; box-shadow: 0 0 0 0.1875rem #000; }
+.contact-channels svg { width: 26px; height: 26px; fill: #000; stroke: none; }
+.contact-channels a { aspect-ratio: 1 / 1; }
+.select-wrap { position: relative; display: block; }
+.contact select { appearance: none; background: var(--paper); color: var(--ink); border: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); border-radius: 12px; padding: 14px 56px 14px 16px; cursor: pointer; }
+.select-wrap svg { pointer-events: none; position: absolute; top: 50%; right: 18px; width: 24px; height: 24px; transform: translateY(-50%); fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.contact select option { background: var(--paper); color: var(--ink); }
+@media (hover: hover) and (pointer: fine) { .contact select { transition-duration: .12s; } .select-wrap:hover svg { transform: translateY(-50%) rotate(180deg); } .select-wrap svg { transition: transform .18s ease; } }
+.contact select { font-weight: 500; }
+@media (min-width: 821px) { .contact select { font-weight: 700; } }
+@media (max-width: 820px) { :root { --page-gutter: max(18px, env(safe-area-inset-left), env(safe-area-inset-right)); } .service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .service-grid { grid-template-columns: 1fr; } .player-shell { border-radius: 24px; padding: 10px; } .now-playing { border-radius: 18px; padding: 16px; } .main-play { border-radius: 16px; } }
+.cta-button { display: inline-flex; align-items: center; justify-content: center; }
+.player-shell { width: min(92%, 1280px); margin-inline: auto; padding: clamp(12px, 2vw, 22px); }
+.now-playing { grid-template-columns: 150px minmax(0, 1fr) auto; gap: clamp(18px, 3vw, 38px); }
+.player-energy { display: none; }
+input[type="range"]::-webkit-slider-thumb { width: 20px; height: 20px; cursor: grab; }
+input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab; }
+.playlist { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.track { overflow: hidden; min-height: 112px; border-radius: 18px; padding: 18px 18px 28px; transition-duration: .13s; }
+.track::before { display: none; }
+.track:hover, .track:focus-visible { z-index: 1; border-color: color-mix(in srgb, var(--signal-bright) 48%, transparent); background: color-mix(in srgb, var(--signal) 13%, var(--panel)); transform: translateY(-3px); box-shadow: 0 10px 26px color-mix(in srgb, var(--signal) 18%, transparent); }
+.track.active { border-color: color-mix(in srgb, var(--signal-bright) 65%, transparent); background: color-mix(in srgb, var(--signal) 18%, var(--panel)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--paper) 10%, transparent), 0 8px 24px color-mix(in srgb, var(--signal) 14%, transparent); animation: none; }
+.track-visualizer { position: absolute; right: 16px; bottom: 9px; left: 16px; height: 14px; display: flex; flex-direction: row; align-items: flex-end; justify-content: flex-start; gap: 3px; pointer-events: none; }
+.track-visualizer span { flex: 1; min-width: 2px; height: 100%; border-radius: 999px; background: var(--signal-bright); opacity: .72; transform: scaleY(var(--level, .14)); transform-origin: bottom; }
+.track:not(.is-playing) .track-visualizer { display: none; }
+.service-card { min-height: 400px; align-items: center; text-align: center; border-color: color-mix(in srgb, var(--paper) 11%, transparent); }
+.service-card:hover, .service-card:focus-within { transform: translateY(-8px); border-color: color-mix(in srgb, var(--signal-bright) 48%, transparent); background: color-mix(in srgb, var(--signal) 10%, var(--panel)); box-shadow: 0 24px 54px rgba(0, 0, 0, .2); }
+.service-index { align-self: flex-start; margin-bottom: 38px; }
+.service-footer { width: 100%; flex-direction: column; justify-content: center; gap: 18px; }
+.service-footer strong { font-family: "Work Sans", sans-serif; font-size: 1.05rem; }
+.service-footer a span { color: currentColor; }
+.contact { align-items: center; gap: clamp(64px, 10vw, 150px); padding-block: clamp(110px, 13vw, 190px) 32px; }
+.contact-copy { display: flex; flex-direction: column; align-items: center; }
+.contact h2 em { color: var(--ink); }
+.contact-channels { align-items: center; gap: 36px; }
+.contact-channels a { width: 76px; height: 76px; }
+.contact-channels svg { width: 38px; height: 38px; }
+.contact-channels img { width: 32px; height: 32px; object-fit: contain; filter: brightness(0); transition: filter .125s ease; }
+.contact-channels a:hover img { filter: brightness(0); }
+.contact-form, .contact label { font-weight: 600; }
+.contact input, .contact textarea, .contact select { border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); border-radius: 14px; padding: 15px 16px; background: color-mix(in srgb, var(--paper) 76%, transparent); font-weight: 500; transition: border-color .12s ease, background .12s ease, box-shadow .12s ease; }
+.contact-copyright { margin-top: 90px; padding-top: 0; border-top: 0; align-self: end; }
+.contact input:hover, .contact textarea:hover, .contact select:hover { border-color: color-mix(in srgb, var(--ink) 48%, transparent); background: color-mix(in srgb, var(--paper) 88%, transparent); }
+.contact input:focus, .contact textarea:focus, .contact select:focus { border-color: var(--signal); background: var(--paper); box-shadow: 0 0 0 4px color-mix(in srgb, var(--signal) 15%, transparent); outline: 0; }
+@media (hover: hover) and (pointer: fine) { .contact select { transition-duration: .12s; } .select-wrap:hover svg { transform: translateY(-50%) rotate(180deg); } .select-wrap svg { transition: transform .18s ease; } }
+.contact select { font-weight: 500; }
+@media (min-width: 821px) { .contact select { font-weight: 700; } }
+@media (max-width: 820px) {
+  :root { --page-gutter: 18px; }
+  .site-header {
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding: 12px 14px !important;
+    background: rgba(13, 13, 17, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    z-index: 1000 !important;
+    box-sizing: border-box !important;
+  }
+  .site-header .brand {
+    color: #ffffff !important;
+    text-shadow: none !important;
+    font-size: 1.15rem !important;
+    margin-right: 8px !important;
+    flex-shrink: 0 !important;
+  }
+  nav {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    max-width: calc(100% - 60px) !important;
+    padding: 2px 0 !important;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  nav a, .nav-btn {
+    font-size: 0.8rem !important;
+    padding: 6px 11px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    border-radius: 999px !important;
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+  }
+  .nav-btn.nav-dynamic {
+    background: rgba(108, 99, 229, 0.22) !important;
+    border-color: rgba(108, 99, 229, 0.4) !important;
+  }
+  .nav-cart-btn {
+    padding: 6px 11px !important;
+    font-size: 0.78rem !important;
+    flex-shrink: 0 !important;
+  }
+  .hero {
+    min-height: auto !important;
+    padding-top: 16px !important;
+    padding-bottom: 36px !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+  }
+  .hero-photo {
+    position: relative !important;
+    inset: auto !important;
+    width: min(100%, 340px) !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1 !important;
+    margin: 10px auto 20px !important;
+    border-radius: 20px !important;
+    overflow: hidden !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5) !important;
+  }
+  .hero-photo img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 20px !important;
+  }
+  .hero-content {
+    padding: 0 !important;
+    width: 100% !important;
+    text-align: center !important;
+  }
+  #hero-title {
+    font-size: clamp(2.3rem, 9vw, 4.2rem) !important;
+    white-space: normal !important;
+    line-height: 1.08 !important;
+    margin: 0 auto 10px !important;
+    color: #ffffff !important;
+    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7) !important;
+  }
+  .hero .eyebrow { color: #a39cf4 !important; }
+  .hero-copy {
+    margin: 14px auto 24px !important;
+    max-width: 340px !important;
+    font-size: 0.98rem !important;
+    line-height: 1.5 !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+  }
+  .hero-cta {
+    margin: 0 auto !important;
+    width: min(20rem, 100%) !important;
+    height: 3.8rem !important;
+    line-height: calc(3.8rem - 2px) !important;
+    font-size: 1.1rem !important;
+  }
+  .player-shell {
+    width: 100% !important;
+    padding: 14px !important;
+    border-radius: 20px !important;
+    box-sizing: border-box !important;
+  }
+  .now-playing {
+    grid-template-columns: 80px minmax(0, 1fr) !important;
+    gap: 12px !important;
+    padding: 16px !important;
+  }
+  .now-playing .cover-art {
+    width: 80px !important;
+    height: 80px !important;
+    border-radius: 14px !important;
+  }
+  .now-playing .main-play {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    height: 48px !important;
+    margin-top: 6px !important;
+    border-radius: 12px !important;
+  }
+  .timeline {
+    grid-template-columns: 36px 1fr 36px !important;
+    gap: 8px !important;
+    padding: 14px 4px !important;
+  }
+  .playlist {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .track {
+    display: grid !important;
+    grid-template-columns: 24px minmax(0, 1fr) 42px 38px !important;
+    gap: 8px !important;
+    padding: 14px 12px !important;
+    border-radius: 14px !important;
+    align-items: center !important;
+  }
+  .track-number { font-size: 0.8rem !important; }
+  .track-name {
+    font-size: 0.92rem !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .track-name small {
+    display: block !important;
+    font-size: 0.74rem !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .track-length { font-size: 0.78rem !important; }
+  .track-action { width: 36px !important; height: 36px !important; min-width: 36px !important; }
+  .track-visualizer { display: none !important; }
+  .services { padding-inline: 18px !important; width: 100% !important; }
+  .service-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+  .service-card { min-height: auto !important; padding: 24px 18px !important; border-radius: 20px !important; }
+  .service-footer {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px !important;
+    margin-top: 20px !important;
+    padding-top: 18px !important;
+  }
+  .service-footer a, .service-footer button, .service-request-link {
+    width: min(18rem, 100%) !important;
+    max-width: 100% !important;
+    height: 3.8rem !important;
+    line-height: calc(3.8rem - 2px) !important;
+    font-size: 1.15rem !important;
+  }
+  .process-section, .delivery-section {
+    padding-block: 44px !important;
+    padding-inline: 18px !important;
+  }
+  .process-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .process-card { padding: 20px 16px !important; border-radius: 16px !important; }
+  .process-trust-line { font-size: 0.72rem !important; padding: 8px 14px !important; max-width: 100% !important; }
+  .process-closing { padding: 24px 16px !important; border-radius: 18px !important; }
+  .process-badges { display: flex !important; flex-wrap: wrap !important; justify-content: center !important; gap: 6px !important; }
+  .process-badge { padding: 8px 12px !important; font-size: 0.76rem !important; }
+  .delivery-layout { grid-template-columns: 1fr !important; gap: 16px !important; }
+  .contact {
+    display: flex !important;
+    flex-direction: column !important;
+    width: calc(100% - 24px) !important;
+    margin: 0 auto 28px !important;
+    padding: 56px 16px 28px !important;
+    background-image: url("./assets/backgrounds/gif2.gif") !important;
+    background-size: cover !important;
+    background-position: center !important;
+    border-radius: 20px !important;
+    box-sizing: border-box !important;
+    gap: 28px !important;
+  }
+  .contact-intro { text-align: center !important; }
+  .contact h2 {
+    font-size: clamp(2.4rem, 11vw, 3.8rem) !important;
+    white-space: normal !important;
+    line-height: 1.1 !important;
+  }
+  .contact-intro > p { font-size: 0.98rem !important; margin: 10px auto 16px !important; }
+  .contact-channels {
+    display: flex !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    margin: 14px auto !important;
+  }
+  .contact-channels a {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    max-width: 52px !important;
+    flex: 0 0 52px !important;
+    border-radius: 50% !important;
+    display: grid !important;
+    place-items: center !important;
+  }
+  .contact-channels svg { width: 22px !important; height: 22px !important; }
+  .contact-form { width: 100% !important; }
+  .form-row { grid-template-columns: 1fr !important; gap: 14px !important; }
+  .contact input, .contact textarea, .contact select {
+    font-size: 16px !important;
+    min-height: 48px !important;
+    padding: 12px 14px !important;
+    border-radius: 12px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+  .project-details-field { padding-bottom: 74px !important; }
+  .project-details-field .cta-button, .contact-form .cta-button {
+    width: min(18rem, 100%) !important;
+    height: 3.8rem !important;
+    line-height: calc(3.8rem - 2px) !important;
+    font-size: 1.15rem !important;
+  }
+  .contact-copyright {
+    margin-top: 20px !important;
+    text-align: center !important;
+    align-self: center !important;
+  }
+}
+body { font-family: "Work Sans", sans-serif; }
+#beats-title em { color: #6C63E5; }
+@media (min-width: 821px) { .hero-photo img { object-fit: fill; transform: none; } }
+.track-visualizer { background: transparent; gap: 2px; padding: 1px 2px; }
+.track-visualizer span { min-width: 3px; border-radius: 999px 999px 2px 2px; background: #99FFFF; box-shadow: 0 0 9px rgba(153, 255, 255, .42); opacity: .9; }
+.playlist { gap: 18px; }
+.contact { padding-block: clamp(88px, 10vw, 132px) 12px; }
+.contact-copyright { margin-top: 10px; }
+.contact-channels a { width: auto; height: auto; min-width: 0; aspect-ratio: 1; flex: 1 1 0; border: none; border-radius: 50%; box-shadow: 0 0 0 0.1875rem #000; }
+.contact-channels img { display: block; }
+.contact-channels svg { display: block; width: 48.6%; height: auto; aspect-ratio: 1 / 1; }
+.contact-channels .email-icon { fill: #000; stroke: none; }
+.contact { background-size: 100% 100%; }
+.hero-photo img { object-fit: fill; transform: none; }
+#hero-title { color: var(--ink); text-shadow: 0 0 7px color-mix(in srgb, #8f00ff 48%, transparent); }
+button.brand { background: transparent; border: none; cursor: pointer; padding: 0; color: var(--paper); }
+.button, .cta-button, .service-footer a, .service-footer button, .service-request-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: min(16rem, 100%);
+  max-width: 100%;
+  min-width: 0;
+  height: 4rem;
+  line-height: calc(4rem - 2px);
+  padding: 0 0.5rem;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 2.5rem;
+  background: transparent;
+  text-align: center;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.125rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: transform .125s ease, color .125s ease, background-color .125s ease, border-color .125s ease;
+}
+.button > span, .cta-button > span, .service-footer a > span, .service-footer button > span, .service-request-link > span { float: none; margin: 0 -0.125em 0 0.75rem; font-size: 1em; font-weight: 400; transition: none; }
+.cta-button { border-color: var(--paper); color: var(--paper); box-shadow: 0 0 0 0.125rem var(--paper); }
+.service-footer a, .service-footer button, .service-request-link { border-color: var(--paper); color: var(--paper); box-shadow: 0 0 0 0.125rem var(--paper); }
+.contact-form .cta-button { border-color: var(--ink); color: var(--ink); box-shadow: 0 0 0 0.125rem var(--ink); }
+.button:hover, .cta-button:hover, .service-footer a:hover, .service-footer button:hover, .service-request-link:hover, .button:focus-visible, .cta-button:focus-visible, .service-footer a:focus-visible, .service-footer button:focus-visible, .service-request-link:focus-visible { background: #FFFF00; color: #000; border-color: #000; box-shadow: 0 0 0 0.125rem #000; transform: rotate(-4.75deg); }
+.button:hover > span, .cta-button:hover > span, .service-footer a:hover > span, .service-footer button:hover > span, .service-request-link:hover > span { color: #000; transform: none; }
+.hero-cta { width: min(23rem, 100%); height: 4.5rem; line-height: calc(4.5rem - 2px); font-size: 1.425rem; }
+.service-footer a, .service-footer button, .service-request-link { width: min(19rem, 100%); height: 4.7rem; line-height: calc(4.7rem - 2px); font-size: 1.625rem; }
+.contact-form .cta-button { width: min(17rem, 100%); height: 4rem; line-height: calc(4rem - 2px); font-size: 1.225rem; border-color: #000; color: #fff; background: #000; box-shadow: 0 0 0 0.1875rem #000; }
+.contact-form .cta-button:hover, .contact-form .cta-button:focus-visible { background: #FFFF00; color: #000; border-color: #000; box-shadow: 0 0 0 0.1875rem #000; transform: scale(1.04); }
+.contact-form .cta-button:hover > span, .contact-form .cta-button:focus-visible > span { color: #000; }
+.player-shell { width: min(92%, 1280px); overflow: visible; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.now-playing { padding: 24px; border: 1px solid var(--glass-border); background: var(--panel); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.timeline { padding: 22px 14px 30px; }
+.timeline input[type="range"] { height: 2px; }
+.playlist { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.track { min-height: 126px; border: 1px solid color-mix(in srgb, var(--paper) 10%, transparent); background: var(--panel); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.track-visualizer { gap: 2px; justify-content: space-between; background: transparent; }
+.track-visualizer span { flex: 1 1 0; min-width: 3px; border-radius: 999px 999px 2px 2px; background: #99FFFF; box-shadow: 0 0 9px rgba(153, 255, 255, .42); opacity: .9; }
+.hero-cta { border-color: var(--ink); color: var(--ink); box-shadow: 0 0 0 0.125rem var(--ink); }
+.hero-cta span { color: var(--ink); }
+.track-visualizer { height: 18px; gap: 2px; padding: 2px 4px; border-radius: 8px; background: transparent; }
+.track-visualizer span { flex: 1 1 0; width: auto; min-width: 3px; border-radius: 999px 999px 2px 2px; background: #99FFFF; box-shadow: none; opacity: var(--active, 0); transform: scaleY(var(--level, 0)); }
+.contact { align-items: start; column-gap: clamp(48px, 8vw, 112px); row-gap: 0; padding-block: clamp(108px, 12vw, 156px) 4px; }
+.contact-copy { align-items: flex-start; align-self: start; text-align: left; }
+.contact-intro { display: inline-flex; flex-direction: column; align-items: center; gap: 20px; }
+.contact-intro > p { max-width: 520px; margin: 0; color: var(--ink); font-size: clamp(1.1rem, 1.8vw, 1.35rem); line-height: 1.5; text-align: center; }
+.contact-intro > p:first-of-type { padding: 20px 0 10px; }
+.contact-intro > p:last-of-type { padding-bottom: 30px; }
+.contact-channels { width: min(100%, 396px); justify-content: center; gap: clamp(12px, 3vw, 36px); }
+.contact-channels a { width: auto; height: auto; min-width: 0; aspect-ratio: 1 / 1; flex: 1 1 0; border: none; border-radius: 50%; box-shadow: 0 0 0 0.125rem #000; margin-top: 22px; }
+.contact-channels svg, .contact-channels img { width: 48.6%; height: auto; aspect-ratio: 1 / 1; }
+.contact-channels .email-icon { fill: #000; stroke: none; }
+.contact-form { padding-top: 0; }
+.project-details-field { position: relative; padding-bottom: 108px; }
+.project-details-field .cta-button { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); }
+.project-details-field .cta-button:hover, .project-details-field .cta-button:focus-visible { transform: translateX(-50%) scale(1.1); }
+.form-status:empty { display: none; }
+.contact-copyright { margin: -18px 0 0; padding-top: 0; border-top: 0; }
+.select-wrap svg { transition: none; }
+.select-wrap:hover svg { transform: translateY(-50%); }
+@media (min-width: 561px) { #hero-title { text-shadow: 0 0 38px color-mix(in srgb, #8f00ff 28%, transparent), 0 0 82px color-mix(in srgb, #8f00ff 18%, transparent), 0 0 142px color-mix(in srgb, #8f00ff 10%, transparent); } .contact-form, .contact-form label, .contact-form input, .contact-form textarea, .contact-form select { font-weight: 500; } .contact-form .cta-button { font-weight: 400; } }
+@media (max-width: 820px) { .playlist { grid-template-columns: 1fr; } .contact-copy { align-items: center; text-align: center; align-self: center; } .contact-intro { align-items: center; text-align: center; width: 100%; } .contact-intro > p { text-align: center; } .contact { column-gap: 0; row-gap: 64px; } .contact-copyright { margin-top: -76px; } .contact-channels { width: min(85%, 336px); margin-inline: auto; gap: 28px; } .contact-channels a { width: auto; height: auto; flex: 1 1 0; min-width: 0; aspect-ratio: 1 / 1; border-radius: 50%; } .contact-channels svg, .contact-channels img { width: 48.6%; height: auto; aspect-ratio: 1 / 1; } }
+@media (max-width: 560px) { .contact-channels { gap: 20px; width: min(85%, 336px); margin-inline: auto; } .contact-channels a { width: auto; height: auto; flex-basis: 0; aspect-ratio: 1 / 1; } .contact-channels svg, .contact-channels img { width: 48.6%; height: auto; aspect-ratio: 1 / 1; } .project-details-field { padding-bottom: 100px; } .hero-cta { width: 100%; max-width: 23rem; } .service-footer a { width: 100%; max-width: 19rem; } .contact-form .cta-button { width: 100%; max-width: 17rem; } }
+@media (max-width: 820px) { .contact-channels { transform: scale(.935); transform-origin: center; } .contact h2 { font-size: clamp(3.25rem, 12vw, 4.25rem); } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+@media (min-width: 821px) { .contact-copyright { margin-top: 35px; } }
+#hero-title { max-width: none; white-space: nowrap; font-size: clamp(2.1rem, 9vw, 9.5rem); }
+/* CHANGE-002 — Process & Delivery & Payment */
+.process-section, .delivery-section { width: 100%; padding: clamp(104px, 11vw, 156px) var(--page-gutter); }
+.process-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(14px, 1.5vw, 24px); }
+.process-card { position: relative; min-height: 250px; padding: clamp(24px, 2.6vw, 38px); border: 1px solid color-mix(in srgb, var(--paper) 11%, transparent); border-radius: 28px; background: var(--panel); box-shadow: 0 20px 60px rgba(75, 0, 130, .09); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); transition: transform .3s ease, border-color .3s ease, background .3s ease; }
+.process-card:hover { transform: translateY(-7px); border-color: color-mix(in srgb, var(--signal-bright) 46%, transparent); background: color-mix(in srgb, var(--signal) 8%, var(--panel)); }
+.process-mark, .payment-kicker, .delivery-label { display: block; color: var(--signal-bright); font-family: "Work Sans", sans-serif; font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.process-card h3 { margin: 44px 0 14px; font-size: clamp(1.45rem, 2vw, 2.1rem); }
+.process-card p { max-width: 38ch; margin: 0; color: var(--muted); font-family: "Work Sans", sans-serif; font-size: .95rem; }
+.process-heading { margin-bottom: 42px; }
+.process-heading > p { max-width: 52ch; font-size: clamp(1rem, 1.7vw, 1.15rem); }
+.process-trust-line { display: flex; align-items: center; justify-content: center; gap: 16px; width: max-content; max-width: 100%; margin: -10px auto 46px; padding: 12px 20px; border: 1px solid color-mix(in srgb, var(--signal-bright) 30%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--signal) 7%, transparent); color: var(--paper); font-family: "Work Sans", sans-serif; font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.process-trust-line span { color: var(--signal-bright); }
+.process-trust-line strong { color: color-mix(in srgb, var(--paper) 45%, transparent); font-weight: 700; }
+.process-closing { margin-top: clamp(28px, 4vw, 54px); padding: clamp(30px, 4vw, 48px); border: 1px solid color-mix(in srgb, var(--signal) 28%, transparent); border-radius: 28px; background: linear-gradient(135deg, color-mix(in srgb, var(--signal) 12%, var(--panel)), var(--panel)); text-align: center; box-shadow: 0 20px 60px rgba(75, 0, 130, .09); }
+.process-closing h3 { font-size: clamp(1.5rem, 2.5vw, 2.5rem); }
+.process-closing > p { max-width: 58ch; margin: 14px auto 30px; color: var(--muted); font-size: .95rem; }
+.process-badges { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.process-badge { padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--paper) 12%, transparent); border-radius: 16px; background: color-mix(in srgb, var(--paper) 4%, transparent); color: var(--paper); font-family: "Work Sans", sans-serif; font-size: .82rem; font-weight: 600; }
+.process-badge::before { content: "✓"; margin-right: 8px; color: var(--signal-bright); font-weight: 700; }
+.delivery-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr); gap: clamp(18px, 2vw, 30px); align-items: stretch; }
+.delivery-panel { border: 1px solid color-mix(in srgb, var(--paper) 11%, transparent); border-radius: 28px; background: var(--panel); box-shadow: 0 20px 60px rgba(75, 0, 130, .09); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.delivery-steps { padding: clamp(24px, 3vw, 42px); }
+.delivery-step { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 24px; padding: 22px 0; border-bottom: 1px solid color-mix(in srgb, var(--paper) 10%, transparent); }
+.delivery-step:first-child { padding-top: 0; }
+.delivery-step:last-child { padding-bottom: 0; border-bottom: 0; }
+.delivery-step-number { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid color-mix(in srgb, var(--signal) 50%, transparent); border-radius: 50%; color: var(--signal-bright); font-family: "Dela Gothic One", sans-serif; font-size: .9rem; }
+.delivery-step h3 { margin: 0 0 7px; font-size: clamp(1.25rem, 1.8vw, 1.75rem); }
+.delivery-step p { margin: 0; color: var(--muted); font-family: "Work Sans", sans-serif; font-size: .92rem; }
+.payment-panel { display: flex; flex-direction: column; justify-content: space-between; padding: clamp(26px, 3vw, 42px); }
+.payment-panel h3 { margin: 28px 0 12px; font-size: clamp(1.7rem, 2.5vw, 2.7rem); }
+.payment-panel > div > p:not(.payment-kicker) { margin: 0; color: var(--muted); font-family: "Work Sans", sans-serif; }
+.payment-methods { margin-top: 32px; }
+.payment-method { padding: 14px 0; border-top: 1px solid color-mix(in srgb, var(--paper) 10%, transparent); color: var(--paper); font-family: "Work Sans", sans-serif; font-size: .86rem; }
+.payment-method::before { content: "→"; margin-right: 10px; color: var(--signal-bright); }
+.delivery-timing { margin-top: 42px; padding-top: 22px; border-top: 1px solid color-mix(in srgb, var(--paper) 12%, transparent); }
+.delivery-timing strong { display: block; color: var(--paper); font-family: "Dela Gothic One", sans-serif; font-size: 1.05rem; font-weight: 400; }
+.delivery-timing span { display: block; margin-top: 5px; color: var(--muted); font-family: "Work Sans", sans-serif; font-size: .78rem; }
+@media (max-width: 820px) { .process-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .delivery-layout { grid-template-columns: 1fr; } .process-section, .delivery-section { padding-block: 88px; } }
+@media (max-width: 560px) { .process-grid { grid-template-columns: 1fr; } .process-card { min-height: 0; } .delivery-step { grid-template-columns: 44px minmax(0, 1fr); gap: 16px; } .delivery-step-number { width: 40px; height: 40px; } .process-section, .delivery-section { padding-inline: 20px; } .process-trust-line { width: 100%; gap: 10px; font-size: .64rem; } .process-badges { grid-template-columns: 1fr; } }
+.success-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
+.success-modal.is-open { pointer-events: auto; opacity: 1; }
+.success-modal-backdrop { position: absolute; inset: 0; background: rgba(13, 13, 17, .82); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.success-modal-card { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 40px 48px; border: 1px solid var(--glass-border); border-radius: 28px; background: var(--panel); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); box-shadow: 0 24px 80px rgba(0, 0, 0, .4); transform: scale(.9); transition: transform .3s cubic-bezier(.16, 1, .3, 1); }
+.success-modal.is-open .success-modal-card { transform: scale(1); }
+.success-check { width: 80px; height: 80px; border-radius: 50%; background: var(--signal); display: grid; place-items: center; animation: check-pop .4s cubic-bezier(.16, 1, .3, 1); }
+.success-check svg { width: 40px; height: 40px; fill: none; stroke: #fff; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 48; stroke-dashoffset: 48; animation: check-draw .4s ease .15s forwards; }
+@keyframes check-pop { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes check-draw { to { stroke-dashoffset: 0; } }
+.success-modal-card h3 { font-size: 2rem; }
+.success-modal-card p { margin: 0; color: var(--muted); text-align: center; max-width: 280px; }
+.success-modal-card .cta-button { width: auto; min-width: 140px; }
+@media (max-width: 560px) { .success-modal-card { padding: 32px 28px; } }
+  /* CHANGE-003 — Mobile premium view fixes (desktop untouched) */
+  @media (max-width: 820px) {
+    .hero { align-items: center; justify-content: center; }
+    .hero-content { padding: 100px 0; justify-content: center; }
+    .hero .eyebrow { margin-bottom: 14px; font-size: 12px; color: #4400a6; }
+    #hero-title { font-size: clamp(2.5rem, 9vw, 3.625rem); white-space: normal; line-height: 1.02; }
+    .hero-copy { margin: 18px auto 30px; }
+    .section { padding-block: 72px; }
+    .section-heading { margin-bottom: 40px; }
+    .section-heading h2 { font-size: clamp(2.5rem, 9vw, 4rem); }
+    .services { padding-block: 72px; }
+    .process-section, .delivery-section { padding-block: 72px; }
+    .service-card { min-height: 340px; }
+  }
+  @media (max-width: 560px) {
+    .hero-content { padding: 80px 0; }
+    #hero-title { font-size: clamp(2rem, 10vw, 3.5rem); line-height: 1.0; }
+    .hero .eyebrow { font-size: 12px; letter-spacing: .14em; color: #4400a6; }
+    .hero-copy { margin: 14px auto 24px; }
+    .hero-cta { width: 100%; max-width: 18rem; height: 3.5rem; line-height: calc(3.5rem - 2px); font-size: 1rem; }
+    .section { padding-block: 64px; }
+    .services { padding-block: 64px; }
+    .section-heading { margin-bottom: 36px; }
+    .section-heading h2 { font-size: clamp(2.25rem, 10vw, 3.5rem); }
+    .process-section, .delivery-section { padding-block: 64px; }
+    .service-card { min-height: 0; }
+  }
+  </style>
+  <meta property="og:image" content="https://bolt.new/static/og_default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://bolt.new/static/og_default.png">
 </head>
 <body>
-  <div id="top"></div>
   <header class="site-header">
-    <a class="brand" href="#top">Eko<span>.</span></a>
-    <nav aria-label="Primary navigation"><a href="#showcase">Showcase</a><a href="#services">Services</a><a href="#contact">Contact</a></nav>
+    <button type="button" class="brand" data-scroll-to="top" aria-label="Eko home">EKO</button>
+    <nav aria-label="Main navigation">
+      <button type="button" class="nav-btn" data-scroll-to="showcase" id="nav-showcase">Showcase</button>
+      <button type="button" class="nav-btn" data-scroll-to="services" id="nav-services">Services</button>
+      <button type="button" class="nav-btn nav-dynamic" data-view-trigger="beats" id="nav-buy-beats">Buy Beats</button>
+      <button type="button" class="nav-btn nav-dynamic" data-view-trigger="sessions" id="nav-sessions">Sessions</button>
+      <button type="button" class="nav-btn nav-dynamic" data-view-trigger="send-audio" id="nav-send-audio">Send Audio</button>
+      <button type="button" class="nav-btn nav-dynamic" data-view-trigger="orders" id="nav-orders">Orders</button>
+      <button type="button" class="nav-btn" data-scroll-to="contact" id="nav-contact">Contact</button>
+      <button type="button" class="nav-cart-btn" data-view-trigger="cart" id="nav-cart" aria-label="Shopping Cart">
+        <svg class="nav-cart-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        <span>Cart</span>
+        <span class="nav-cart-badge" id="nav-cart-badge">0</span>
+      </button>
+    </nav>
   </header>
   <main>
-    <section class="hero" id="hero">
-      <div class="hero-photo"><img src="./assets/backgrounds/c1.gif" alt=""></div>
-      <div class="hero-content"><p class="eyebrow">Music Producer</p><h1 id="hero-title">Music Producer</h1><p class="hero-copy">Beats, Mixing &amp; Vocal Production</p><a class="button button-primary" href="#showcase">Listen to work <span>→</span></a></div>
-      <p class="vertical-note">ORIGINAL MUSIC / PROFESSIONAL PRODUCTION</p>
-    </section>
-    <section class="section" id="showcase">
-      <div class="section-heading"><div><p class="eyebrow">Selected work</p><h2>Showcase</h2></div><p>A selection of original productions, mixes, and soundtrack work.</p></div>
-      <div class="player-shell">
-        <div class="now-playing"><div class="cover-art"><span>EKO</span></div><div class="track-meta"><p class="eyebrow">Now playing</p><h3 id="current-title">Feeling Mello</h3><p id="current-style">Original production</p></div><button class="main-play" id="main-play" type="button" aria-label="Play Feeling Mello"><svg class="icon-play play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause play-icon" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H14z"></path></svg></button></div>
-        <div class="timeline"><span id="current-time">0:00</span><input id="progress" type="range" min="0" max="100" step="0.01" value="0" aria-label="Track progress"><span id="duration">0:44</span></div>
-        <div class="playlist" id="playlist" aria-label="Beat playlist">
-          <button class="track active" type="button" data-src="./assets/audio/feeling mello.mp3" data-title="Feeling Mello" data-style="Original production" aria-label="Play Feeling Mello"><span class="track-number">01</span><span class="track-name">Feeling Mello<small>Original production</small></span><span class="track-length">0:44</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H6z"></path></svg></span></button>
-          <button class="track" type="button" data-src="./assets/audio/broken jar mastered.mp3" data-title="Broken Jar" data-style="Mastered production" aria-label="Play Broken Jar"><span class="track-number">02</span><span class="track-name">Broken Jar<small>Mastered production</small></span><span class="track-length">0:38</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H6z"></path></svg></span></button>
-          <button class="track" type="button" data-src="./assets/audio/Kpop beat.mp3" data-title="Kpop Beat" data-style="K-Pop production" aria-label="Play Kpop Beat"><span class="track-number">03</span><span class="track-name">Kpop Beat<small>K-Pop production</small></span><span class="track-length">1:14</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H6z"></path></svg></span></button>
-          <button class="track" type="button" data-src="./assets/audio/Kensuke.mp3" data-title="Kensuke" data-style="Original production" aria-label="Play Kensuke"><span class="track-number">04</span><span class="track-name">Kensuke<small>Original production</small></span><span class="track-length">0:45</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H6z"></path></svg></span></button>
-          <button class="track" type="button" data-src="./assets/audio/K-Pop post fx.mp3" data-title="K-Pop Post FX" data-style="Post-production mix" aria-label="Play K-Pop Post FX"><span class="track-number">05</span><span class="track-name">K-Pop Post FX<small>Post-production mix</small></span><span class="track-length">0:14</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H6z"></path></svg></span></button>
-          <button class="track" type="button" data-src="./assets/audio/Aiobahn maybe last mix.mp3" data-title="Aiobahn Maybe Last Mix" data-style="Final mix" aria-label="Play Aiobahn Maybe Last Mix"><span class="track-number">06</span><span class="track-name">Aiobahn Maybe Last Mix<small>Final mix</small></span><span class="track-length">0:53</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H6z"></path></svg></span></button>
-        </div>
-        <audio id="audio" preload="metadata" src="./assets/audio/feeling mello.mp3"></audio>
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero-photo"><img src="./assets/backgrounds/c1.gif" alt="Music producer working in a recording studio" decoding="async"></div>
+      <div class="hero-content">
+        <p class="eyebrow">Producer · Engineer · Sound Designer</p>
+        <h1 id="hero-title">Music Producer</h1>
+        <p class="hero-copy">Beats, Mixing &amp; Vocal Production<br>Focused on clean, impactful sound with fast delivery</p>
+        <button type="button" class="button button-primary cta-button hero-cta" data-scroll-to="showcase">Listen to Tracks <span aria-hidden="true">›</span></button>
       </div>
     </section>
+    <section class="section beats" id="showcase" aria-labelledby="beats-title">
+      <div class="section-heading"><div><h2 id="beats-title">The <em>Work</em></h2></div><p>Explore a curated selection of original productions. Headphones recommended.</p></div>
+      <div class="player-shell">
+        <div class="now-playing"><div class="cover-art" aria-hidden="true"><span>NW</span></div><div class="track-meta"><p class="eyebrow">Now playing</p><h3 id="current-title">Feeling Mello</h3><p id="current-style">Original production</p></div><button class="main-play" id="main-play" type="button" aria-label="Play Feeling Mello"><svg class="play-icon icon-play" aria-hidden="true" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="play-icon icon-pause" aria-hidden="true" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H14z"></path></svg></button></div>
+        <div class="timeline"><span id="current-time">0:00</span><input id="progress" type="range" min="0" max="100" step="0.01" value="0" aria-label="Track progress"><span id="duration">0:44</span></div>
+        <div class="playlist" id="playlist" aria-label="Beat playlist">
+          <button class="track active" type="button" data-src="./assets/audio/feeling mello.wav" data-title="Feeling Mello" data-style="Original production" aria-label="Play Feeling Mello"><span class="track-number">01</span><span class="track-name">Feeling Mello<small>Original production</small></span><span class="track-length">0:44</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H14z"></path></svg></span></button>
+          <button class="track" type="button" data-src="./assets/audio/broken jar mastered.mp3" data-title="Broken Jar" data-style="Mastered production" aria-label="Play Broken Jar"><span class="track-number">02</span><span class="track-name">Broken Jar<small>Mastered production</small></span><span class="track-length">0:38</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H14z"></path></svg></span></button>
+          <button class="track" type="button" data-src="./assets/audio/Kpop beat.mp3" data-title="Kpop Beat" data-style="K-Pop production" aria-label="Play Kpop Beat"><span class="track-number">03</span><span class="track-name">Kpop Beat<small>K-Pop production</small></span><span class="track-length">1:14</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H14z"></path></svg></span></button>
+          <button class="track" type="button" data-src="./assets/audio/Kensuke.mp3" data-title="Kensuke" data-style="Original production" aria-label="Play Kensuke"><span class="track-number">04</span><span class="track-name">Kensuke<small>Original production</small></span><span class="track-length">0:45</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H14z"></path></svg></span></button>
+          <button class="track" type="button" data-src="./assets/audio/K-Pop post fx.mp3" data-title="K-Pop Post FX" data-style="Post-production mix" aria-label="Play K-Pop Post FX"><span class="track-number">05</span><span class="track-name">K-Pop Post FX<small>Post-production mix</small></span><span class="track-length">0:14</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H14z"></path></svg></span></button>
+          <button class="track" type="button" data-src="./assets/audio/Aiobahn maybe last mix.mp3" data-title="Aiobahn Maybe Last Mix" data-style="Final mix" aria-label="Play Aiobahn Maybe Last Mix"><span class="track-number">06</span><span class="track-name">Aiobahn Maybe Last Mix<small>Final mix</small></span><span class="track-length">0:53</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H14z"></path></svg></span></button>
+        </div>
+        <audio id="audio" preload="metadata" src="./assets/audio/feeling mello.wav"></audio>
+      </div>
+    </section>
+    <section class="process-section" id="process" aria-labelledby="process-title">
+      <div class="section-heading process-heading"><div><p class="eyebrow">How the work is made</p><h2 id="process-title">The <em>Process</em></h2></div><p>A simple, creative workflow designed to bring your sound to life.</p></div>
+      <div class="process-trust-line"><span>100% Original</span><strong>·</strong><span>No AI Used</span></div>
+      <div class="process-grid">
+        <article class="process-card"><span class="process-mark">01 / Discuss</span><h3>Discuss</h3><p>We discuss your ideas, references, and goals to get what you want to achieve.</p></article>
+        <article class="process-card"><span class="process-mark">02 / Plan</span><h3>Plan</h3><p>I analyze the vibe and create a custom plan for your track.</p></article>
+        <article class="process-card"><span class="process-mark">03 / Create</span><h3>Create</h3><p>I compose, design, and build your track from scratch with original ideas.</p></article>
+        <article class="process-card"><span class="process-mark">04 / Mix &amp; Refine</span><h3>Mix &amp; Refine</h3><p>I mix, balance, and polish the sound until it feels just right.</p></article>
+        <article class="process-card"><span class="process-mark">05 / Master</span><h3>Master</h3><p>Final mastering for loudness, clarity, and industry-level quality.</p></article>
+        <article class="process-card"><span class="process-mark">06 / Deliver</span><h3>Deliver</h3><p>You get high-quality, ready-to-release files that sound amazing everywhere.</p></article>
+      </div>
+      <div class="process-closing"><h3>100% Original Build For You. Each Time.</h3><p>No templates. No shortcuts. Just honest music, crafted to tell your story.</p><div class="process-badges"><div class="process-badge">No AI Used</div><div class="process-badge">Made From Scratch</div><div class="process-badge">Built Around Your Sound</div><div class="process-badge">Ready To Release</div></div></div>
+    </section>
+    <section class="section services" id="services" aria-labelledby="services-title">
+      <div class="section-heading"><div><p class="eyebrow">Made for your next release</p><h2 id="services-title">Studio <em>Services</em></h2></div><p>Professional sound, straightforward pricing, and a process built around your vision.</p></div>
+      <div class="service-grid">
+        <article class="service-card"><p class="service-index">01 / Bespoke</p><h3>Custom Beat Production</h3><p>An original instrumental shaped around your voice, references, and release vision.</p><div class="service-footer"><strong>From $299</strong><button type="button" class="service-request-link" data-scroll-to="contact" aria-label="Request custom beat production">Request <span aria-hidden="true">›</span></button></div></article>
+        <article class="service-card"><p class="service-index">02 / Release</p><h3>Mixing &amp; Mastering</h3><p>Dimensional, detailed mixes and competitive masters ready for every platform.</p><div class="service-footer"><strong>From $149</strong><button type="button" class="service-request-link" data-scroll-to="contact" aria-label="Request mixing and mastering">Request <span aria-hidden="true">›</span></button></div></article>
+        <article class="service-card"><p class="service-index">03 / Voice</p><h3>Vocal Mixing</h3><p>For artists with a beat and recorded vocals who need polish, balance, and presence.</p><div class="service-footer"><strong>From $99</strong><button type="button" class="service-request-link" data-scroll-to="contact" aria-label="Request vocal mixing">Request <span aria-hidden="true">›</span></button></div></article>
+        <article class="service-card"><p class="service-index">04 / Restoration</p><h3>Audio Editing</h3><p>Professional enhancement for treated podcasts, extracted acapellas, and noisy recordings.</p><div class="service-footer"><strong>From $79</strong><button type="button" class="service-request-link" data-scroll-to="contact" aria-label="Request audio editing">Request <span aria-hidden="true">›</span></button></div></article>
+        <article class="service-card"><p class="service-index">05 / Catalog</p><h3>Beat Lease</h3><p>Release-ready instrumentals with flexible licensing for independent artists.</p><div class="service-footer"><strong>From $49</strong><button type="button" class="service-request-link" data-view-trigger="beats" aria-label="Browse beats to lease">Browse <span aria-hidden="true">›</span></button></div></article>
+        <article class="service-card"><p class="service-index">06 / Mentorship</p><h3>Production Lessons</h3><p>Focused one-to-one sessions covering arrangement, sound selection, and workflow.</p><div class="service-footer"><strong>From $75</strong><button type="button" class="service-request-link" data-scroll-to="contact" aria-label="Request production lessons">Request <span aria-hidden="true">›</span></button></div></article>
+      </div>
+    </section>
+    <section class="delivery-section" id="delivery" aria-labelledby="delivery-title">
+      <div class="section-heading"><div><p class="eyebrow">From request to final files</p><h2 id="delivery-title">Delivery <em>&amp;</em><br>Payments</h2></div><p>A straightforward handoff with the important details clear before work begins.</p></div>
+      <div class="delivery-layout">
+        <div class="delivery-panel delivery-steps">
+          <div class="delivery-step"><span class="delivery-step-number">01</span><div><h3>UPI / GPay / PhonePe accepted</h3><p>* Projects are confirmed upon advance payment.</p></div></div>
+          <div class="delivery-step"><span class="delivery-step-number">02</span><div><h3>Pay any way you like</h3></div></div>
+        </div>
+        <aside class="delivery-panel payment-panel"><div><p class="payment-kicker">Delivery</p><h3>Fast turnaround.</h3><div class="payment-methods"><div class="payment-method">Beats — within 24 hours</div><div class="payment-method">Mixing — 24–48 hours</div><div class="payment-method">Edits — same day (in most cases)</div></div></div></aside>
+      </div>
+    </section>
+    <section class="section contact" id="contact" aria-labelledby="contact-title">
+      <div class="contact-copy"><div class="contact-intro"><h2 id="contact-title">Let&rsquo;s <em>Work</em></h2><p>Available for collaborations &amp; ongoing projects</p><div class="contact-channels" aria-label="Contact Eko">
+        <a href="#" aria-label="Eko on Instagram"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-instagram" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.9 3.9 0 0 0-1.417.923A3.9 3.9 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.9 3.9 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.299c-.04-.851-.175-1.433-.372-1.941a3.9 3.9 0 0 0-.923-1.417A3.9 3.9 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.443.01 10.172 0 7.998 0zm-.717 1.442h.718c2.136 0 2.389.007 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599s.453.546.598.92c.11.281.24.705.275 1.485.039.843.047 1.096.047 3.231s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.5 2.5 0 0 1-.599.919c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.5 2.5 0 0 1-.92-.598 2.5 2.5 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-2.388-.046-3.233s.008-2.388.046-3.231c.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92s.546-.453.92-.598c.282-.11.705-.24 1.485-.276.738-.034 1.024-.044 2.515-.045zm4.988 1.328a.96.96 0 1 0 0 1.92.96.96 0 0 0 0-1.92m-4.27 1.122a4.109 4.109 0 1 0 0 8.217 4.109 4.109 0 0 0 0-8.217m0 1.441a2.667 2.667 0 1 1 0 5.334 2.667 2.667 0 0 1 0-5.334"/></svg></a>
+        <a href="mailto:hello@eko.com" aria-label="Email Eko"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-envelope" viewBox="0 0 16 16" aria-hidden="true"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741M1 11.105l4.708-2.897L1 5.383z"/></svg></a>
+        <a href="#" aria-label="Contact Eko on Signal"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0q-.934 0-1.83.139l.17 1.111a11 11 0 0 1 3.32 0l.172-1.111A12 12 0 0 0 12 0M9.152.34A12 12 0 0 0 5.77 1.742l.584.961a10.8 10.8 0 0 1 3.066-1.27zm5.696 0-.268 1.094a10.8 10.8 0 0 1 3.066 1.27l.584-.962A12 12 0 0 0 14.848.34M12 2.25a9.75 9.75 0 0 0-8.539 14.459c.074.134.1.292.064.441l-1.013 4.338 4.338-1.013a.62.62 0 0 1 .441.064A9.7 9.7 0 0 0 12 21.75c5.385 0 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25m-7.092.068a12 12 0 0 0-2.59 2.59l.909.664a11 11 0 0 1 2.345-2.345zm14.184 0-.664.909a11 11 0 0 1 2.345 2.345l.909-.664a12 12 0 0 0-2.59-2.59M1.742 5.77A12 12 0 0 0 .34 9.152l1.094.268a10.8 10.8 0 0 1 1.269-3.066zm20.516 0-.961.584a10.8 10.8 0 0 1 1.27 3.066l1.093-.268a12 12 0 0 0-1.402-3.383M.138 10.168A12 12 0 0 0 0 12q0 .934.139 1.83l1.111-.17A11 11 0 0 1 1.125 12q0-.848.125-1.66zm23.723.002-1.111.17q.125.812.125 1.66c0 .848-.042 1.12-.125 1.66l1.111.172a12.1 12.1 0 0 0 0-3.662M1.434 14.58l-1.094.268a12 12 0 0 0 .96 2.591l-.265 1.14 1.096.255.36-1.539-.188-.365a10.8 10.8 0 0 1-.87-2.35m21.133 0a10.8 10.8 0 0 1-1.27 3.067l.962.584a12 12 0 0 0 1.402-3.383zm-1.793 3.848a11 11 0 0 1-2.345 2.345l.664.909a12 12 0 0 0 2.59-2.59zm-19.959 1.1L.357 21.48a1.8 1.8 0 0 0 2.162 2.161l1.954-.455-.256-1.095-1.953.455a.675.675 0 0 1-.81-.81l.454-1.954zm16.832 1.769a10.8 10.8 0 0 1-3.066 1.27l.268 1.093a12 12 0 0 0 3.382-1.402zm-10.94.213-1.54.36.256 1.095 1.139-.266c.814.415 1.683.74 2.591.961l.268-1.094a10.8 10.8 0 0 1-2.35-.869zm3.634 1.24-.172 1.111a12.1 12.1 0 0 0 3.662 0l-.17-1.111q-.812.125-1.66.125a11 11 0 0 1-1.66-.125"/></svg></a>
+      </div><p>DM for quick response</p></div></div>
+      <form class="contact-form" action="https://api.web3forms.com/submit" method="POST">
+        <input type="hidden" name="access_key" value="2ebd4b29-1913-405e-b0ec-b3b7ef0721b3"><input type="hidden" name="subject" value="New project request from Eko website"><input type="hidden" name="from_name" value="Eko Website">
+        <div class="form-row"><label>Name<input type="text" name="name" autocomplete="name" required placeholder="Your name"></label><label>Email<input type="email" name="email" autocomplete="email" required placeholder="you@email.com"></label></div>
+        <label>What do you need?<span class="select-wrap"><select name="service" required><option value="" selected disabled>Select a service</option><option>Custom Beat Production</option><option>Mixing &amp; Mastering</option><option>Vocal Mixing</option><option>Audio Editing</option><option>Beat Lease</option><option>Production Lessons</option><option>Other</option><option>General Inquiry</option></select><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg></span></label>
+        <label class="project-details-field">Project details<textarea name="message" rows="5" required placeholder="Tell me about the sound, timeline, and references..."></textarea><button class="button button-primary cta-button" type="submit" id="submit-btn">Send Request <span aria-hidden="true">›</span></button></label>
+        <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+      </form>
+      <p class="contact-copyright" style="">© <span id="year">2026</span> Eko. All rights reserved.</p>
+    </section>
   </main>
+  <div class="success-modal" id="success-modal" aria-hidden="true"><div class="success-modal-backdrop"></div><div class="success-modal-card" role="dialog" aria-modal="true" aria-labelledby="success-title"><div class="success-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg></div><h3 id="success-title">Success</h3><p>Your request has been sent. I'll get back to you shortly.</p><button class="button button-primary cta-button" id="close-modal" type="button">Close</button></div></div>
+  <script>
+const audio = document.querySelector('#audio');
+const mainPlay = document.querySelector('#main-play');
+const tracks = [...document.querySelectorAll('.track')];
+const currentTitle = document.querySelector('#current-title');
+const currentStyle = document.querySelector('#current-style');
+const currentTime = document.querySelector('#current-time');
+const duration = document.querySelector('#duration');
+const progress = document.querySelector('#progress');
+let activeTrack = tracks[0];
+let audioContext;
+let analyser;
+let sourceNode;
+let frequencyData;
+let visualizerFrame;
+let timelineFrame;
+let bandLevels = Array(30).fill(0);
+let kickEnvelope = 0;
+let previousKickEnergy = 0;
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+const desktopPlayer = window.matchMedia('(min-width: 821px)');
+const trackVisualizer = document.createElement('span');
+trackVisualizer.className = 'track-visualizer';
+trackVisualizer.setAttribute('aria-hidden', 'true');
+trackVisualizer.replaceChildren(...Array.from({ length: 30 }, () => document.createElement('span')));
+activeTrack.append(trackVisualizer);
+audio.src = activeTrack.dataset.src;
+function renderVisualizer() {
+  if (!analyser || audio.paused || document.hidden || reduceMotion.matches || !desktopPlayer.matches) { visualizerFrame = undefined; return; }
+  analyser.getByteFrequencyData(frequencyData);
+  const bars = [...trackVisualizer.children];
+  const nyquist = audioContext.sampleRate / 2;
+  const getEnergy = (low, high) => { const start = Math.max(1, Math.floor((low / nyquist) * frequencyData.length)); const end = Math.max(start, Math.min(frequencyData.length - 1, Math.ceil((high / nyquist) * frequencyData.length))); let total = 0; for (let index = start; index <= end; index += 1) total += frequencyData[index]; return total / (end - start + 1) / 255; };
+  const kickEnergy = getEnergy(65, 180);
+  const kickTransient = Math.max(0, kickEnergy - previousKickEnergy * .94);
+  previousKickEnergy += (kickEnergy - previousKickEnergy) * .18;
+  const kickTarget = kickTransient > .045 ? Math.min(1, (kickTransient - .045) * 8.5) : 0;
+  kickEnvelope = kickTarget > kickEnvelope ? kickTarget : kickEnvelope * .48;
+  bars.forEach((bar, index) => { const distance = Math.abs(index - (bars.length - 1) / 2) / (bars.length / 2); const silhouette = .28 + Math.pow(1 - distance, .7) * .72; const target = kickEnvelope * silhouette; bandLevels[index] = target > bandLevels[index] ? target : bandLevels[index] * .46; const level = bandLevels[index] < .025 ? 0 : bandLevels[index]; bar.style.setProperty('--level', level.toFixed(3)); bar.style.setProperty('--active', level > 0 ? '1' : '0'); });
+  visualizerFrame = requestAnimationFrame(renderVisualizer);
+}
+async function ensureAudioGraph() {
+  if (reduceMotion.matches || !desktopPlayer.matches) return;
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+  try { if (!audioContext) { audioContext = new AudioContext(); analyser = audioContext.createAnalyser(); analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.16; sourceNode = audioContext.createMediaElementSource(audio); sourceNode.connect(analyser); analyser.connect(audioContext.destination); frequencyData = new Uint8Array(analyser.frequencyBinCount); } if (audioContext.state === 'suspended') await audioContext.resume(); } catch { trackVisualizer.classList.add('is-static'); }
+}
+function startVisualizer() { if (!visualizerFrame && !reduceMotion.matches) visualizerFrame = requestAnimationFrame(renderVisualizer); }
+function stopVisualizer() { if (visualizerFrame) cancelAnimationFrame(visualizerFrame); visualizerFrame = undefined; bandLevels.fill(0); kickEnvelope = 0; previousKickEnergy = 0; [...trackVisualizer.children].forEach((bar) => { bar.style.setProperty('--level', '0'); bar.style.setProperty('--active', '0'); }); }
+let isSeeking = false;
+function parseTimeString(str) {
+  if (!str) return 0;
+  const parts = str.trim().split(':').map(Number);
+  if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) return parts[0] * 60 + parts[1];
+  return 0;
+}
+function getTrackDuration() {
+  if (Number.isFinite(audio.duration) && audio.duration > 0) return audio.duration;
+  const lengthEl = activeTrack ? activeTrack.querySelector('.track-length') : null;
+  if (lengthEl && lengthEl.textContent) {
+    const parsed = parseTimeString(lengthEl.textContent);
+    if (parsed > 0) return parsed;
+  }
+  return 0;
+}
+function renderTimeline() {
+  if (!isSeeking) {
+    currentTime.textContent = formatTime(audio.currentTime);
+    const dur = getTrackDuration();
+    progress.value = (dur > 0 && Number.isFinite(dur)) ? (audio.currentTime / dur) * 100 : 0;
+  }
+  if (!audio.paused) timelineFrame = requestAnimationFrame(renderTimeline);
+}
+function startTimeline() { if (!timelineFrame) timelineFrame = requestAnimationFrame(renderTimeline); }
+function stopTimeline() { if (timelineFrame) cancelAnimationFrame(timelineFrame); timelineFrame = undefined; renderTimeline(); }
+function loadTrackDurations() { tracks.forEach((track) => { const metadataAudio = new Audio(); metadataAudio.preload = 'metadata'; metadataAudio.src = track.dataset.src; metadataAudio.addEventListener('loadedmetadata', () => { if (Number.isFinite(metadataAudio.duration) && metadataAudio.duration > 0) track.querySelector('.track-length').textContent = formatTime(metadataAudio.duration); }, { once: true }); }); }
+function formatTime(seconds) { if (!Number.isFinite(seconds) || seconds < 0) return '0:00'; const minutes = Math.floor(seconds / 60); const remaining = Math.floor(seconds % 60).toString().padStart(2, '0'); return `${minutes}:${remaining}`; }
+function setPlayingState(isPlaying) { mainPlay.classList.toggle('is-playing', isPlaying); mainPlay.setAttribute('aria-label', `${isPlaying ? 'Pause' : 'Play'} ${currentTitle.textContent}`); tracks.forEach((track) => { const isCurrent = track === activeTrack; track.classList.toggle('is-playing', isCurrent && isPlaying); track.setAttribute('aria-label', `${isCurrent && isPlaying ? 'Pause' : 'Play'} ${track.dataset.title}`); }); }
+function updateNowPlaying(track) { currentTitle.textContent = track.dataset.title; currentStyle.textContent = track.dataset.title === 'Kensuke' ? 'Soundtrack by Eko for Anime Teaser' : 'Original production'; }
+function selectTrack(track, shouldPlay = true) { const changed = track !== activeTrack; if (changed) { activeTrack.classList.remove('active'); activeTrack = track; activeTrack.classList.add('active'); activeTrack.append(trackVisualizer); audio.src = activeTrack.dataset.src; currentTime.textContent = '0:00'; const fallbackDur = activeTrack.querySelector('.track-length')?.textContent || '0:00'; duration.textContent = fallbackDur; progress.value = 0; updateNowPlaying(activeTrack); } if (shouldPlay) { if (!changed && !audio.paused) audio.pause(); else ensureAudioGraph().then(() => audio.play()).catch(() => setPlayingState(false)); } }
+mainPlay.addEventListener('click', () => { if (audio.paused) ensureAudioGraph().then(() => audio.play()).catch(() => setPlayingState(false)); else audio.pause(); });
+tracks.forEach((track) => track.addEventListener('click', () => selectTrack(track)));
+audio.addEventListener('play', () => { setPlayingState(true); startVisualizer(); startTimeline(); });
+audio.addEventListener('pause', () => { setPlayingState(false); stopVisualizer(); stopTimeline(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopVisualizer(); else if (!audio.paused) startVisualizer(); });
+reduceMotion.addEventListener?.('change', () => { if (reduceMotion.matches) stopVisualizer(); else if (!audio.paused) startVisualizer(); });
+desktopPlayer.addEventListener?.('change', () => { if (!desktopPlayer.matches) stopVisualizer(); else if (!audio.paused) ensureAudioGraph().then(startVisualizer); });
+audio.addEventListener('loadedmetadata', () => { if (Number.isFinite(audio.duration) && audio.duration > 0) { const formattedDuration = formatTime(audio.duration); duration.textContent = formattedDuration; activeTrack.querySelector('.track-length').textContent = formattedDuration; } });
+audio.addEventListener('timeupdate', () => { if (!isSeeking && audio.paused) renderTimeline(); });
+audio.addEventListener('seeked', () => { if (!isSeeking) renderTimeline(); });
+audio.addEventListener('ended', () => { const nextIndex = (tracks.indexOf(activeTrack) + 1) % tracks.length; selectTrack(tracks[nextIndex]); });
+
+function applySeek() {
+  const dur = getTrackDuration();
+  if (dur > 0 && Number.isFinite(dur)) {
+    const targetTime = Math.max(0, Math.min(dur, (Number(progress.value) / 100) * dur));
+    audio.currentTime = targetTime;
+    currentTime.textContent = formatTime(targetTime);
+  }
+}
+progress.addEventListener('pointerdown', () => { isSeeking = true; });
+progress.addEventListener('mousedown', () => { isSeeking = true; });
+progress.addEventListener('touchstart', () => { isSeeking = true; }, { passive: true });
+progress.addEventListener('input', () => {
+  isSeeking = true;
+  const dur = getTrackDuration();
+  if (dur > 0 && Number.isFinite(dur)) {
+    const previewTime = (Number(progress.value) / 100) * dur;
+    currentTime.textContent = formatTime(previewTime);
+  }
+});
+progress.addEventListener('change', () => {
+  applySeek();
+  isSeeking = false;
+});
+const onPointerUp = () => {
+  if (isSeeking) {
+    applySeek();
+    isSeeking = false;
+  }
+};
+window.addEventListener('pointerup', onPointerUp);
+window.addEventListener('mouseup', onPointerUp);
+window.addEventListener('touchend', onPointerUp);
+updateNowPlaying(activeTrack);
+loadTrackDurations();
+document.querySelector('#year').textContent = new Date().getFullYear();
+const contactForm = document.querySelector('.contact-form');
+const formStatus = document.querySelector('#form-status');
+const submitBtn = document.querySelector('#submit-btn');
+const successModal = document.querySelector('#success-modal');
+const closeBtn = document.querySelector('#close-modal');
+function playBlip() { try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.frequency.setValueAtTime(880, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.08); gain.gain.setValueAtTime(0.18, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.2); } catch {} }
+function openSuccessModal() { successModal.classList.add('is-open'); successModal.setAttribute('aria-hidden', 'false'); const check = successModal.querySelector('.success-check'); if (check) { check.style.animation = 'none'; void check.offsetWidth; check.style.animation = ''; } }
+function closeSuccessModal() { successModal.classList.remove('is-open'); successModal.setAttribute('aria-hidden', 'true'); }
+contactForm.addEventListener('submit', async (event) => { event.preventDefault(); submitBtn.textContent = 'Sending...'; formStatus.textContent = ''; try { const formData = new FormData(contactForm); const response = await fetch(contactForm.action, { method: 'POST', headers: { 'Accept': 'application/json' }, body: formData }); const result = await response.json(); if (result.success) { submitBtn.textContent = 'Success'; playBlip(); openSuccessModal(); contactForm.reset(); setTimeout(() => { submitBtn.textContent = 'Send Request '; const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; submitBtn.appendChild(arrow); }, 4000); } else { submitBtn.textContent = 'Send Request '; const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; submitBtn.appendChild(arrow); formStatus.textContent = 'Something went wrong. Please try again.'; } } catch { submitBtn.textContent = 'Send Request '; const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; submitBtn.appendChild(arrow); formStatus.textContent = 'Something went wrong. Please try again.'; } });
+closeBtn.addEventListener('click', closeSuccessModal);
+successModal.querySelector('.success-modal-backdrop').addEventListener('click', closeSuccessModal);
+window.pauseLandingPlayer = () => {
+  if (audio && !audio.paused) {
+    audio.pause();
+    setPlayingState(false);
+    stopVisualizer();
+    stopTimeline();
+  }
+};
+document.querySelectorAll('a[href="#"]').forEach((link) => { link.addEventListener('click', (event) => event.preventDefault()); });
+  </script>
+
+  <!-- Full-Screen Hidden Page Architecture -->
+  <aside class="fullscreen-view-container" id="fullscreen-view-container" aria-label="Full-screen view" role="dialog" aria-modal="true">
+    <header class="fullscreen-topbar">
+      <button type="button" class="btn-back-studio" id="btn-back-to-studio" aria-label="Close and return to Studio">
+        <span class="arrow" aria-hidden="true">←</span>
+        <span>Back to Studio</span>
+      </button>
+      <div class="view-brand-indicator" aria-hidden="true">
+        <span class="eko">EKO</span>
+        <span class="sep">/</span>
+        <span class="view-name" id="fullscreen-view-title">View</span>
+      </div>
+      <div class="topbar-right-actions">
+        <button type="button" class="topbar-cart-btn" id="topbar-cart-btn" aria-label="Open Cart">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span>Cart (<span id="topbar-cart-badge">0</span>)</span>
+        </button>
+      </div>
+    </header>
+    <div class="fullscreen-view-body" id="fullscreen-view-body">
+      <!-- Dynamic content loaded on demand -->
+    </div>
+  </aside>
+
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
