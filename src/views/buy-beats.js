@@ -13,7 +13,7 @@ export function createBuyBeatsView({ navigateTo }) {
       bpm: 110,
       key: 'C Maj',
       duration: '0:44',
-      src: './assets/showcase/feeling mello.wav',
+      src: './assets/audio/feeling mello.wav',
       tags: ['Smooth', 'Guitar', 'Warm Drums', 'Relaxed'],
       description: 'Lush Rhodes chords, organic rimshots, and a laid-back melodic groove built for reflective verses.',
       prices: { mp3: 49, wav: 99, stems: 199, exclusive: 599 }
@@ -231,7 +231,7 @@ export function createBuyBeatsView({ navigateTo }) {
       return `
         <article class="beat-card ${isPlaying ? 'is-playing' : ''}" data-id="${beat.id}" id="beat-card-${beat.id}">
           <div class="beat-main-col">
-            <button type="button" class="beat-play-btn ${isPlaying ? 'playing' : ''}" data-action="preview" aria-label="Play ${beat.title}">
+            <button type="button" class="beat-play-btn ${isPlaying ? 'playing' : ''}" data-action="preview" aria-label="${isPlaying ? 'Pause' : 'Play'} ${beat.title}">
               ${isPlaying ? `
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
               ` : `
