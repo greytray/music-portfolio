@@ -685,7 +685,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
           <button class="track" type="button" data-src="./assets/audio/K-Pop post fx.mp3" data-title="K-Pop Post FX" data-style="Post-production mix" aria-label="Play K-Pop Post FX"><span class="track-number">05</span><span class="track-name">K-Pop Post FX<small>Post-production mix</small></span><span class="track-length">0:14</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H14z"></path></svg></span></button>
           <button class="track" type="button" data-src="./assets/audio/Aiobahn maybe last mix.mp3" data-title="Aiobahn Maybe Last Mix" data-style="Final mix" aria-label="Play Aiobahn Maybe Last Mix"><span class="track-number">06</span><span class="track-name">Aiobahn Maybe Last Mix<small>Final mix</small></span><span class="track-length">0:53</span><span class="track-action" aria-hidden="true"><svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14H14z"></path></svg></span></button>
         </div>
-        <audio id="audio" preload="metadata" src="./assets/audio/feeling mello.mp3"></audio>
+        <audio id="audio" preload="auto" src="./assets/audio/feeling mello.mp3"></audio>
       </div>
     </section>
     <section class="process-section" id="process" aria-labelledby="process-title">
@@ -765,7 +765,12 @@ trackVisualizer.className = 'track-visualizer';
 trackVisualizer.setAttribute('aria-hidden', 'true');
 trackVisualizer.replaceChildren(...Array.from({ length: 30 }, () => document.createElement('span')));
 activeTrack.append(trackVisualizer);
-audio.src = activeTrack.dataset.src;
+
+// Do not reset audio.src if already present to preserve initial buffering
+if (!audio.getAttribute('src')) {
+  audio.src = activeTrack.dataset.src;
+}
+
 function renderVisualizer() {
   if (!analyser || audio.paused || document.hidden || reduceMotion.matches || !desktopPlayer.matches) { visualizerFrame = undefined; return; }
   analyser.getByteFrequencyData(frequencyData);
@@ -788,10 +793,6 @@ async function ensureAudioGraph() {
 }
 function startVisualizer() { if (!visualizerFrame && !reduceMotion.matches) visualizerFrame = requestAnimationFrame(renderVisualizer); }
 function stopVisualizer() { if (visualizerFrame) cancelAnimationFrame(visualizerFrame); visualizerFrame = undefined; bandLevels.fill(0); kickEnvelope = 0; previousKickEnergy = 0; [...trackVisualizer.children].forEach((bar) => { bar.style.setProperty('--level', '0'); bar.style.setProperty('--active', '0'); }); }
-let isSeeking = false;
-let seekPendingLock = false;
-let pendingSeekTarget = null;
-let seekReleaseTimer = null;
 
 const KNOWN_DURATIONS = {
   './assets/audio/feeling mello.mp3': 44,
@@ -802,12 +803,62 @@ const KNOWN_DURATIONS = {
   './assets/audio/Aiobahn maybe last mix.mp3': 53
 };
 
+// In-memory audio Blob cache to guarantee instant, 100% reliable seeking with zero network roundtrips
+window.__AUDIO_BLOB_CACHE__ = window.__AUDIO_BLOB_CACHE__ || new Map();
+const audioBlobCache = window.__AUDIO_BLOB_CACHE__;
+
+async function getOrFetchTrackBlobUrl(src) {
+  if (!src) return null;
+  if (audioBlobCache.has(src)) {
+    return audioBlobCache.get(src);
+  }
+  try {
+    const res = await fetch(src);
+    if (!res.ok) throw new Error('Fetch failed');
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    audioBlobCache.set(src, blobUrl);
+    return blobUrl;
+  } catch (err) {
+    return null;
+  }
+}
+
+// Immediately cache initial track
+getOrFetchTrackBlobUrl(activeTrack.dataset.src).then((blobUrl) => {
+  if (blobUrl && audio.paused && (!audio.currentTime || audio.currentTime === 0)) {
+    audio.src = blobUrl;
+  }
+});
+
+// Prefetch remaining tracks sequentially in the background
+function prefetchOtherTracks() {
+  tracks.forEach((t, idx) => {
+    if (t !== activeTrack) {
+      setTimeout(() => {
+        getOrFetchTrackBlobUrl(t.dataset.src);
+      }, (idx + 1) * 150);
+    }
+  });
+}
+if ('requestIdleCallback' in window) {
+  window.requestIdleCallback(prefetchOtherTracks);
+} else {
+  setTimeout(prefetchOtherTracks, 300);
+}
+
+let isUserScrubbing = false;
+let seekLockTarget = null;
+let pendingSeekTarget = null;
+let lastSeekActionTime = 0;
+
 function parseTimeString(str) {
   if (!str) return 0;
   const parts = str.trim().split(':').map(Number);
   if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) return parts[0] * 60 + parts[1];
   return 0;
 }
+
 function getTrackDuration() {
   if (Number.isFinite(audio.duration) && audio.duration > 0) return audio.duration;
   if (activeTrack && KNOWN_DURATIONS[activeTrack.dataset.src]) return KNOWN_DURATIONS[activeTrack.dataset.src];
@@ -818,35 +869,34 @@ function getTrackDuration() {
   }
   return 44;
 }
-function renderTimeline() {
-  if (!isSeeking && !seekPendingLock && !audio.seeking) {
-    currentTime.textContent = formatTime(audio.currentTime);
-    const dur = getTrackDuration();
-    progress.value = (dur > 0 && Number.isFinite(dur)) ? Math.min(100, (audio.currentTime / dur) * 100) : 0;
-  }
-  if (!audio.paused) timelineFrame = requestAnimationFrame(renderTimeline);
-}
-function startTimeline() { if (!timelineFrame) timelineFrame = requestAnimationFrame(renderTimeline); }
-function stopTimeline() { if (timelineFrame) cancelAnimationFrame(timelineFrame); timelineFrame = undefined; renderTimeline(); }
-function loadTrackDurations() {
-  tracks.forEach((track) => {
-    const metadataAudio = new Audio();
-    metadataAudio.preload = 'metadata';
-    metadataAudio.src = track.dataset.src;
-    metadataAudio.addEventListener('loadedmetadata', () => {
-      if (Number.isFinite(metadataAudio.duration) && metadataAudio.duration > 0) {
-        KNOWN_DURATIONS[track.dataset.src] = metadataAudio.duration;
-        track.querySelector('.track-length').textContent = formatTime(metadataAudio.duration);
-      }
-    }, { once: true });
-  });
-}
+
 function formatTime(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
   const minutes = Math.floor(seconds / 60);
   const remaining = Math.floor(seconds % 60).toString().padStart(2, '0');
   return `${minutes}:${remaining}`;
 }
+
+function renderTimeline() {
+  if (!isUserScrubbing) {
+    if (seekLockTarget !== null) {
+      if (Math.abs(audio.currentTime - seekLockTarget) < 0.6 || (!audio.seeking && audio.currentTime >= seekLockTarget - 0.3)) {
+        seekLockTarget = null;
+      }
+    }
+
+    if (seekLockTarget === null && !audio.seeking) {
+      currentTime.textContent = formatTime(audio.currentTime);
+      const dur = getTrackDuration();
+      progress.value = (dur > 0 && Number.isFinite(dur)) ? Math.min(100, (audio.currentTime / dur) * 100) : 0;
+    }
+  }
+  if (!audio.paused) timelineFrame = requestAnimationFrame(renderTimeline);
+}
+
+function startTimeline() { if (!timelineFrame) timelineFrame = requestAnimationFrame(renderTimeline); }
+function stopTimeline() { if (timelineFrame) cancelAnimationFrame(timelineFrame); timelineFrame = undefined; renderTimeline(); }
+
 function setPlayingState(isPlaying) {
   mainPlay.classList.toggle('is-playing', isPlaying);
   mainPlay.setAttribute('aria-label', `${isPlaying ? 'Pause' : 'Play'} ${currentTitle.textContent}`);
@@ -867,15 +917,20 @@ function selectTrack(track, shouldPlay = true) {
     activeTrack = track;
     activeTrack.classList.add('active');
     activeTrack.append(trackVisualizer);
-    audio.src = activeTrack.dataset.src;
+    
+    const cachedBlobUrl = audioBlobCache.get(activeTrack.dataset.src);
+    audio.src = cachedBlobUrl || activeTrack.dataset.src;
+    if (!cachedBlobUrl) {
+      getOrFetchTrackBlobUrl(activeTrack.dataset.src);
+    }
+    
     currentTime.textContent = '0:00';
     const fallbackDur = activeTrack.querySelector('.track-length')?.textContent || '0:00';
     duration.textContent = fallbackDur;
     progress.value = 0;
-    isSeeking = false;
-    seekPendingLock = false;
+    isUserScrubbing = false;
+    seekLockTarget = null;
     pendingSeekTarget = null;
-    clearTimeout(seekReleaseTimer);
     updateNowPlaying(activeTrack);
   }
   if (shouldPlay) {
@@ -888,11 +943,39 @@ mainPlay.addEventListener('click', () => {
   else audio.pause();
 });
 tracks.forEach((track) => track.addEventListener('click', () => selectTrack(track)));
-audio.addEventListener('play', () => { setPlayingState(true); startVisualizer(); startTimeline(); });
-audio.addEventListener('pause', () => { setPlayingState(false); stopVisualizer(); stopTimeline(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden) stopVisualizer(); else if (!audio.paused) startVisualizer(); });
-reduceMotion.addEventListener?.('change', () => { if (reduceMotion.matches) stopVisualizer(); else if (!audio.paused) startVisualizer(); });
-desktopPlayer.addEventListener?.('change', () => { if (!desktopPlayer.matches) stopVisualizer(); else if (!audio.paused) ensureAudioGraph().then(startVisualizer); });
+
+function applySeekTarget(targetTime) {
+  if (audio.readyState >= 1) {
+    try {
+      audio.currentTime = targetTime;
+      pendingSeekTarget = null;
+    } catch (e) {
+      pendingSeekTarget = targetTime;
+    }
+  } else {
+    pendingSeekTarget = targetTime;
+  }
+}
+
+function commitSeek(targetPercent) {
+  const dur = getTrackDuration();
+  if (dur <= 0 || !Number.isFinite(dur)) return;
+
+  const fraction = Math.max(0, Math.min(100, targetPercent)) / 100;
+  const targetTime = Math.max(0, Math.min(Math.max(0, dur - 0.2), fraction * dur));
+
+  seekLockTarget = targetTime;
+  currentTime.textContent = formatTime(targetTime);
+  progress.value = (targetTime / dur) * 100;
+  lastSeekActionTime = Date.now();
+
+  const cachedBlob = audioBlobCache.get(activeTrack.dataset.src);
+  if (cachedBlob && !audio.src.startsWith('blob:') && audio.paused) {
+    audio.src = cachedBlob;
+  }
+
+  applySeekTarget(targetTime);
+}
 
 const applyPendingSeekIfAny = () => {
   if (pendingSeekTarget !== null) {
@@ -902,6 +985,7 @@ const applyPendingSeekIfAny = () => {
     pendingSeekTarget = null;
   }
 };
+
 audio.addEventListener('loadedmetadata', () => {
   if (Number.isFinite(audio.duration) && audio.duration > 0) {
     KNOWN_DURATIONS[activeTrack.dataset.src] = audio.duration;
@@ -912,90 +996,78 @@ audio.addEventListener('loadedmetadata', () => {
   applyPendingSeekIfAny();
 });
 audio.addEventListener('canplay', applyPendingSeekIfAny);
-
-audio.addEventListener('timeupdate', () => {
-  if (!isSeeking && !seekPendingLock && !audio.seeking && audio.paused) renderTimeline();
+audio.addEventListener('play', () => {
+  applyPendingSeekIfAny();
+  setPlayingState(true);
+  startVisualizer();
+  startTimeline();
+});
+audio.addEventListener('pause', () => {
+  setPlayingState(false);
+  stopVisualizer();
+  stopTimeline();
 });
 audio.addEventListener('seeked', () => {
-  seekPendingLock = false;
-  isSeeking = false;
-  clearTimeout(seekReleaseTimer);
+  seekLockTarget = null;
+  isUserScrubbing = false;
   if (audio.paused) renderTimeline();
+});
+audio.addEventListener('timeupdate', () => {
+  if (!isUserScrubbing && seekLockTarget === null && !audio.seeking && audio.paused) {
+    renderTimeline();
+  }
 });
 audio.addEventListener('ended', () => {
   const nextIndex = (tracks.indexOf(activeTrack) + 1) % tracks.length;
   selectTrack(tracks[nextIndex]);
 });
 
-function executeSeek(targetPercent) {
-  const dur = getTrackDuration();
-  if (dur <= 0 || !Number.isFinite(dur)) return;
-
-  const fraction = Math.max(0, Math.min(100, targetPercent)) / 100;
-  const targetTime = Math.max(0, Math.min(Math.max(0, dur - 0.25), fraction * dur));
-
-  seekPendingLock = true;
-  currentTime.textContent = formatTime(targetTime);
-  progress.value = (targetTime / dur) * 100;
-
-  if (audio.readyState >= 1) {
-    try {
-      audio.currentTime = targetTime;
-      pendingSeekTarget = null;
-    } catch (err) {
-      pendingSeekTarget = targetTime;
-    }
-  } else {
-    pendingSeekTarget = targetTime;
-  }
-
-  clearTimeout(seekReleaseTimer);
-  seekReleaseTimer = setTimeout(() => {
-    seekPendingLock = false;
-    isSeeking = false;
-  }, 250);
-}
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopVisualizer(); else if (!audio.paused) startVisualizer(); });
+reduceMotion.addEventListener?.('change', () => { if (reduceMotion.matches) stopVisualizer(); else if (!audio.paused) startVisualizer(); });
+desktopPlayer.addEventListener?.('change', () => { if (!desktopPlayer.matches) stopVisualizer(); else if (!audio.paused) ensureAudioGraph().then(startVisualizer); });
 
 progress.addEventListener('pointerdown', () => {
-  isSeeking = true;
-  seekPendingLock = true;
-  clearTimeout(seekReleaseTimer);
+  isUserScrubbing = true;
 });
 progress.addEventListener('mousedown', () => {
-  isSeeking = true;
-  seekPendingLock = true;
-  clearTimeout(seekReleaseTimer);
+  isUserScrubbing = true;
 });
 progress.addEventListener('touchstart', () => {
-  isSeeking = true;
-  seekPendingLock = true;
-  clearTimeout(seekReleaseTimer);
+  isUserScrubbing = true;
 }, { passive: true });
 
 progress.addEventListener('input', () => {
-  isSeeking = true;
-  seekPendingLock = true;
-  clearTimeout(seekReleaseTimer);
+  isUserScrubbing = true;
   const dur = getTrackDuration();
   if (dur > 0 && Number.isFinite(dur)) {
     const fraction = Math.max(0, Math.min(100, Number(progress.value))) / 100;
-    const previewTime = Math.max(0, Math.min(Math.max(0, dur - 0.25), fraction * dur));
+    const previewTime = Math.max(0, Math.min(Math.max(0, dur - 0.2), fraction * dur));
     currentTime.textContent = formatTime(previewTime);
   }
 });
 
+let committedValue = null;
+function handleScrubRelease() {
+  if (isUserScrubbing) {
+    isUserScrubbing = false;
+    const val = Number(progress.value);
+    committedValue = val;
+    commitSeek(val);
+  }
+}
+
 progress.addEventListener('change', () => {
-  executeSeek(Number(progress.value));
+  const val = Number(progress.value);
+  if (val !== committedValue || Date.now() - lastSeekActionTime > 300) {
+    isUserScrubbing = false;
+    commitSeek(val);
+  }
+  committedValue = null;
 });
 
-const onGlobalPointerUp = () => {
-  if (isSeeking) {
-    executeSeek(Number(progress.value));
-  }
-};
-window.addEventListener('pointerup', onGlobalPointerUp);
-window.addEventListener('mouseup', onGlobalPointerUp);
-window.addEventListener('touchend', onGlobalPointerUp);
+window.addEventListener('pointerup', handleScrubRelease);
+window.addEventListener('mouseup', handleScrubRelease);
+window.addEventListener('touchend', handleScrubRelease);
 
 const timelineContainer = document.querySelector('.timeline');
 if (timelineContainer) {
@@ -1005,13 +1077,13 @@ if (timelineContainer) {
     if (e.clientX >= rect.left && e.clientX <= rect.right) {
       const pct = ((e.clientX - rect.left) / rect.width) * 100;
       progress.value = pct;
-      executeSeek(pct);
+      isUserScrubbing = false;
+      commitSeek(pct);
     }
   });
 }
 
 updateNowPlaying(activeTrack);
-loadTrackDurations();
 document.querySelector('#year').textContent = new Date().getFullYear();
 const contactForm = document.querySelector('.contact-form');
 const formStatus = document.querySelector('#form-status');

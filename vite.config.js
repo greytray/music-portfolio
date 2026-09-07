@@ -29,6 +29,15 @@ export default defineConfig({
     cors: true,
     headers: {
       "Access-Control-Allow-Origin": "*",
+      "Accept-Ranges": "bytes",
+    },
+  },
+  preview: {
+    host: "0.0.0.0",
+    port: 3000,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Accept-Ranges": "bytes",
     },
   },
 });
