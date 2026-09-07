@@ -43,14 +43,16 @@ export function attachTiltToCard(card, index = 0) {
   };
 
   function update() {
-    state.currentRx += (state.targetRx - state.currentRx) * LERP_FACTOR;
-    state.currentRy += (state.targetRy - state.currentRy) * LERP_FACTOR;
-    state.currentTz += (state.targetTz - state.currentTz) * LERP_FACTOR;
+    // Ultra-smooth spring interpolation (gentle settling decay on exit)
+    const currentLerp = state.isHovered ? 0.14 : 0.08;
+    state.currentRx += (state.targetRx - state.currentRx) * currentLerp;
+    state.currentRy += (state.targetRy - state.currentRy) * currentLerp;
+    state.currentTz += (state.targetTz - state.currentTz) * currentLerp;
 
     const hasSignificantMotion = 
-      Math.abs(state.targetRx - state.currentRx) > 0.01 ||
-      Math.abs(state.targetRy - state.currentRy) > 0.01 ||
-      Math.abs(state.targetTz - state.currentTz) > 0.01 ||
+      Math.abs(state.targetRx - state.currentRx) > 0.005 ||
+      Math.abs(state.targetRy - state.currentRy) > 0.005 ||
+      Math.abs(state.targetTz - state.currentTz) > 0.005 ||
       state.isHovered;
 
     if (hasSignificantMotion) {
@@ -58,6 +60,7 @@ export function attachTiltToCard(card, index = 0) {
       state.rafId = requestAnimationFrame(update);
     } else {
       card.style.transform = '';
+      card.classList.remove('is-tilting');
       state.rafId = null;
     }
   }
@@ -117,7 +120,7 @@ export function attachTiltToCard(card, index = 0) {
 
   function onPointerLeave() {
     state.isHovered = false;
-    card.classList.remove('is-tilting');
+    // Target 0 resting state; keep 'is-tilting' until spring decays smoothly to 0 in update()
     state.targetRx = 0;
     state.targetRy = 0;
     state.targetTz = 0;
@@ -138,7 +141,6 @@ export function attachTiltToCard(card, index = 0) {
 export function initAllCardTilts(root = document) {
   const cardSelectors = [
     '.now-playing',
-    '.timeline',
     '.track',
     '.process-card',
     '.process-closing',
