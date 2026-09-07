@@ -960,9 +960,9 @@ nav a:hover, nav a:focus-visible,
 }
 
 .kokonut-select,
-.kokonut-input {
+.kokonut-input,
+.kokonut-textarea {
   width: 100%;
-  height: 48px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 13px;
@@ -970,10 +970,22 @@ nav a:hover, nav a:focus-visible,
   font-size: 0.9rem;
   font-family: inherit;
   padding: 0 16px;
-  padding-right: 40px;
   transition: all 0.2s ease;
   appearance: none;
   -webkit-appearance: none;
+}
+
+.kokonut-select,
+.kokonut-input {
+  height: 48px;
+  padding-right: 40px;
+}
+
+.kokonut-textarea {
+  min-height: 88px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  resize: vertical;
 }
 
 .kokonut-select.with-icon,
@@ -982,7 +994,30 @@ nav a:hover, nav a:focus-visible,
   padding-right: 42px;
 }
 
-.kokonut-input::placeholder {
+.kokonut-textarea.with-icon {
+  padding-left: 44px;
+  padding-right: 16px;
+}
+
+.kokonut-textarea-wrap {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.kokonut-textarea-icon {
+  position: absolute;
+  top: 14px;
+  left: 15px;
+  color: var(--muted);
+  pointer-events: none;
+  z-index: 2;
+  width: 18px;
+  height: 18px;
+}
+
+.kokonut-input::placeholder,
+.kokonut-textarea::placeholder {
   color: rgba(255, 255, 255, 0.45);
 }
 
@@ -994,13 +1029,15 @@ nav a:hover, nav a:focus-visible,
 }
 
 .kokonut-select:hover,
-.kokonut-input:hover {
+.kokonut-input:hover,
+.kokonut-textarea:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.2);
 }
 
 .kokonut-select:focus,
-.kokonut-input:focus {
+.kokonut-input:focus,
+.kokonut-textarea:focus {
   outline: none;
   background: rgba(255, 255, 255, 0.09);
   border-color: var(--signal-bright);
@@ -1027,6 +1064,7 @@ nav a:hover, nav a:focus-visible,
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   padding: 14px 18px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.035);
@@ -1037,25 +1075,25 @@ nav a:hover, nav a:focus-visible,
 .kokonut-price-info {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
+  flex: 1;
 }
 
 .kokonut-price-label {
   font-size: 0.74rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
+  letter-spacing: 0.06em;
+  color: #10b981;
   font-weight: 700;
+  line-height: 1.3;
 }
 
 .kokonut-service-desc {
   font-size: 0.84rem;
   color: rgba(255, 255, 255, 0.85);
-  max-width: 320px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.4;
+  word-break: normal;
 }
 
 .kokonut-price-amount {
@@ -1064,6 +1102,8 @@ nav a:hover, nav a:focus-visible,
   font-weight: 700;
   color: #10b981;
   letter-spacing: -0.01em;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .kokonut-submit-btn {
@@ -1453,6 +1493,10 @@ nav a:hover, nav a:focus-visible,
   padding: 2px 6px;
   border-radius: 4px;
   color: var(--signal-bright);
+}
+
+.details-column .kokonut-form-card {
+  max-width: 100%;
 }
 
 .details-panel-shell {
@@ -2162,28 +2206,366 @@ nav a:hover, nav a:focus-visible,
 }
 
 /* --------------------------------------------------------------------------
-   Responsive Adjustments
+   Responsive Adjustments & Mobile Optimizations
    -------------------------------------------------------------------------- */
 @media (max-width: 980px) {
   .sessions-layout,
   .send-audio-grid,
   .cart-layout {
     grid-template-columns: 1fr;
-    gap: 36px;
+    gap: 32px;
   }
   .beat-card {
     flex-direction: column;
     align-items: flex-start;
-    gap: 20px;
+    gap: 18px;
   }
   .beat-buy-col {
     width: 100%;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: end;
   }
+}
+
+@media (max-width: 768px) {
+  .store-player-bar {
+    top: 60px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    margin-bottom: 20px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .store-player-info {
+    min-width: 0;
+    width: 100%;
+  }
+  .store-player-scrub {
+    width: 100%;
+  }
+  .genre-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    width: 100%;
+  }
+  .genre-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .genre-tab {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .store-search-wrap {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
   .fullscreen-topbar {
-    padding-inline: 16px;
+    padding: 10px 14px;
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+  .btn-back-studio {
+    padding: 7px 14px;
+    font-size: 0.78rem;
+    gap: 6px;
+    border-radius: 999px;
+    min-height: 38px;
+  }
+  .view-brand-indicator {
+    font-size: 0.85rem;
+    gap: 6px;
+  }
+  .view-brand-indicator span.view-name {
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+  }
+  .topbar-cart-btn {
+    padding: 7px 12px;
+    font-size: 0.78rem;
+    min-height: 38px;
   }
   .fullscreen-view-body {
-    padding-inline: 16px;
+    padding: 20px 14px 72px;
+    width: 100%;
+  }
+  .view-hero {
+    margin-bottom: 24px;
+  }
+  .view-pill-tag {
+    font-size: 0.68rem;
+    padding: 4px 12px;
+    margin-bottom: 12px;
+  }
+  .view-title {
+    font-size: clamp(1.85rem, 7.5vw, 2.4rem);
+    margin-bottom: 10px;
+    line-height: 1.15;
+  }
+  .view-subtitle {
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+  .view-section-label {
+    font-size: 1.15rem;
+    margin-bottom: 14px;
+  }
+
+  /* Sessions & Kokonut Form Card */
+  .kokonut-form-card {
+    border-radius: 16px;
+  }
+  .kokonut-card-header {
+    padding: 16px 16px;
+    gap: 10px;
+  }
+  .kokonut-card-title {
+    font-size: 0.98rem;
+  }
+  .kokonut-card-subtitle {
+    font-size: 0.75rem;
+  }
+  .kokonut-live-badge {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+  }
+  .kokonut-card-body {
+    padding: 16px 14px;
+    gap: 12px;
+  }
+  .kokonut-grid-service-duration,
+  .kokonut-grid-2,
+  .kokonut-grid-date-time {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .kokonut-select,
+  .kokonut-input {
+    height: 46px;
+    font-size: 0.88rem;
+  }
+  .kokonut-textarea {
+    font-size: 0.88rem;
+  }
+  .kokonut-submit-btn {
+    height: 48px;
+    font-size: 0.9rem;
+    min-height: 44px;
+  }
+  .kokonut-card-footer {
+    padding: 16px 14px 20px;
+  }
+  .kokonut-footer-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.72rem;
+  }
+  .kokonut-email-sync-indicator {
+    font-size: 0.65rem;
+    padding: 3px 7px;
+  }
+  .kokonut-upcoming-item {
+    padding: 10px 12px;
+  }
+  .kokonut-upcoming-title {
+    font-size: 0.82rem;
+  }
+  .kokonut-upcoming-sub {
+    font-size: 0.72rem;
+  }
+
+  /* Send Audio Dropzone */
+  .dropzone {
+    padding: 28px 16px;
+    border-radius: 18px;
+  }
+  .dropzone-icon {
+    margin-bottom: 10px;
+  }
+  .dropzone h3 {
+    font-size: 1.1rem;
+  }
+  .dropzone p {
+    font-size: 0.82rem;
+    margin-bottom: 14px;
+  }
+  .btn-select-files {
+    padding: 9px 18px;
+    font-size: 0.82rem;
+    min-height: 44px;
+  }
+  .file-list-wrap {
+    padding: 14px 12px;
+    border-radius: 14px;
+  }
+  .file-item {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .file-name {
+    font-size: 0.84rem;
+    max-width: 160px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .audio-prep-tips {
+    padding: 14px 12px;
+    border-radius: 14px;
+  }
+  .audio-prep-tips h4 {
+    font-size: 0.88rem;
+  }
+  .audio-prep-tips ul {
+    font-size: 0.8rem;
+    gap: 6px;
+    padding-left: 16px;
+  }
+
+  /* Beats Store */
+  .beat-card {
+    padding: 16px 14px;
+    border-radius: 16px;
+    gap: 14px;
+  }
+  .beat-main-col {
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .beat-play-btn {
+    width: 46px;
+    height: 46px;
+  }
+  .beat-name {
+    font-size: 1.15rem;
+  }
+  .beat-desc {
+    font-size: 0.82rem;
+    margin-bottom: 8px;
+  }
+  .beat-buy-col {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .license-dropdown {
+    width: 100%;
+    min-height: 44px;
+  }
+  .btn-buy-beat {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .licensing-header h2 {
+    font-size: 1.5rem;
+  }
+  .license-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .license-card {
+    padding: 24px 18px;
+  }
+
+  /* Cart View */
+  .cart-item-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 14px;
+    border-radius: 14px;
+  }
+  .cart-item-title {
+    font-size: 1.05rem;
+  }
+  .cart-item-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .cart-item-price {
+    font-size: 1.15rem;
+  }
+  .details-panel-shell {
+    padding: 20px 16px;
+    border-radius: 18px;
+  }
+  .checkout-form input[type="text"],
+  .checkout-form input[type="email"] {
+    min-height: 46px;
+  }
+
+  /* Orders View */
+  .orders-lookup-bar {
+    flex-direction: column;
+    gap: 10px;
+    max-width: 100%;
+    margin-bottom: 32px;
+  }
+  .lookup-input-wrap {
+    width: 100%;
+  }
+  .lookup-input-wrap input {
+    padding: 12px 14px 12px 42px;
+    font-size: 0.88rem;
+  }
+  .orders-lookup-bar .btn-primary-sm {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .order-card {
+    padding: 18px 14px;
+    border-radius: 16px;
+  }
+  .order-title {
+    font-size: 1.15rem;
+  }
+  .order-stepper {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 14px 0;
+  }
+  .order-details-box {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .order-action-col {
+    width: 100%;
+  }
+  .btn-download-order {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .view-brand-indicator span.eko,
+  .view-brand-indicator span.sep {
+    display: none;
+  }
+  .kokonut-price-preview {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+  .kokonut-price-amount {
+    font-size: 1.25rem;
+  }
+  .order-stepper {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 }
