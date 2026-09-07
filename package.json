@@ -14,5 +14,8 @@
   },
   "dependencies": {
     "ogl": "^1.0.11"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
