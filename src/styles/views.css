@@ -797,264 +797,504 @@ nav a:hover, nav a:focus-visible,
 }
 
 /* --------------------------------------------------------------------------
-   2. Sessions View
+   2. Sessions View (KokonutUI Form 02 Aesthetic)
    -------------------------------------------------------------------------- */
-.sessions-layout {
-  display: grid;
-  grid-template-columns: 1fr 1.15fr;
-  gap: 40px;
-  align-items: start;
+.kokonut-form-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding-block: 8px 48px;
 }
 
-.session-cards {
+.kokonut-form-card {
+  width: 100%;
+  max-width: 580px;
+  background: rgba(18, 17, 26, 0.94);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.2) inset;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.kokonut-form-card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), 0 0 28px rgba(108, 99, 229, 0.18);
+}
+
+.kokonut-card-header {
+  padding: 22px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.kokonut-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.kokonut-icon-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.14);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kokonut-card-title {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.kokonut-card-subtitle {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 3px 0 0 0;
+}
+
+.kokonut-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.kokonut-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.kokonut-card-body {
+  padding: 24px 28px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
 }
 
-.session-type-card {
-  background: rgba(24, 23, 35, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 20px;
-  padding: 24px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.kokonut-grid-service-duration {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  gap: 12px;
+  width: 100%;
 }
 
-.session-type-card:hover {
-  background: rgba(35, 33, 50, 0.8);
-  border-color: rgba(108, 99, 229, 0.4);
-  transform: translateY(-2px);
+.kokonut-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
 }
 
-.session-type-card.active {
-  border-color: var(--signal-bright);
-  background: rgba(42, 36, 72, 0.9);
-  box-shadow: 0 0 0 1px var(--signal-bright);
+.kokonut-grid-date-time {
+  display: grid;
+  grid-template-columns: 1.6fr 0.85fr;
+  gap: 12px;
+  width: 100%;
 }
 
-.sess-header {
+.kokonut-select-wrap {
+  position: relative;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 10px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
 }
 
-.sess-tag {
-  display: inline-block;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--signal-bright);
-  margin-bottom: 6px;
+.kokonut-input-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
 }
 
-.sess-title {
-  font-family: "Dela Gothic One", sans-serif;
-  font-size: 1.25rem;
-  margin: 0;
+.kokonut-input-icon {
+  position: absolute;
+  left: 15px;
+  color: var(--muted);
+  pointer-events: none;
+  z-index: 2;
+  width: 18px;
+  height: 18px;
 }
 
-.sess-price-block {
-  text-align: right;
+.kokonut-select-arrow {
+  position: absolute;
+  right: 15px;
+  color: var(--muted);
+  pointer-events: none;
+  z-index: 2;
+  width: 18px;
+  height: 18px;
 }
 
-.sess-price {
-  display: block;
-  font-family: "Dela Gothic One", sans-serif;
-  font-size: 1.6rem;
+.kokonut-select,
+.kokonut-input {
+  width: 100%;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 13px;
   color: #ffffff;
+  font-size: 0.9rem;
+  font-family: inherit;
+  padding: 0 16px;
+  padding-right: 40px;
+  transition: all 0.2s ease;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
-.sess-dur {
-  font-size: 0.78rem;
-  color: var(--muted);
+.kokonut-select.with-icon,
+.kokonut-input.with-icon {
+  padding-left: 44px;
+  padding-right: 42px;
 }
 
-.sess-desc {
-  color: var(--muted);
-  font-size: 0.92rem;
-  line-height: 1.5;
-  margin-bottom: 14px;
+.kokonut-input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
 }
 
-.sess-features {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.kokonut-select option {
+  background: #181723;
+  color: #ffffff;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+}
+
+.kokonut-select:hover,
+.kokonut-input:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.kokonut-select:focus,
+.kokonut-input:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--signal-bright);
+  box-shadow: 0 0 0 3px rgba(108, 99, 229, 0.25);
+}
+
+.kokonut-pill-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 13px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.kokonut-price-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  margin-top: 4px;
+}
+
+.kokonut-price-info {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
+  min-width: 0;
+}
+
+.kokonut-price-label {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.kokonut-service-desc {
   font-size: 0.84rem;
   color: rgba(255, 255, 255, 0.85);
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.booking-panel-shell {
-  background: rgba(24, 23, 35, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 24px;
-  padding: 32px;
-}
-
-.dates-scroll-wrap {
-  overflow-x: auto;
-  padding-bottom: 10px;
-  margin-bottom: 24px;
-}
-
-.dates-scroll {
-  display: flex;
-  gap: 10px;
-}
-
-.date-chip {
-  flex: 0 0 auto;
-  width: 72px;
-  padding: 12px 6px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.date-chip:hover {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.date-chip.active {
-  background: var(--signal);
-  border-color: var(--signal-bright);
-}
-
-.date-weekday {
-  font-size: 0.75rem;
-  color: var(--muted);
-  text-transform: uppercase;
-}
-
-.date-chip.active .date-weekday {
-  color: #ffffff;
-}
-
-.date-num {
-  font-family: "Dela Gothic One", sans-serif;
+.kokonut-price-amount {
+  font-family: "Space Grotesk", sans-serif;
   font-size: 1.35rem;
-}
-
-.date-month {
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-
-.date-chip.active .date-month {
-  color: #ffffff;
-}
-
-.time-slots-wrap {
-  margin-bottom: 24px;
-}
-
-.input-label {
-  display: block;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  margin-bottom: 10px;
   font-weight: 700;
+  color: #10b981;
+  letter-spacing: -0.01em;
 }
 
-.time-slots-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 10px;
-}
-
-.time-slot-chip {
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+.kokonut-submit-btn {
+  width: 100%;
+  height: 46px;
+  border-radius: 12px;
+  background: #10b981;
   color: #ffffff;
-  font-size: 0.85rem;
+  font-family: inherit;
+  font-size: 0.92rem;
   font-weight: 600;
+  border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  margin-top: 4px;
 }
 
-.time-slot-chip:hover {
-  background: rgba(255, 255, 255, 0.12);
+.kokonut-submit-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
 }
 
-.time-slot-chip.active {
-  background: var(--signal);
-  border-color: var(--signal-bright);
+.kokonut-submit-btn:active {
+  transform: translateY(0);
 }
 
-.booking-form label {
+/* Card Footer - Upcoming Appointments */
+.kokonut-card-footer {
+  padding: 20px 26px 24px 26px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.015);
   display: flex;
   flex-direction: column;
+  gap: 12px;
+}
+
+.kokonut-footer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
   font-size: 0.8rem;
-  color: var(--muted);
   font-weight: 600;
-  margin-bottom: 16px;
-}
-
-.booking-form input,
-.booking-form select,
-.booking-form textarea {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 10px;
-  padding: 12px 14px;
-  color: #ffffff;
-  font-size: 0.95rem;
-  font-weight: 400;
-}
-
-.booking-form input:focus,
-.booking-form select:focus,
-.booking-form textarea:focus {
-  border-color: var(--signal-bright);
-  outline: none;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.booking-summary-box {
-  padding: 18px 20px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  margin-bottom: 24px;
-}
-
-.summary-line {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 1.05rem;
-  margin-bottom: 6px;
-}
-
-.summary-line strong {
-  font-family: "Dela Gothic One", sans-serif;
-  color: var(--signal-bright);
-  font-size: 1.3rem;
-}
-
-.summary-sub {
   color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.kokonut-upcoming-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kokonut-upcoming-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s ease;
+}
+
+.kokonut-upcoming-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.kokonut-upcoming-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.kokonut-avatar-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kokonut-upcoming-title {
   font-size: 0.85rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kokonut-upcoming-sub {
+  font-size: 0.74rem;
+  color: var(--muted);
+  margin: 3px 0 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kokonut-fixed-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 13px;
+  font-size: 0.88rem;
+  color: var(--muted);
+  width: 100%;
+}
+
+.kokonut-fixed-pill strong {
+  color: #ffffff;
+}
+
+.kokonut-select option:disabled {
+  color: rgba(255, 255, 255, 0.35);
+  background: #12111a;
+  font-style: italic;
+}
+
+.kokonut-email-sync-indicator {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.kokonut-email-sync-indicator.active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.kokonut-email-sync-indicator.idle {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+}
+
+.kokonut-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  text-align: center;
+  gap: 8px;
+}
+
+.kokonut-empty-icon {
+  font-size: 1.3rem;
+  opacity: 0.6;
+}
+
+.kokonut-empty-msg {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.kokonut-email-highlight {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.kokonut-upcoming-badge {
+  font-size: 0.74rem;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  padding: 4px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .kokonut-grid-service-duration,
+  .kokonut-grid-2,
+  .kokonut-grid-date-time {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .kokonut-card-header,
+  .kokonut-card-body,
+  .kokonut-card-footer {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .kokonut-form-card {
+    border-radius: 16px;
+  }
+  .kokonut-footer-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .kokonut-email-sync-indicator {
+    font-size: 0.68rem;
+    padding: 3px 8px;
+  }
 }
 
 /* --------------------------------------------------------------------------
