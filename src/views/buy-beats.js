@@ -86,22 +86,31 @@ export function createBuyBeatsView({ navigateTo }) {
   const storeAudio = new Audio();
   storeAudio.preload = 'auto';
 
-  const audioBlobCache = window.__AUDIO_BLOB_CACHE__ || new Map();
-  window.__AUDIO_BLOB_CACHE__ = audioBlobCache;
+  const audioBlobCache = window.__AUDIO_BLOB_CACHE__ = window.__AUDIO_BLOB_CACHE__ || new Map();
+  const audioBlobPromises = window.__AUDIO_BLOB_PROMISES__ = window.__AUDIO_BLOB_PROMISES__ || new Map();
 
-  async function getOrFetchTrackBlobUrl(src) {
-    if (!src) return null;
-    if (audioBlobCache.has(src)) return audioBlobCache.get(src);
-    try {
-      const res = await fetch(src);
-      if (!res.ok) throw new Error('Fetch failed');
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      audioBlobCache.set(src, blobUrl);
-      return blobUrl;
-    } catch {
-      return null;
-    }
+  function ensureTrackBlob(src) {
+    if (!src) return Promise.resolve(null);
+    if (audioBlobCache.has(src)) return Promise.resolve(audioBlobCache.get(src));
+    if (audioBlobPromises.has(src)) return audioBlobPromises.get(src);
+
+    const promise = fetch(src)
+      .then((res) => {
+        if (!res.ok) throw new Error('Fetch failed');
+        return res.blob();
+      })
+      .then((blob) => {
+        const blobUrl = URL.createObjectURL(blob);
+        audioBlobCache.set(src, blobUrl);
+        return blobUrl;
+      })
+      .catch((err) => {
+        console.warn('Store blob fetch failed for', src, err);
+        return src;
+      });
+
+    audioBlobPromises.set(src, promise);
+    return promise;
   }
 
   container.innerHTML = `
@@ -343,7 +352,7 @@ export function createBuyBeatsView({ navigateTo }) {
     });
   }
 
-  function togglePlayBeat(beat) {
+  async function togglePlayBeat(beat) {
     if (currentPlayingBeat && currentPlayingBeat.id === beat.id) {
       if (storeAudio.paused) {
         storeAudio.play();
@@ -352,21 +361,25 @@ export function createBuyBeatsView({ navigateTo }) {
       }
     } else {
       currentPlayingBeat = beat;
-      const cached = audioBlobCache.get(beat.src);
-      storeAudio.src = cached || beat.src;
-      if (!cached) {
-        getOrFetchTrackBlobUrl(beat.src);
-      }
-      storeAudio.play();
       storePlayerBar.style.display = 'flex';
       storeNowTitle.textContent = beat.title;
       storeNowMeta.textContent = `${beat.bpm} BPM · Key of ${beat.key} · ${beat.genre}`;
+
+      let blobUrl = audioBlobCache.get(beat.src);
+      if (!blobUrl && audioBlobPromises.has(beat.src)) {
+        blobUrl = await audioBlobPromises.get(beat.src);
+      } else if (!blobUrl) {
+        blobUrl = await ensureTrackBlob(beat.src);
+      }
+      storeAudio.src = blobUrl || beat.src;
+      storeAudio.play().catch(() => {});
     }
     renderBeats();
   }
 
   let isStoreScrubbing = false;
   let storeSeekLockTarget = null;
+  let storeSeekLockTimeout = null;
   let storePendingSeekTarget = null;
 
   function getStoreDuration() {
@@ -384,8 +397,25 @@ export function createBuyBeatsView({ navigateTo }) {
     const fraction = Math.max(0, Math.min(100, targetPercent)) / 100;
     const targetTime = Math.max(0, Math.min(Math.max(0, dur - 0.2), fraction * dur));
     storeSeekLockTarget = targetTime;
+    clearTimeout(storeSeekLockTimeout);
+    storeSeekLockTimeout = setTimeout(() => {
+      storeSeekLockTarget = null;
+    }, 1000);
+
     storeTimeCur.textContent = formatTime(targetTime);
-    storeSeek.value = (targetTime / dur) * 100;
+    storeSeek.value = (dur > 0) ? (targetTime / dur) * 100 : 0;
+
+    const cached = currentPlayingBeat ? audioBlobCache.get(currentPlayingBeat.src) : null;
+    if (cached && storeAudio.src !== cached) {
+      const wasPlaying = !storeAudio.paused;
+      storeAudio.src = cached;
+      storeAudio.currentTime = targetTime;
+      if (wasPlaying) {
+        storeAudio.play().catch(() => {});
+      }
+      return;
+    }
+
     if (storeAudio.readyState >= 1) {
       try {
         storeAudio.currentTime = targetTime;
@@ -417,27 +447,43 @@ export function createBuyBeatsView({ navigateTo }) {
   storeAudio.addEventListener('canplay', applyPendingStoreSeekIfAny);
 
   storeAudio.addEventListener('seeked', () => {
-    storeSeekLockTarget = null;
+    if (storeSeekLockTarget !== null) {
+      if (Math.abs(storeAudio.currentTime - storeSeekLockTarget) < 0.8) {
+        storeSeekLockTarget = null;
+        clearTimeout(storeSeekLockTimeout);
+      } else if (storeAudio.currentTime < 0.5 && storeSeekLockTarget > 1.0) {
+        try {
+          storeAudio.currentTime = storeSeekLockTarget;
+        } catch (e) {}
+      }
+    }
     isStoreScrubbing = false;
   });
 
   storeAudio.addEventListener('timeupdate', () => {
     const dur = getStoreDuration();
-    if (!isStoreScrubbing) {
-      if (storeSeekLockTarget !== null) {
-        if (Math.abs(storeAudio.currentTime - storeSeekLockTarget) < 0.6 || (!storeAudio.seeking && storeAudio.currentTime >= storeSeekLockTarget - 0.3)) {
-          storeSeekLockTarget = null;
-        }
+    if (storeSeekLockTarget !== null) {
+      if (Math.abs(storeAudio.currentTime - storeSeekLockTarget) < 0.6) {
+        storeSeekLockTarget = null;
+        clearTimeout(storeSeekLockTimeout);
+      } else if (storeAudio.currentTime < 0.5 && storeSeekLockTarget > 1.0) {
+        try {
+          storeAudio.currentTime = storeSeekLockTarget;
+        } catch (e) {}
       }
-      if (storeSeekLockTarget === null && !storeAudio.seeking && dur > 0) {
-        storeTimeCur.textContent = formatTime(storeAudio.currentTime);
-        storeTimeDur.textContent = formatTime(dur);
-        storeSeek.value = (storeAudio.currentTime / dur) * 100;
-      }
+    }
+    if (!isStoreScrubbing && storeSeekLockTarget === null && !storeAudio.seeking && dur > 0) {
+      storeTimeCur.textContent = formatTime(storeAudio.currentTime);
+      storeTimeDur.textContent = formatTime(dur);
+      storeSeek.value = (storeAudio.currentTime / dur) * 100;
     }
   });
 
   storeAudio.addEventListener('ended', () => {
+    const dur = getStoreDuration();
+    if (dur > 0 && storeAudio.currentTime < dur - 1.5) {
+      return;
+    }
     currentPlayingBeat = null;
     storePlayerBar.style.display = 'none';
     renderBeats();

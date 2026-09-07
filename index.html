@@ -806,28 +806,39 @@ const KNOWN_DURATIONS = {
 // In-memory audio Blob cache to guarantee instant, 100% reliable seeking with zero network roundtrips
 window.__AUDIO_BLOB_CACHE__ = window.__AUDIO_BLOB_CACHE__ || new Map();
 const audioBlobCache = window.__AUDIO_BLOB_CACHE__;
+window.__AUDIO_BLOB_PROMISES__ = window.__AUDIO_BLOB_PROMISES__ || new Map();
+const audioBlobPromises = window.__AUDIO_BLOB_PROMISES__;
 
-async function getOrFetchTrackBlobUrl(src) {
-  if (!src) return null;
-  if (audioBlobCache.has(src)) {
-    return audioBlobCache.get(src);
-  }
-  try {
-    const res = await fetch(src);
-    if (!res.ok) throw new Error('Fetch failed');
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    audioBlobCache.set(src, blobUrl);
-    return blobUrl;
-  } catch (err) {
-    return null;
-  }
+function ensureTrackBlob(src) {
+  if (!src) return Promise.resolve(null);
+  if (audioBlobCache.has(src)) return Promise.resolve(audioBlobCache.get(src));
+  if (audioBlobPromises.has(src)) return audioBlobPromises.get(src);
+
+  const promise = fetch(src)
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.blob();
+    })
+    .then((blob) => {
+      const blobUrl = URL.createObjectURL(blob);
+      audioBlobCache.set(src, blobUrl);
+      return blobUrl;
+    })
+    .catch((err) => {
+      console.warn('Audio blob load failed for', src, err);
+      return src;
+    });
+
+  audioBlobPromises.set(src, promise);
+  return promise;
 }
 
-// Immediately cache initial track
-getOrFetchTrackBlobUrl(activeTrack.dataset.src).then((blobUrl) => {
-  if (blobUrl && audio.paused && (!audio.currentTime || audio.currentTime === 0)) {
-    audio.src = blobUrl;
+// Immediately start caching the initial track
+ensureTrackBlob(activeTrack.dataset.src).then((blobUrl) => {
+  if (blobUrl && !audio.src.startsWith('blob:')) {
+    if (audio.paused && (!audio.currentTime || audio.currentTime === 0)) {
+      audio.src = blobUrl;
+    }
   }
 });
 
@@ -836,7 +847,7 @@ function prefetchOtherTracks() {
   tracks.forEach((t, idx) => {
     if (t !== activeTrack) {
       setTimeout(() => {
-        getOrFetchTrackBlobUrl(t.dataset.src);
+        ensureTrackBlob(t.dataset.src);
       }, (idx + 1) * 150);
     }
   });
@@ -844,11 +855,12 @@ function prefetchOtherTracks() {
 if ('requestIdleCallback' in window) {
   window.requestIdleCallback(prefetchOtherTracks);
 } else {
-  setTimeout(prefetchOtherTracks, 300);
+  setTimeout(prefetchOtherTracks, 200);
 }
 
 let isUserScrubbing = false;
 let seekLockTarget = null;
+let seekLockTimeout = null;
 let pendingSeekTarget = null;
 let lastSeekActionTime = 0;
 
@@ -910,7 +922,7 @@ function updateNowPlaying(track) {
   currentTitle.textContent = track.dataset.title;
   currentStyle.textContent = track.dataset.title === 'Kensuke' ? 'Soundtrack by Eko for Anime Teaser' : 'Original production';
 }
-function selectTrack(track, shouldPlay = true) {
+async function selectTrack(track, shouldPlay = true) {
   const changed = track !== activeTrack;
   if (changed) {
     activeTrack.classList.remove('active');
@@ -918,29 +930,50 @@ function selectTrack(track, shouldPlay = true) {
     activeTrack.classList.add('active');
     activeTrack.append(trackVisualizer);
     
-    const cachedBlobUrl = audioBlobCache.get(activeTrack.dataset.src);
-    audio.src = cachedBlobUrl || activeTrack.dataset.src;
-    if (!cachedBlobUrl) {
-      getOrFetchTrackBlobUrl(activeTrack.dataset.src);
-    }
-    
     currentTime.textContent = '0:00';
     const fallbackDur = activeTrack.querySelector('.track-length')?.textContent || '0:00';
     duration.textContent = fallbackDur;
     progress.value = 0;
     isUserScrubbing = false;
     seekLockTarget = null;
+    clearTimeout(seekLockTimeout);
     pendingSeekTarget = null;
     updateNowPlaying(activeTrack);
+
+    const src = activeTrack.dataset.src;
+    let blobUrl = audioBlobCache.get(src);
+    if (!blobUrl && audioBlobPromises.has(src)) {
+      blobUrl = await audioBlobPromises.get(src);
+    } else if (!blobUrl) {
+      blobUrl = await ensureTrackBlob(src);
+    }
+    audio.src = blobUrl || src;
   }
   if (shouldPlay) {
-    if (!changed && !audio.paused) audio.pause();
-    else ensureAudioGraph().then(() => audio.play()).catch(() => setPlayingState(false));
+    if (!changed && !audio.paused) {
+      audio.pause();
+    } else {
+      ensureAudioGraph()
+        .then(() => audio.play())
+        .catch(() => setPlayingState(false));
+    }
   }
 }
-mainPlay.addEventListener('click', () => {
-  if (audio.paused) ensureAudioGraph().then(() => audio.play()).catch(() => setPlayingState(false));
-  else audio.pause();
+
+mainPlay.addEventListener('click', async () => {
+  if (audio.paused) {
+    await ensureAudioGraph();
+    const src = activeTrack.dataset.src;
+    const cachedBlob = audioBlobCache.get(src);
+    if (cachedBlob && audio.src !== cachedBlob) {
+      const prevTime = audio.currentTime;
+      audio.src = cachedBlob;
+      if (prevTime > 0) audio.currentTime = prevTime;
+    }
+    audio.play().catch(() => setPlayingState(false));
+  } else {
+    audio.pause();
+  }
 });
 tracks.forEach((track) => track.addEventListener('click', () => selectTrack(track)));
 
@@ -965,13 +998,25 @@ function commitSeek(targetPercent) {
   const targetTime = Math.max(0, Math.min(Math.max(0, dur - 0.2), fraction * dur));
 
   seekLockTarget = targetTime;
+  clearTimeout(seekLockTimeout);
+  seekLockTimeout = setTimeout(() => {
+    seekLockTarget = null;
+  }, 1000);
+
   currentTime.textContent = formatTime(targetTime);
-  progress.value = (targetTime / dur) * 100;
+  progress.value = (dur > 0) ? (targetTime / dur) * 100 : 0;
   lastSeekActionTime = Date.now();
 
-  const cachedBlob = audioBlobCache.get(activeTrack.dataset.src);
-  if (cachedBlob && !audio.src.startsWith('blob:') && audio.paused) {
+  const src = activeTrack.dataset.src;
+  const cachedBlob = audioBlobCache.get(src);
+  if (cachedBlob && audio.src !== cachedBlob) {
+    const wasPlaying = !audio.paused;
     audio.src = cachedBlob;
+    audio.currentTime = targetTime;
+    if (wasPlaying) {
+      audio.play().catch(() => {});
+    }
+    return;
   }
 
   applySeekTarget(targetTime);
@@ -1008,16 +1053,39 @@ audio.addEventListener('pause', () => {
   stopTimeline();
 });
 audio.addEventListener('seeked', () => {
-  seekLockTarget = null;
+  if (seekLockTarget !== null) {
+    if (Math.abs(audio.currentTime - seekLockTarget) < 0.8) {
+      seekLockTarget = null;
+      clearTimeout(seekLockTimeout);
+    } else if (audio.currentTime < 0.5 && seekLockTarget > 1.0) {
+      try {
+        audio.currentTime = seekLockTarget;
+      } catch (e) {}
+    }
+  }
   isUserScrubbing = false;
   if (audio.paused) renderTimeline();
 });
 audio.addEventListener('timeupdate', () => {
+  if (seekLockTarget !== null) {
+    if (Math.abs(audio.currentTime - seekLockTarget) < 0.6) {
+      seekLockTarget = null;
+      clearTimeout(seekLockTimeout);
+    } else if (audio.currentTime < 0.5 && seekLockTarget > 1.0) {
+      try {
+        audio.currentTime = seekLockTarget;
+      } catch (e) {}
+    }
+  }
   if (!isUserScrubbing && seekLockTarget === null && !audio.seeking && audio.paused) {
     renderTimeline();
   }
 });
 audio.addEventListener('ended', () => {
+  const dur = getTrackDuration();
+  if (dur > 0 && audio.currentTime < dur - 1.5) {
+    return;
+  }
   const nextIndex = (tracks.indexOf(activeTrack) + 1) % tracks.length;
   selectTrack(tracks[nextIndex]);
 });
