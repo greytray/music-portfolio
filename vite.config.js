@@ -103,6 +103,7 @@ function audioStreamingPlugin() {
 }
 
 export default defineConfig({
+  base: "./",
   plugins: [copyAssetsPlugin(), audioStreamingPlugin()],
   server: {
     host: "0.0.0.0",
