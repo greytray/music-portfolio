@@ -189,17 +189,189 @@ nav a:hover, .nav-btn:hover {
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
 }
 
-/* Contact form glass panel */
-.contact-form {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
-  backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  border-radius: 28px !important;
-  padding: clamp(24px, 3.5vw, 42px) !important;
+/* Contact form container - clean frameless layout (outer container removed) */
+.contact-form,
+.iridescence-zone-content .contact-form {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+/* Modern Glass Input Fields & Textarea */
+.contact-form input[type="text"],
+.contact-form input[type="email"],
+.contact-form textarea,
+.custom-select-trigger {
+  width: 100% !important;
+  background: rgba(255, 255, 255, 0.10) !important;
+  backdrop-filter: blur(24px) saturate(180%) brightness(105%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(105%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 18px !important;
+  padding: 16px 22px !important;
+  color: #ffffff !important;
+  font-family: "Work Sans", "DM Sans", sans-serif !important;
+  font-size: 1.05rem !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
   box-shadow: 
     inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.35),
-    0 24px 60px -12px rgba(0, 0, 0, 0.45) !important;
+    0 8px 24px -4px rgba(0, 0, 0, 0.25) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+}
+
+.contact-form input[type="text"]::placeholder,
+.contact-form input[type="email"]::placeholder,
+.contact-form textarea::placeholder {
+  color: rgba(255, 255, 255, 0.70) !important;
+  font-weight: 400 !important;
+}
+
+.contact-form input[type="text"]:focus,
+.contact-form input[type="email"]:focus,
+.contact-form textarea:focus,
+.custom-select-container.is-open .custom-select-trigger {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border-color: rgba(255, 255, 255, 0.55) !important;
+  color: #ffffff !important;
+  box-shadow: 
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.60),
+    0 0 0 3px rgba(255, 255, 255, 0.20),
+    0 12px 32px -6px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Custom Rounded Liquid Glass Modern Dropdown Menu */
+.custom-select-container {
+  position: relative;
+  width: 100%;
+}
+
+.custom-select-trigger {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  cursor: pointer !important;
+  text-align: left !important;
+}
+
+.custom-select-label {
+  color: #ffffff !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.custom-select-label.is-placeholder {
+  color: rgba(255, 255, 255, 0.70) !important;
+  font-weight: 400 !important;
+}
+
+.custom-select-arrow {
+  width: 20px !important;
+  height: 20px !important;
+  stroke: #ffffff !important;
+  stroke-width: 2.5 !important;
+  fill: none !important;
+  flex-shrink: 0 !important;
+  margin-left: 12px !important;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.custom-select-container.is-open .custom-select-arrow {
+  transform: rotate(180deg) !important;
+}
+
+/* Dropdown Menu & Always-Visible Custom Scrollbar */
+.custom-select-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background: rgba(24, 22, 36, 0.94) !important;
+  backdrop-filter: blur(36px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  border-radius: 20px !important;
+  padding: 8px !important;
+  list-style: none !important;
+  margin: 0 !important;
+  box-shadow: 
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.40),
+    0 24px 60px -8px rgba(0, 0, 0, 0.55) !important;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px) scale(0.98);
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s ease;
+  max-height: 260px !important;
+  overflow-y: scroll !important;
+  scrollbar-gutter: stable !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(181, 173, 255, 0.45) rgba(255, 255, 255, 0.06) !important;
+}
+
+.custom-select-menu::-webkit-scrollbar {
+  width: 7px !important;
+  display: block !important;
+}
+
+.custom-select-menu::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 999px !important;
+  margin: 6px 0 !important;
+}
+
+.custom-select-menu::-webkit-scrollbar-thumb {
+  background: rgba(181, 173, 255, 0.45) !important;
+  border-radius: 999px !important;
+  border: 1.5px solid transparent !important;
+  background-clip: padding-box !important;
+}
+
+.custom-select-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(181, 173, 255, 0.75) !important;
+}
+
+.custom-select-container.is-open .custom-select-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.custom-select-option {
+  padding: 12px 18px !important;
+  border-radius: 14px !important;
+  color: #ececf8 !important;
+  font-family: "Work Sans", "DM Sans", sans-serif !important;
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.18s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.custom-select-option:hover,
+.custom-select-option:focus-visible {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  transform: translateX(4px);
+}
+
+.custom-select-option.is-selected {
+  background: rgba(108, 99, 229, 0.45) !important;
+  border: 1px solid rgba(181, 173, 255, 0.40) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
 }
 
 .contact-channels a {
