@@ -113,32 +113,73 @@
   font-weight: 700 !important;
 }
 
-/* Top site navigation contrast */
+/* Top site navigation - Luminous Frosted Glass Sticky Navbar (No Solid/Black Overlay) */
 .site-header {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14) !important;
+  position: sticky !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  transform: none !important;
+  z-index: 1000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 16px var(--page-gutter, 28px) !important;
+  box-sizing: border-box !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.05) 100%) !important;
+  backdrop-filter: blur(36px) saturate(200%) brightness(112%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(200%) brightness(112%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.45),
+    0 16px 40px -10px rgba(0, 0, 0, 0.35),
+    0 4px 12px -2px rgba(0, 0, 0, 0.15) !important;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, padding 0.3s ease !important;
+}
+
+.site-header .brand {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7), 0 2px 14px rgba(0, 0, 0, 0.5) !important;
+  transition: opacity 0.2s ease, transform 0.2s ease !important;
+}
+
+.site-header .brand:hover {
+  opacity: 0.85 !important;
+  transform: scale(1.02) !important;
 }
 
 nav a, .nav-btn {
   color: #ffffff !important;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7), 0 2px 14px rgba(0, 0, 0, 0.5) !important;
+  transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease !important;
 }
 
 nav a:hover, .nav-btn:hover {
   color: #ffffff !important;
-  background: rgba(255, 255, 255, 0.14) !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+  transform: translateY(-1px) !important;
 }
 
 .nav-cart-btn {
-  background: rgba(255, 255, 255, 0.12) !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
   color: #ffffff !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.45), 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
 }
 
 .nav-cart-btn:hover {
-  background: rgba(255, 255, 255, 0.22) !important;
-  border-color: rgba(255, 255, 255, 0.38) !important;
+  background: rgba(255, 255, 255, 0.30) !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
   color: #ffffff !important;
 }
 
@@ -323,7 +364,7 @@ nav a:hover, .nav-btn:hover {
   transform: rotate(180deg) !important;
 }
 
-/* Dropdown Menu & Always-Visible Custom Scrollbar */
+/* Dropdown Menu & Always-Visible Custom Scrollbar (Never Auto-Hiding) */
 .custom-select-menu {
   position: absolute;
   top: calc(100% + 8px);
@@ -335,7 +376,7 @@ nav a:hover, .nav-btn:hover {
   -webkit-backdrop-filter: blur(36px) saturate(190%) !important;
   border: 1px solid rgba(13, 13, 17, 0.18) !important;
   border-radius: 18px !important;
-  padding: 8px !important;
+  padding: 8px 4px 8px 8px !important;
   list-style: none !important;
   margin: 0 !important;
   box-shadow: 
@@ -344,33 +385,40 @@ nav a:hover, .nav-btn:hover {
   visibility: hidden;
   transform: translateY(-8px) scale(0.98);
   transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s ease;
-  max-height: 260px !important;
+  max-height: 228px !important;
   overflow-y: scroll !important;
   scrollbar-gutter: stable !important;
   scrollbar-width: thin !important;
-  scrollbar-color: rgba(108, 99, 229, 0.50) rgba(13, 13, 17, 0.06) !important;
+  scrollbar-color: #6c63e5 rgba(13, 13, 17, 0.08) !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
 .custom-select-menu::-webkit-scrollbar {
-  width: 7px !important;
+  width: 8px !important;
+  height: 8px !important;
   display: block !important;
+  -webkit-appearance: none !important;
+  background: rgba(13, 13, 17, 0.05) !important;
 }
 
 .custom-select-menu::-webkit-scrollbar-track {
-  background: rgba(13, 13, 17, 0.04) !important;
+  background: rgba(13, 13, 17, 0.08) !important;
   border-radius: 999px !important;
-  margin: 6px 0 !important;
+  margin: 6px 2px !important;
+  display: block !important;
 }
 
 .custom-select-menu::-webkit-scrollbar-thumb {
-  background: rgba(108, 99, 229, 0.45) !important;
+  background: #6c63e5 !important;
   border-radius: 999px !important;
-  border: 1.5px solid transparent !important;
+  border: 1.5px solid #ffffff !important;
   background-clip: padding-box !important;
+  min-height: 44px !important;
+  display: block !important;
 }
 
 .custom-select-menu::-webkit-scrollbar-thumb:hover {
-  background: rgba(108, 99, 229, 0.75) !important;
+  background: #5046e4 !important;
 }
 
 .custom-select-container.is-open .custom-select-menu {
@@ -436,8 +484,9 @@ nav a:hover, .nav-btn:hover {
 
 .contact-copyright {
   color: #232230 !important;
-  font-weight: 550 !important;
+  font-weight: 400 !important;
   text-shadow: none !important;
+  opacity: 0.85 !important;
 }
 
 /* ==========================================================================
@@ -525,9 +574,10 @@ nav a:hover, .nav-btn:hover {
   width: 100%;
 }
 
-/* Integrated Audio Playbar inside Now Playing card (clean undarkened glass) */
+/* Integrated Audio Playbar inside Now Playing card (clean undarkened glass, zero stroke) */
 .now-playing .timeline,
-.iridescence-zone-content .now-playing .timeline {
+.iridescence-zone-content .now-playing .timeline,
+.timeline {
   display: grid;
   grid-template-columns: 48px 1fr 48px;
   align-items: center;
@@ -541,17 +591,110 @@ nav a:hover, .nav-btn:hover {
   border: none !important;
   border-radius: 0 !important;
   box-shadow: none !important;
+  outline: none !important;
   color: rgba(255, 255, 255, 0.88) !important;
   font-family: "Work Sans", sans-serif;
   font-size: 0.85rem !important;
   font-weight: 600 !important;
 }
 
-.now-playing .timeline input[type="range"] {
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
-  accent-color: var(--signal-bright);
+.now-playing .timeline input[type="range"],
+.timeline input[type="range"],
+#progress {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 100% !important;
+  height: 6px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(
+    to right,
+    var(--signal-bright, #9084ff) 0%,
+    var(--signal-bright, #9084ff) var(--progress-pct, 0%),
+    rgba(255, 255, 255, 0.22) var(--progress-pct, 0%),
+    rgba(255, 255, 255, 0.22) 100%
+  ) !important;
+  accent-color: var(--signal-bright) !important;
+  border: none !important;
+  border-bottom: 0 !important;
+  border-top: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  stroke: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+}
+
+.now-playing .timeline input[type="range"]::-webkit-slider-runnable-track,
+.timeline input[type="range"]::-webkit-slider-runnable-track,
+#progress::-webkit-slider-runnable-track {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  height: 6px !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.now-playing .timeline input[type="range"]::-webkit-slider-thumb,
+.timeline input[type="range"]::-webkit-slider-thumb,
+#progress::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45), 0 0 10px rgba(144, 132, 255, 0.75) !important;
+  cursor: grab !important;
+  margin-top: -4px !important;
+  transition: transform 0.1s ease !important;
+}
+
+.now-playing .timeline input[type="range"]:active::-webkit-slider-thumb,
+#progress:active::-webkit-slider-thumb {
+  cursor: grabbing !important;
+  transform: scale(1.25) !important;
+}
+
+.now-playing .timeline input[type="range"]::-moz-range-track,
+.timeline input[type="range"]::-moz-range-track,
+#progress::-moz-range-track {
+  height: 6px !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.now-playing .timeline input[type="range"]::-moz-range-progress,
+.timeline input[type="range"]::-moz-range-progress,
+#progress::-moz-range-progress {
+  height: 6px !important;
+  border-radius: 999px !important;
+  background: var(--signal-bright, #9084ff) !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.now-playing .timeline input[type="range"]::-moz-range-thumb,
+.timeline input[type="range"]::-moz-range-thumb,
+#progress::-moz-range-thumb {
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45), 0 0 10px rgba(144, 132, 255, 0.75) !important;
+  cursor: grab !important;
 }
 
 @media (max-width: 820px) {

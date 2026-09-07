@@ -15,17 +15,23 @@ body.modal-open {
    Navigation Bar Enhancements
    -------------------------------------------------------------------------- */
 .site-header {
-  position: absolute;
-  z-index: 10;
+  position: sticky;
+  z-index: 1000;
   top: 0;
-  left: 50%;
-  width: calc(100% - (var(--page-gutter) * 2));
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  width: 100%;
+  transform: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--paper) 22%, transparent);
+  padding: 16px var(--page-gutter, 28px);
+  box-sizing: border-box;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(36px) saturate(200%) brightness(112%);
+  -webkit-backdrop-filter: blur(36px) saturate(200%) brightness(112%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.45), 0 16px 40px -10px rgba(0, 0, 0, 0.35), 0 4px 12px -2px rgba(0, 0, 0, 0.15);
 }
 
 nav {
@@ -462,8 +468,40 @@ nav a:hover, nav a:focus-visible,
 
 .store-player-scrub input[type="range"] {
   flex: 1;
-  height: 4px;
-  accent-color: var(--signal-bright);
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--signal-bright) 0%,
+    var(--signal-bright) var(--store-progress-pct, 0%),
+    rgba(255, 255, 255, 0.20) var(--store-progress-pct, 0%),
+    rgba(255, 255, 255, 0.20) 100%
+  );
+  border: none !important;
+  outline: none !important;
+  cursor: pointer;
+}
+
+.store-player-scrub input[type="range"]::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: transparent;
+  border: none;
+}
+
+.store-player-scrub input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  margin-top: -4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4), 0 0 8px rgba(144, 132, 255, 0.8);
+  cursor: grab;
 }
 
 .store-toolbar {

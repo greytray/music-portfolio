@@ -382,6 +382,11 @@ export function createBuyBeatsView({ navigateTo }) {
   let storeSeekLockTimeout = null;
   let storePendingSeekTarget = null;
 
+  function updateStoreSeekFill(val) {
+    const pct = Math.max(0, Math.min(100, (val !== undefined && val !== null) ? Number(val) : (Number(storeSeek.value) || 0)));
+    storeSeek.style.setProperty('--store-progress-pct', `${pct}%`);
+  }
+
   function getStoreDuration() {
     if (Number.isFinite(storeAudio.duration) && storeAudio.duration > 0) return storeAudio.duration;
     if (currentPlayingBeat && currentPlayingBeat.duration) {
@@ -403,7 +408,9 @@ export function createBuyBeatsView({ navigateTo }) {
     }, 1000);
 
     storeTimeCur.textContent = formatTime(targetTime);
-    storeSeek.value = (dur > 0) ? (targetTime / dur) * 100 : 0;
+    const pct = (dur > 0) ? (targetTime / dur) * 100 : 0;
+    storeSeek.value = pct;
+    updateStoreSeekFill(pct);
 
     const cached = currentPlayingBeat ? audioBlobCache.get(currentPlayingBeat.src) : null;
     if (cached && storeAudio.src !== cached) {
@@ -475,7 +482,9 @@ export function createBuyBeatsView({ navigateTo }) {
     if (!isStoreScrubbing && storeSeekLockTarget === null && !storeAudio.seeking && dur > 0) {
       storeTimeCur.textContent = formatTime(storeAudio.currentTime);
       storeTimeDur.textContent = formatTime(dur);
-      storeSeek.value = (storeAudio.currentTime / dur) * 100;
+      const curPct = (storeAudio.currentTime / dur) * 100;
+      storeSeek.value = curPct;
+      updateStoreSeekFill(curPct);
     }
   });
 
@@ -486,6 +495,7 @@ export function createBuyBeatsView({ navigateTo }) {
     }
     currentPlayingBeat = null;
     storePlayerBar.style.display = 'none';
+    updateStoreSeekFill(0);
     renderBeats();
   });
 
@@ -511,8 +521,10 @@ export function createBuyBeatsView({ navigateTo }) {
   storeSeek.addEventListener('input', () => {
     isStoreScrubbing = true;
     const dur = getStoreDuration();
+    const val = Number(storeSeek.value) || 0;
+    updateStoreSeekFill(val);
     if (dur > 0 && Number.isFinite(dur)) {
-      const fraction = Math.max(0, Math.min(100, Number(storeSeek.value))) / 100;
+      const fraction = Math.max(0, Math.min(100, val)) / 100;
       const previewTime = Math.max(0, Math.min(Math.max(0, dur - 0.2), fraction * dur));
       storeTimeCur.textContent = formatTime(previewTime);
     }

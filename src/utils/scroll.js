@@ -54,9 +54,8 @@ export function fastSmoothScrollTo(target, options = {}) {
   // 3. Perform Smooth Scroll exactly to section start
   if (el) {
     const rect = el.getBoundingClientRect();
-    const isMobileSticky = typeof window !== 'undefined' && window.innerWidth <= 820;
-    const headerEl = isMobileSticky ? document.querySelector('.site-header') : null;
-    const headerOffset = (headerEl && isMobileSticky) ? headerEl.offsetHeight : 0;
+    const headerEl = typeof document !== 'undefined' ? document.querySelector('.site-header') : null;
+    const headerOffset = headerEl ? headerEl.offsetHeight : 0;
     const targetY = Math.max(0, Math.round(rect.top + window.scrollY - headerOffset + (options.offset || 0)));
     window.scrollTo({
       top: targetY,
