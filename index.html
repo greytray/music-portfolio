@@ -515,13 +515,13 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
 .contact-form .cta-button { width: min(17rem, 100%); height: 4rem; line-height: calc(4rem - 2px); font-size: 1.225rem; border-color: #000; color: #fff; background: #000; box-shadow: 0 0 0 0.1875rem #000; }
 .contact-form .cta-button:hover, .contact-form .cta-button:focus-visible { background: #FFFF00; color: #000; border-color: #000; box-shadow: 0 0 0 0.1875rem #000; transform: scale(1.04); }
 .contact-form .cta-button:hover > span, .contact-form .cta-button:focus-visible > span { color: #000; }
-.beats, #showcase { contain: layout paint; isolation: isolate; transform: translateZ(0); will-change: transform; }
-.player-shell { width: min(92%, 1280px); overflow: visible; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; transform: translateZ(0); }
-.now-playing { padding: 24px; border: 1px solid var(--glass-border); background: var(--panel); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); transform: translateZ(0); backface-visibility: hidden; }
+.beats, #showcase { contain: none; isolation: auto; }
+.player-shell { width: min(92%, 1280px); overflow: visible; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.now-playing { padding: 24px; border-radius: 28px; }
 .timeline { padding: 22px 14px 30px; user-select: none; -webkit-user-select: none; }
 .timeline input[type="range"] { width: 100%; height: 28px; background: transparent; accent-color: var(--signal); cursor: pointer; touch-action: none; margin: -13px 0; padding: 0; }
-.playlist { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-.track { min-height: 126px; border: 1px solid color-mix(in srgb, var(--paper) 10%, transparent); background: var(--panel); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); transform: translateZ(0); backface-visibility: hidden; }
+.playlist { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; border: none; }
+.track { min-height: 126px; border-radius: 22px; }
 .track-visualizer { gap: 2px; justify-content: space-between; background: transparent; }
 .track-visualizer span { flex: 1 1 0; min-width: 3px; border-radius: 999px 999px 2px 2px; background: #99FFFF; box-shadow: 0 0 9px rgba(153, 255, 255, .42); opacity: .9; }
 .hero-cta { border-color: var(--ink); color: var(--ink); box-shadow: 0 0 0 0.125rem var(--ink); }
@@ -731,8 +731,39 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
             </div><p>DM for quick response</p></div></div>
             <form class="contact-form" action="https://api.web3forms.com/submit" method="POST">
               <input type="hidden" name="access_key" value="2ebd4b29-1913-405e-b0ec-b3b7ef0721b3"><input type="hidden" name="subject" value="New project request from Eko website"><input type="hidden" name="from_name" value="Eko Website">
-              <div class="form-row"><label>Name<input type="text" name="name" autocomplete="name" required placeholder="Your name"></label><label>Email<input type="email" name="email" autocomplete="email" required placeholder="you@email.com"></label></div>
-              <label>What do you need?<span class="select-wrap"><select name="service" required><option value="" selected disabled>Select a service</option><option>Custom Beat Production</option><option>Mixing &amp; Mastering</option><option>Vocal Mixing</option><option>Audio Editing</option><option>Beat Lease</option><option>Production Lessons</option><option>Other</option><option>General Inquiry</option></select><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg></span></label>
+              <div class="form-row">
+                <label>Name<input type="text" name="name" autocomplete="name" required placeholder="Your name"></label>
+                <label>Email<input type="email" name="email" autocomplete="email" required placeholder="you@email.com"></label>
+              </div>
+              <label>What do you need?
+                <div class="custom-select-container" id="custom-service-select">
+                  <button type="button" class="custom-select-trigger" id="custom-service-trigger" aria-haspopup="listbox" aria-expanded="false">
+                    <span class="custom-select-label is-placeholder" id="custom-service-label">Select a service</span>
+                    <svg class="custom-select-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg>
+                  </button>
+                  <ul class="custom-select-menu" role="listbox" id="custom-service-menu" aria-labelledby="custom-service-trigger">
+                    <li class="custom-select-option" role="option" data-value="Custom Beat Production">Custom Beat Production</li>
+                    <li class="custom-select-option" role="option" data-value="Mixing &amp; Mastering">Mixing &amp; Mastering</li>
+                    <li class="custom-select-option" role="option" data-value="Vocal Mixing">Vocal Mixing</li>
+                    <li class="custom-select-option" role="option" data-value="Audio Editing">Audio Editing</li>
+                    <li class="custom-select-option" role="option" data-value="Beat Lease">Beat Lease</li>
+                    <li class="custom-select-option" role="option" data-value="Production Lessons">Production Lessons</li>
+                    <li class="custom-select-option" role="option" data-value="Other">Other</li>
+                    <li class="custom-select-option" role="option" data-value="General Inquiry">General Inquiry</li>
+                  </ul>
+                  <select name="service" id="native-service-select" required tabindex="-1" style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; left: 0; bottom: 0;">
+                    <option value="" selected disabled>Select a service</option>
+                    <option value="Custom Beat Production">Custom Beat Production</option>
+                    <option value="Mixing &amp; Mastering">Mixing &amp; Mastering</option>
+                    <option value="Vocal Mixing">Vocal Mixing</option>
+                    <option value="Audio Editing">Audio Editing</option>
+                    <option value="Beat Lease">Beat Lease</option>
+                    <option value="Production Lessons">Production Lessons</option>
+                    <option value="Other">Other</option>
+                    <option value="General Inquiry">General Inquiry</option>
+                  </select>
+                </div>
+              </label>
               <label class="project-details-field">Project details<textarea name="message" rows="5" required placeholder="Tell me about the sound, timeline, and references..."></textarea><button class="button button-primary cta-button" type="submit" id="submit-btn">Send Request <span aria-hidden="true">›</span></button></label>
               <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
             </form>
@@ -1161,10 +1192,60 @@ const formStatus = document.querySelector('#form-status');
 const submitBtn = document.querySelector('#submit-btn');
 const successModal = document.querySelector('#success-modal');
 const closeBtn = document.querySelector('#close-modal');
+
+// Custom Rounded Dropdown Logic
+const customSelect = document.querySelector('#custom-service-select');
+const customSelectLabel = document.querySelector('#custom-service-label');
+const nativeSelect = document.querySelector('#native-service-select');
+if (customSelect && customSelectLabel && nativeSelect) {
+  const trigger = customSelect.querySelector('#custom-service-trigger');
+  const options = customSelect.querySelectorAll('.custom-select-option');
+
+  const toggleDropdown = (open) => {
+    const isOpen = open !== undefined ? open : !customSelect.classList.contains('is-open');
+    customSelect.classList.toggle('is-open', isOpen);
+    trigger.setAttribute('aria-expanded', String(isOpen));
+  };
+
+  trigger.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleDropdown();
+  });
+
+  options.forEach((opt) => {
+    opt.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const val = opt.getAttribute('data-value');
+      customSelectLabel.textContent = opt.textContent;
+      customSelectLabel.classList.remove('is-placeholder');
+      nativeSelect.value = val;
+      nativeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+      options.forEach(o => o.classList.remove('is-selected'));
+      opt.classList.add('is-selected');
+      toggleDropdown(false);
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!customSelect.contains(e.target)) {
+      toggleDropdown(false);
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && customSelect.classList.contains('is-open')) {
+      toggleDropdown(false);
+      trigger.focus();
+    }
+  });
+}
+
 function playBlip() { try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.frequency.setValueAtTime(880, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.08); gain.gain.setValueAtTime(0.18, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.2); } catch {} }
 function openSuccessModal() { successModal.classList.add('is-open'); successModal.setAttribute('aria-hidden', 'false'); const check = successModal.querySelector('.success-check'); if (check) { check.style.animation = 'none'; void check.offsetWidth; check.style.animation = ''; } }
 function closeSuccessModal() { successModal.classList.remove('is-open'); successModal.setAttribute('aria-hidden', 'true'); }
-contactForm.addEventListener('submit', async (event) => { event.preventDefault(); submitBtn.textContent = 'Sending...'; formStatus.textContent = ''; try { const formData = new FormData(contactForm); const response = await fetch(contactForm.action, { method: 'POST', headers: { 'Accept': 'application/json' }, body: formData }); const result = await response.json(); if (result.success) { submitBtn.textContent = 'Success'; playBlip(); openSuccessModal(); contactForm.reset(); setTimeout(() => { submitBtn.textContent = 'Send Request '; const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; submitBtn.appendChild(arrow); }, 4000); } else { submitBtn.textContent = 'Send Request '; const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; submitBtn.appendChild(arrow); formStatus.textContent = 'Something went wrong. Please try again.'; } } catch { submitBtn.textContent = 'Send Request '; const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; submitBtn.appendChild(arrow); formStatus.textContent = 'Something went wrong. Please try again.'; } });
+contactForm.addEventListener('submit', async (event) => { event.preventDefault(); submitBtn.textContent = 'Sending...'; formStatus.textContent = ''; try { const formData = new FormData(contactForm); const response = await fetch(contactForm.action, { method: 'POST', headers: { 'Accept': 'application/json' }, body: formData }); const result = await response.json(); if (result.success) { submitBtn.textContent = 'Success'; playBlip(); openSuccessModal(); contactForm.reset(); if (customSelectLabel) { customSelectLabel.textContent = 'Select a service'; customSelectLabel.classList.add('is-placeholder'); } if (customSelect) { customSelect.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('is-selected')); } setTimeout(() => { submitBtn.textContent = 'Send Request '; const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; submitBtn.appendChild(arrow); }, 4000); } else { submitBtn.textContent = 'Send Request '; const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; submitBtn.appendChild(arrow); formStatus.textContent = 'Something went wrong. Please try again.'; } } catch { submitBtn.textContent = 'Send Request '; const arrow = document.createElement('span'); arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '›'; submitBtn.appendChild(arrow); formStatus.textContent = 'Something went wrong. Please try again.'; } });
 closeBtn.addEventListener('click', closeSuccessModal);
 successModal.querySelector('.success-modal-backdrop').addEventListener('click', closeSuccessModal);
 window.pauseLandingPlayer = () => {

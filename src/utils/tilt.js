@@ -6,14 +6,15 @@
  * - When the cursor moves towards sides or corners: the card feels the physical weight
  *   of the cursor point and gets depressed inwards into the Z-axis, creating a satisfying
  *   perspective shift where the pressed side sinks and the opposite side elevates.
+ * - All cards (regardless of size) share the same calibrated intensity and depth response as the "Now Playing" card.
  * - Smooth spring interpolation ensures ultra-fluid 60fps tracking.
- * - Staggered tiny floating animations give cards an organic levitating atmosphere.
+ * - Staggered floating animations give cards an organic levitating atmosphere.
  */
 
-const MAX_TILT_DEG = 8.5; // Maximum tilt angle in degrees
-const MAX_DEPRESS_PX = 6; // Maximum inward depth displacement in pixels
-const LERP_FACTOR = 0.14;  // Spring interpolation speed
-const DEAD_ZONE = 0.06;    // Center dead-zone where card remains stable
+const BASE_TILT_DEG = 8.5; // Base tilt angle in degrees (calibrated from Now Playing card)
+const BASE_DEPRESS_PX = 7; // Inward depth displacement in pixels
+const LERP_FACTOR = 0.15;  // Spring interpolation speed
+const DEAD_ZONE = 0.05;    // Center dead-zone where card remains stable
 
 const activeCards = new WeakSet();
 
@@ -83,14 +84,22 @@ export function attachTiltToCard(card, index = 0) {
       state.targetRy = 0;
       state.targetTz = 0;
     } else {
+      // Calibrate aspect ratio & physical size so every card size feels identical to Now Playing
+      // Baseline reference: width ~ 900px, height ~ 160px
+      const aspectCorrectionX = Math.min(1.35, Math.max(0.75, 450 / (rect.width / 2)));
+      const aspectCorrectionY = Math.min(1.35, Math.max(0.75, 80 / (rect.height / 2)));
+
+      const effectiveTiltX = BASE_TILT_DEG * aspectCorrectionY;
+      const effectiveTiltY = BASE_TILT_DEG * aspectCorrectionX;
+
       // Weight Press Physics:
       // - Cursor on top (dy < 0): top sinks inwards -> rotX is positive in CSS 3D
       // - Cursor on bottom (dy > 0): bottom sinks inwards -> rotX is negative
       // - Cursor on right (dx > 0): right sinks inwards -> rotY is positive
       // - Cursor on left (dx < 0): left sinks inwards -> rotY is negative
-      state.targetRx = -dy * MAX_TILT_DEG;
-      state.targetRy = dx * MAX_TILT_DEG;
-      state.targetTz = -Math.min(dist, 1.0) * MAX_DEPRESS_PX;
+      state.targetRx = -dy * effectiveTiltX;
+      state.targetRy = dx * effectiveTiltY;
+      state.targetTz = -Math.min(dist, 1.0) * BASE_DEPRESS_PX;
     }
 
     if (!state.rafId) {
