@@ -1,0 +1,426 @@
+/* ==========================================================================
+   Iridescence Full-Page Background & Apple Liquid Glassmorphism System
+   ========================================================================== */
+
+.iridescence-showcase-zone {
+  position: relative;
+  width: 100%;
+  max-width: 100vw;
+  margin: 0;
+  padding: 0;
+  overflow: clip;
+}
+
+/* Sticky viewport that stays pinned to the screen throughout the ENTIRE page
+   (Hero, The Work/Showcase, The Process, Studio Services, Delivery, and Contact) */
+.iridescence-sticky-stage {
+  position: sticky;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  max-width: 100%;
+  height: 100vh;
+  height: 100svh;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  margin-bottom: -100vh;
+  margin-bottom: -100svh;
+}
+
+.iridescence-canvas-host {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 1;
+  transform: translateZ(0);
+}
+
+.iridescence-canvas-host canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  pointer-events: none;
+}
+
+/* Content layer that scrolls smoothly over the fixed background */
+.iridescence-zone-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+
+/* Ensure ALL sections inside the zone have transparent background so iridescence shines through */
+.iridescence-zone-content .hero,
+.iridescence-zone-content .section.beats,
+.iridescence-zone-content #showcase,
+.iridescence-zone-content .process-section,
+.iridescence-zone-content #process,
+.iridescence-zone-content .section.services,
+.iridescence-zone-content #services,
+.iridescence-zone-content .delivery-section,
+.iridescence-zone-content #delivery,
+.iridescence-zone-content .section.contact,
+.iridescence-zone-content #contact {
+  background: transparent !important;
+  background-image: none !important;
+  position: relative;
+}
+
+/* ==========================================================================
+   Hero Section Readability & Contrast
+   ========================================================================== */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  align-items: flex-end;
+  background: transparent !important;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 10;
+  width: calc(100% - (var(--page-gutter) * 2));
+  margin: 0 auto;
+  padding: 180px 0 88px;
+}
+
+.hero-content h1,
+#hero-title {
+  color: #ffffff !important;
+  text-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(108, 99, 229, 0.45) !important;
+}
+
+.hero-copy {
+  color: #ebebf5 !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7) !important;
+  font-weight: 500 !important;
+  line-height: 1.6 !important;
+}
+
+.hero .eyebrow {
+  color: #b5adff !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+  font-weight: 700 !important;
+}
+
+/* Top site navigation contrast */
+.site-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+
+nav a, .nav-btn {
+  color: #ffffff !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
+}
+
+nav a:hover, .nav-btn:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+}
+
+.nav-cart-btn {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+.nav-cart-btn:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-color: rgba(255, 255, 255, 0.38) !important;
+  color: #ffffff !important;
+}
+
+.nav-cart-btn svg {
+  stroke: #ffffff !important;
+}
+
+/* ==========================================================================
+   Contact Section Readability & Styling
+   ========================================================================== */
+.contact {
+  background: transparent !important;
+  background-image: none !important;
+  color: #ffffff !important;
+}
+
+.contact h2 {
+  color: #ffffff !important;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6) !important;
+}
+
+.contact h2 em {
+  color: #9084ff !important;
+}
+
+.contact-intro > p {
+  color: #e4e4f2 !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+}
+
+.contact .eyebrow {
+  color: #b5adff !important;
+}
+
+.contact label {
+  color: #ebebf5 !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Contact form glass panel */
+.contact-form {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
+  backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 28px !important;
+  padding: clamp(24px, 3.5vw, 42px) !important;
+  box-shadow: 
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.35),
+    0 24px 60px -12px rgba(0, 0, 0, 0.45) !important;
+}
+
+.contact-channels a {
+  background: rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.45),
+    0 12px 28px -6px rgba(0, 0, 0, 0.35) !important;
+  color: #ffffff !important;
+}
+
+.contact-channels a svg {
+  fill: #ffffff !important;
+}
+
+.contact-channels a:hover {
+  background: #ffff00 !important;
+  border-color: #ffff00 !important;
+  box-shadow: 0 0 24px rgba(255, 255, 0, 0.5) !important;
+}
+
+.contact-channels a:hover svg {
+  fill: #000000 !important;
+}
+
+.contact-copyright {
+  color: #a7a7b4 !important;
+}
+
+/* ==========================================================================
+   Audio Section Clean Layout
+   ========================================================================== */
+.player-shell,
+.iridescence-zone-content .player-shell {
+  width: min(92%, 1280px);
+  margin-inline: auto;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+}
+
+/* ==========================================================================
+   Apple Liquid Glassmorphism System
+   - Clean single 1px specular glass borders (no double stroke or bottom outline)
+   - Top-edge subtle specular sheen
+   - Rich ambient multi-layer drop shadows
+   - Organic staggered floating animations
+   - 3D perspective tilt with cursor weight press
+   ========================================================================== */
+
+/* Subtle organic floating animation rhythm */
+@keyframes cardLevitate {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.floating-card-item {
+  animation: cardLevitate 6.5s ease-in-out infinite;
+  animation-delay: var(--card-float-delay, 0s);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.floating-card-item.is-tilting {
+  animation: none !important;
+}
+
+/* 1. Main Now-Playing Audio Player Card */
+.now-playing,
+.iridescence-zone-content .now-playing {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%) !important;
+  backdrop-filter: blur(36px) saturate(190%) brightness(108%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(190%) brightness(108%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 28px !important;
+  box-shadow: 
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.40),
+    0 24px 60px -12px rgba(0, 0, 0, 0.45),
+    0 8px 24px -4px rgba(0, 0, 0, 0.22) !important;
+  margin-bottom: 20px !important;
+  padding: clamp(22px, 2.8vw, 34px) !important;
+}
+
+/* 2. Audio Playbar / Timeline Floating Capsule */
+.timeline,
+.iridescence-zone-content .timeline {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
+  backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 22px !important;
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.35),
+    0 16px 36px -8px rgba(0, 0, 0, 0.32) !important;
+  margin-bottom: 24px !important;
+  padding: 16px 24px !important;
+}
+
+/* 3. Playlist & Individual Track Cards */
+.playlist,
+.iridescence-zone-content .playlist {
+  border: none !important;
+  background: transparent !important;
+  gap: 16px !important;
+}
+
+.track,
+.iridescence-zone-content .track {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
+  backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 22px !important;
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.32),
+    0 16px 36px -8px rgba(0, 0, 0, 0.32) !important;
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.35s ease !important;
+}
+
+.track:hover,
+.iridescence-zone-content .track:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.34) !important;
+  box-shadow: 
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.55),
+    0 24px 48px -10px rgba(0, 0, 0, 0.42) !important;
+}
+
+.track.active,
+.iridescence-zone-content .track.active {
+  background: linear-gradient(135deg, rgba(120, 80, 255, 0.34) 0%, rgba(255, 255, 255, 0.12) 100%) !important;
+  border-color: rgba(200, 180, 255, 0.50) !important;
+  box-shadow: 
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.70),
+    0 24px 50px -8px rgba(90, 40, 220, 0.42) !important;
+}
+
+/* 4. Process Cards */
+.process-card,
+.iridescence-zone-content .process-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
+  backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 28px !important;
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.35),
+    0 20px 45px -10px rgba(0, 0, 0, 0.35) !important;
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.35s ease !important;
+}
+
+.process-card:hover,
+.iridescence-zone-content .process-card:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.34) !important;
+  box-shadow: 
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.55),
+    0 28px 56px -12px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* Process Closing Card */
+.process-closing,
+.iridescence-zone-content .process-closing {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.04) 100%) !important;
+  backdrop-filter: blur(36px) saturate(190%) brightness(108%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(190%) brightness(108%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 28px !important;
+  box-shadow: 
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.38),
+    0 24px 54px -10px rgba(0, 0, 0, 0.40) !important;
+}
+
+/* 5. Studio Service Cards */
+.service-card,
+.iridescence-zone-content .service-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
+  backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 28px !important;
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.35),
+    0 20px 45px -10px rgba(0, 0, 0, 0.35) !important;
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.35s ease !important;
+}
+
+.service-card:hover,
+.iridescence-zone-content .service-card:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.34) !important;
+  box-shadow: 
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.55),
+    0 28px 56px -12px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* 6. Delivery & Payment Panels */
+.delivery-panel,
+.iridescence-zone-content .delivery-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
+  backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 28px !important;
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.35),
+    0 20px 45px -10px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Liquid Glass Capsules & Badges */
+.process-badge,
+.payment-method,
+.process-trust-line {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 999px !important;
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.28) !important;
+}

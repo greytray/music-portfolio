@@ -1,5 +1,7 @@
 import { cartStore } from './store/cartStore.js';
 import { fastSmoothScrollTo } from './utils/scroll.js';
+import { mountIridescence } from './components/Iridescence.js';
+import { initAllCardTilts } from './utils/tilt.js';
 
 // Dynamic modules registry for on-demand lazy loading
 const VIEW_LOADERS = {
@@ -174,6 +176,11 @@ export function initHiddenPageArchitecture() {
       viewElement.style.display = 'block';
       viewBody.appendChild(viewElement);
 
+      // Attach 3D cursor weight tilt to cards within the newly rendered view
+      setTimeout(() => {
+        initAllCardTilts(viewElement);
+      }, 50);
+
     } catch (err) {
       console.error('Failed to load view:', err);
       viewBody.innerHTML = `
@@ -272,9 +279,34 @@ export function initHiddenPageArchitecture() {
   };
 }
 
+// Initialize React Bits Iridescence Unified Background (Showcase through Delivery)
+export function initSectionIridescence() {
+  const hostEl = document.getElementById('iridescence-unified-canvas');
+  const zoneEl = document.getElementById('iridescence-zone');
+
+  if (!hostEl) return () => {};
+
+  const cleanup = mountIridescence(hostEl, {
+    speed: 2.7,
+    amplitude: 1.0,
+    color: [1, 1, 1],
+    mouseReact: true,
+    mouseTarget: zoneEl || hostEl
+  });
+
+  return cleanup;
+}
+
 // Auto-run initialization when DOM is ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initHiddenPageArchitecture);
+  document.addEventListener('DOMContentLoaded', () => {
+    initHiddenPageArchitecture();
+    initSectionIridescence();
+    initAllCardTilts();
+  });
 } else {
   initHiddenPageArchitecture();
+  initSectionIridescence();
+  initAllCardTilts();
 }
+
