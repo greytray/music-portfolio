@@ -37,14 +37,14 @@ nav { display: flex; gap: 32px; }
 nav a { color: #ffffff; font-size: .88rem; font-weight: 600; transition: color .2s ease; }
 nav a:hover, nav a:focus-visible { color: #9084ff; }
 .hero { position: relative; min-height: 100vh; min-height: 100svh; display: flex; align-items: center; justify-content: center; overflow: hidden; isolation: isolate; }
-.hero-content { position: relative; z-index: 2; width: calc(100% - (var(--page-gutter) * 2)); max-width: 1200px; margin: 0 auto; padding: clamp(80px, 10vh, 120px) 0; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.hero-content { position: relative; z-index: 2; width: calc(100% - (var(--page-gutter) * 2)); margin: 0 auto; padding: clamp(80px, 10vh, 120px) 0; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
 .eyebrow, label, .service-index, .track-name small, .track-number, .track-length, .timeline, .form-status, .contact-copyright, .service-footer strong, .service-footer a, .hero-copy, .section-heading > p, .contact-copy > p:not(.eyebrow) { font-family: "Work Sans", "DM Sans", sans-serif; }
 .eyebrow { margin: 0 0 18px; color: var(--signal); font-size: .72rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
-.hero .eyebrow, .hero-eyebrow { display: block; width: 100%; color: #111827; font-size: .72rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; text-shadow: none; margin: 0 auto 18px; text-align: center; }
+.hero .eyebrow, .hero-eyebrow { color: #111827; font-size: .72rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; text-shadow: none; margin: 0 auto 18px; text-align: center; }
 h1, h2, h3 { display: block; font-family: "Dela Gothic One", sans-serif; line-height: 1.15; margin: 0; color: #ffffff; font-weight: 400; letter-spacing: 0.01em; }
-h1 { max-width: none; font-size: clamp(5rem, 15vw, 11.5rem); margin-inline: auto; text-align: center; }
-#hero-title { display: block; width: 100%; max-width: 100%; color: #ffffff; transform: translateZ(0); will-change: text-shadow; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; font-feature-settings: "kern" 1, "liga" 1; font-kerning: normal; backface-visibility: hidden; text-shadow: 0 0 1px rgba(250, 0, 255, 0.90), 0 0 3px rgba(250, 0, 255, 0.80), 0 0 8px rgba(250, 0, 255, 0.65), 0 0 20px rgba(250, 0, 255, 0.50), 0 0 45px rgba(250, 0, 255, 0.35), 0 0 80px rgba(250, 0, 255, 0.22), 0 0 130px rgba(250, 0, 255, 0.12); text-align: center; margin-inline: auto; letter-spacing: 0; }
-.hero-copy { display: block; width: 100%; max-width: 680px; margin: 28px auto 0; color: #111827; font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 500; text-align: center; }
+h1 { max-width: 760px; font-size: clamp(5rem, 15vw, 11.5rem); }
+#hero-title { display: inline-block; color: #ffffff; transform: translateZ(0); will-change: text-shadow; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; font-feature-settings: "kern" 1, "liga" 1; font-kerning: normal; backface-visibility: hidden; text-shadow: 0 0 1px rgba(250, 0, 255, 0.90), 0 0 3px rgba(250, 0, 255, 0.80), 0 0 8px rgba(250, 0, 255, 0.65), 0 0 20px rgba(250, 0, 255, 0.50), 0 0 45px rgba(250, 0, 255, 0.35), 0 0 80px rgba(250, 0, 255, 0.22), 0 0 130px rgba(250, 0, 255, 0.12); }
+.hero-copy { max-width: 680px; margin: 28px auto 0; color: #111827; font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 500; text-align: center; }
 @media (min-width: 821px) {
   .hero-copy { max-width: none; margin-inline: auto; }
   .hero-copy-line2 { display: inline-block; white-space: nowrap; }

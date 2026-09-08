@@ -89,7 +89,6 @@
   position: relative;
   z-index: 10;
   width: calc(100% - (var(--page-gutter) * 2));
-  max-width: 1200px;
   margin: 0 auto;
   padding: clamp(80px, 10vh, 120px) 0;
   display: flex;
@@ -101,15 +100,8 @@
 
 .hero-content h1,
 #hero-title {
-  display: block !important;
-  width: 100% !important;
-  max-width: 100% !important;
+  display: inline-block !important;
   color: #ffffff !important;
-  text-align: center !important;
-  margin-inline: auto !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-  letter-spacing: 0 !important;
   transform: translateZ(0) !important;
   will-change: text-shadow !important;
   -webkit-font-smoothing: antialiased !important;
@@ -130,24 +122,15 @@
 
 .hero .eyebrow,
 .hero-eyebrow {
-  display: block !important;
-  width: 100% !important;
   color: #111827 !important;
   font-weight: 700 !important;
   text-shadow: none !important;
-  text-align: center !important;
-  margin-inline: auto !important;
 }
 
 .hero-copy {
-  display: block !important;
-  width: 100% !important;
   color: #111827 !important;
   font-weight: 500 !important;
   text-shadow: none !important;
-  max-width: 680px;
-  text-align: center !important;
-  margin-inline: auto !important;
 }
 
 @media (min-width: 821px) {
