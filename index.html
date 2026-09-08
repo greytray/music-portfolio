@@ -43,8 +43,12 @@ nav a:hover, nav a:focus-visible { color: #9084ff; }
 .hero .eyebrow, .hero-eyebrow { color: #111827; font-size: .72rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; text-shadow: none; margin: 0 0 18px; }
 h1, h2, h3 { display: block; font-family: "Dela Gothic One", sans-serif; line-height: 1.15; margin: 0; color: #ffffff; font-weight: 400; letter-spacing: 0.01em; }
 h1 { max-width: 760px; font-size: clamp(5rem, 15vw, 11.5rem); }
-#hero-title { color: #ffffff; text-shadow: 0 0 2px #FA00FF, 0 0 4px #FA00FF, 0 0 8px rgba(250, 0, 255, 0.95), 0 0 16px rgba(250, 0, 255, 0.85), 0 0 32px rgba(250, 0, 255, 0.65), 0 0 54px rgba(250, 0, 255, 0.45); transform: translateZ(0); will-change: transform; }
-.hero-copy { max-width: 500px; margin: 28px 0 34px; color: #111827; font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 500; }
+#hero-title { display: inline-block; color: #ffffff; transform: translateZ(0); will-change: text-shadow; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; font-feature-settings: "kern" 1, "liga" 1; font-kerning: normal; backface-visibility: hidden; text-shadow: 0 0 1px rgba(250, 0, 255, 0.90), 0 0 3px rgba(250, 0, 255, 0.80), 0 0 8px rgba(250, 0, 255, 0.65), 0 0 20px rgba(250, 0, 255, 0.50), 0 0 45px rgba(250, 0, 255, 0.35), 0 0 80px rgba(250, 0, 255, 0.22), 0 0 130px rgba(250, 0, 255, 0.12); }
+.hero-copy { max-width: 680px; margin: 28px 0 34px; color: #111827; font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 500; }
+@media (min-width: 821px) {
+  .hero-copy { max-width: none; }
+  .hero-copy-line2 { display: inline-block; white-space: nowrap; }
+}
 .vertical-note { position: absolute; z-index: 2; right: 24px; bottom: 90px; margin: 0; color: #a7a7b4; font-size: .62rem; letter-spacing: .2em; writing-mode: vertical-rl; }
 .button { display: inline-block; min-width: 190px; padding: 15px 18px; border: 1px solid transparent; border-radius: 2px; color: var(--paper); font-family: "Dela Gothic One", sans-serif; line-height: 1.15; font-weight: 400; letter-spacing: 0.01em; text-align: left; cursor: pointer; transition: transform .2s ease, background .2s ease, color .2s ease; }
 .button > span { float: none; margin: 0 -0.125em 0 0.75rem; font-size: 1em; }
@@ -488,7 +492,7 @@ body { font-family: "Work Sans", sans-serif; }
 .contact-channels .email-icon { fill: #000; stroke: none; }
 .contact { background-size: 100% 100%; }
 .hero-photo img { object-fit: fill; transform: translateZ(0); backface-visibility: hidden; }
-#hero-title { color: #ffffff; text-shadow: 0 0 2px #FA00FF, 0 0 4px #FA00FF, 0 0 8px rgba(250, 0, 255, 0.95), 0 0 16px rgba(250, 0, 255, 0.85), 0 0 32px rgba(250, 0, 255, 0.65), 0 0 54px rgba(250, 0, 255, 0.45); transform: translateZ(0); will-change: transform; }
+#hero-title { color: #ffffff; text-shadow: 0 0 4px rgba(250, 0, 255, 0.75), 0 0 12px rgba(250, 0, 255, 0.60), 0 0 28px rgba(250, 0, 255, 0.45), 0 0 56px rgba(250, 0, 255, 0.35), 0 0 90px rgba(250, 0, 255, 0.25), 0 0 130px rgba(250, 0, 255, 0.16); transform: translateZ(0); will-change: transform; }
 button.brand { background: transparent; border: none; cursor: pointer; padding: 0; color: var(--paper); }
 .button, .cta-button, .service-footer a, .service-footer button, .service-request-link {
   display: inline-flex;
@@ -518,7 +522,124 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
 .contact-form .cta-button { border-color: var(--ink); color: var(--ink); box-shadow: 0 0 0 0.125rem var(--ink); }
 .button:hover, .cta-button:hover, .service-footer a:hover, .service-footer button:hover, .service-request-link:hover, .button:focus-visible, .cta-button:focus-visible, .service-footer a:focus-visible, .service-footer button:focus-visible, .service-request-link:focus-visible { background: #FFFF00; color: #000; border-color: #000; box-shadow: 0 0 0 0.125rem #000; transform: rotate(-4.75deg); }
 .button:hover > span, .cta-button:hover > span, .service-footer a:hover > span, .service-footer button:hover > span, .service-request-link:hover > span { color: #000; transform: none; }
-.hero-cta { width: min(23rem, 100%); height: 4.5rem; line-height: calc(4.5rem - 2px); font-size: 1.425rem; }
+.hero-cta, .liquid-glass-btn, .water-liquid-btn {
+  position: relative !important;
+  overflow: hidden !important;
+  contain: paint !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  min-width: clamp(230px, 22vw, 290px) !important;
+  height: 4.35rem !important;
+  line-height: 1 !important;
+  padding: 0 2.25rem !important;
+  border-radius: 9999px !important;
+  background: 
+    radial-gradient(
+      ellipse 85% 65% at 50% -25%,
+      rgba(255, 255, 255, 0.92) 0%,
+      rgba(255, 255, 255, 0.40) 45%,
+      transparent 75%
+    ),
+    linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.72) 0%,
+      rgba(248, 235, 255, 0.42) 32%,
+      rgba(225, 245, 255, 0.42) 65%,
+      rgba(250, 0, 255, 0.16) 100%
+    ) !important;
+  backdrop-filter: blur(28px) saturate(220%) brightness(112%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(220%) brightness(112%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.90) !important;
+  color: #0f172a !important;
+  font-family: "Dela Gothic One", sans-serif !important;
+  font-size: 1.15rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.015em !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.95), 0 0 12px rgba(250, 0, 255, 0.12) !important;
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 1),
+    inset 0 2.5px 4px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -2px 3px 0 rgba(15, 23, 42, 0.08),
+    inset 0 0 20px rgba(250, 0, 255, 0.12),
+    inset 0 0 16px rgba(56, 189, 248, 0.15),
+    0 12px 36px -4px rgba(15, 23, 42, 0.14),
+    0 4px 14px rgba(15, 23, 42, 0.06) !important;
+  cursor: pointer !important;
+  transform-style: preserve-3d !important;
+  will-change: transform, box-shadow !important;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease, color 0.2s ease !important;
+  --liquid-x: 50%;
+  --liquid-y: 50%;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+.hero-cta::after, .water-liquid-btn::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 1.5px !important;
+  left: 10% !important;
+  right: 10% !important;
+  height: 44% !important;
+  border-radius: 9999px !important;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.50) 45%,
+    rgba(255, 255, 255, 0) 100%
+  ) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  opacity: 0.90 !important;
+  transition: opacity 0.3s ease !important;
+}
+.hero-cta::before, .water-liquid-btn::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  background: radial-gradient(
+    circle 160px at var(--liquid-x, 50%) var(--liquid-y, 50%),
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(216, 180, 254, 0.42) 30%,
+    rgba(56, 189, 248, 0.28) 55%,
+    transparent 80%
+  ) !important;
+  opacity: 0.35 !important;
+  transition: opacity 0.35s ease !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+  mix-blend-mode: overlay !important;
+}
+.hero-cta:hover::before, .hero-cta:focus-visible::before, .water-liquid-btn:hover::before, .water-liquid-btn:focus-visible::before {
+  opacity: 0.95 !important;
+}
+.hero-cta:hover, .hero-cta:focus-visible, .water-liquid-btn:hover, .water-liquid-btn:focus-visible {
+  border-color: rgba(255, 255, 255, 1) !important;
+  color: #000000 !important;
+  box-shadow: 
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 1),
+    inset 0 3px 5px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -2.5px 4px 0 rgba(0, 0, 0, 0.06),
+    inset 0 0 28px rgba(250, 0, 255, 0.24),
+    inset 0 0 20px rgba(56, 189, 248, 0.22),
+    0 16px 44px -6px rgba(250, 0, 255, 0.26),
+    0 6px 18px rgba(15, 23, 42, 0.1) !important;
+}
+.hero-cta > span, .water-liquid-btn > span {
+  position: relative !important;
+  z-index: 3 !important;
+  display: inline-block !important;
+  margin-left: 0.75rem !important;
+  color: inherit !important;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.hero-cta:hover > span, .hero-cta:focus-visible > span, .water-liquid-btn:hover > span, .water-liquid-btn:focus-visible > span {
+  transform: translateX(4px) scale(1.08) !important;
+  color: inherit !important;
+}
 .service-footer a, .service-footer button, .service-request-link { width: min(19rem, 100%); height: 4.7rem; line-height: calc(4.7rem - 2px); font-size: 1.625rem; }
 .contact-form .cta-button { width: min(17rem, 100%); height: 4rem; line-height: calc(4rem - 2px); font-size: 1.225rem; border-color: #000; color: #fff; background: #000; box-shadow: 0 0 0 0.1875rem #000; }
 .contact-form .cta-button:hover, .contact-form .cta-button:focus-visible { background: #FFFF00; color: #000; border-color: #000; box-shadow: 0 0 0 0.1875rem #000; transform: scale(1.04); }
@@ -618,7 +739,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
     .hero { align-items: center; justify-content: center; }
     .hero-content { padding: 100px 0; justify-content: center; }
     .hero .eyebrow, .hero-eyebrow { margin-bottom: 14px; font-size: 12px; color: #111827; font-weight: 700; text-shadow: none; }
-    #hero-title { font-size: clamp(2.5rem, 9vw, 3.625rem); white-space: normal; line-height: 1.02; color: #ffffff; text-shadow: 0 0 2px #FA00FF, 0 0 4px #FA00FF, 0 0 8px rgba(250, 0, 255, 0.95), 0 0 16px rgba(250, 0, 255, 0.85), 0 0 28px rgba(250, 0, 255, 0.65); }
+    #hero-title { font-size: clamp(2.5rem, 9vw, 3.625rem); white-space: normal; line-height: 1.02; color: #ffffff; text-shadow: 0 0 3px rgba(250, 0, 255, 0.75), 0 0 10px rgba(250, 0, 255, 0.60), 0 0 22px rgba(250, 0, 255, 0.45), 0 0 45px rgba(250, 0, 255, 0.35), 0 0 70px rgba(250, 0, 255, 0.22); }
     .hero-copy { margin: 18px auto 30px; color: #111827; font-weight: 500; text-shadow: none; }
     .section { padding-block: 72px; }
     .section-heading { margin-bottom: 40px; }
@@ -629,7 +750,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
   }
   @media (max-width: 560px) {
     .hero-content { padding: 80px 0; }
-    #hero-title { font-size: clamp(2rem, 10vw, 3.5rem); line-height: 1.0; color: #ffffff; text-shadow: 0 0 2px #FA00FF, 0 0 4px #FA00FF, 0 0 8px rgba(250, 0, 255, 0.95), 0 0 16px rgba(250, 0, 255, 0.85), 0 0 24px rgba(250, 0, 255, 0.65); }
+    #hero-title { font-size: clamp(2rem, 10vw, 3.5rem); line-height: 1.0; color: #ffffff; text-shadow: 0 0 3px rgba(250, 0, 255, 0.75), 0 0 8px rgba(250, 0, 255, 0.60), 0 0 18px rgba(250, 0, 255, 0.45), 0 0 36px rgba(250, 0, 255, 0.32); }
     .hero .eyebrow, .hero-eyebrow { font-size: 12px; letter-spacing: .14em; color: #111827; font-weight: 700; text-shadow: none; }
     .hero-copy { margin: 14px auto 24px; color: #111827; font-weight: 500; text-shadow: none; }
     .hero-cta { width: 100%; max-width: 18rem; height: 3.5rem; line-height: calc(3.5rem - 2px); font-size: 1rem; }
@@ -677,7 +798,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
           <div class="hero-content">
             <p class="eyebrow hero-eyebrow">Producer · Engineer · Sound Designer</p>
             <h1 id="hero-title">Music Producer</h1>
-            <p class="hero-copy">Beats, Mixing &amp; Vocal Production<br>Focused on clean, impactful sound with fast delivery</p>
+            <p class="hero-copy"><span class="hero-copy-line1">Beats, Mixing &amp; Vocal Production</span><br><span class="hero-copy-line2">Focused on clean, impactful sound with fast delivery</span></p>
             <button type="button" class="button button-primary cta-button hero-cta" data-scroll-to="showcase">Listen to Tracks <span aria-hidden="true">›</span></button>
           </div>
         </section>
