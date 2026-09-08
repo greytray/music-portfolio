@@ -550,9 +550,10 @@ export function createBuyBeatsView({ navigateTo }) {
     storeAudio.currentTime = 0;
     currentPlayingBeat = null;
     storePlayerBar.style.display = 'none';
-    clearTimeout(storeSeekReleaseTimer);
-    isStoreSeeking = false;
-    storeSeekPendingLock = false;
+    clearTimeout(storeSeekLockTimeout);
+    isStoreScrubbing = false;
+    storeSeekLockTarget = null;
+    storePendingSeekTarget = null;
     renderBeats();
   });
 

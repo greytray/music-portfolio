@@ -40,10 +40,11 @@ nav a:hover, nav a:focus-visible { color: #9084ff; }
 .hero-content { position: relative; z-index: 2; width: calc(100% - (var(--page-gutter) * 2)); margin: 0 auto; padding: 180px 0 88px; }
 .eyebrow, label, .service-index, .track-name small, .track-number, .track-length, .timeline, .form-status, .contact-copyright, .service-footer strong, .service-footer a, .hero-copy, .section-heading > p, .contact-copy > p:not(.eyebrow) { font-family: "Work Sans", "DM Sans", sans-serif; }
 .eyebrow { margin: 0 0 18px; color: var(--signal); font-size: .72rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
-.hero .eyebrow { color: #b5adff; }
+.hero .eyebrow, .hero-eyebrow { color: #111827; font-size: .72rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; text-shadow: none; margin: 0 0 18px; }
 h1, h2, h3 { display: block; font-family: "Dela Gothic One", sans-serif; line-height: 1.15; margin: 0; color: #ffffff; font-weight: 400; letter-spacing: 0.01em; }
 h1 { max-width: 760px; font-size: clamp(5rem, 15vw, 11.5rem); }
-.hero-copy { max-width: 500px; margin: 28px 0 34px; color: #ebebf5; font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 500; }
+#hero-title { color: #ffffff; text-shadow: 0 0 2px #FA00FF, 0 0 4px #FA00FF, 0 0 8px rgba(250, 0, 255, 0.95), 0 0 16px rgba(250, 0, 255, 0.85), 0 0 32px rgba(250, 0, 255, 0.65), 0 0 54px rgba(250, 0, 255, 0.45); transform: translateZ(0); will-change: transform; }
+.hero-copy { max-width: 500px; margin: 28px 0 34px; color: #111827; font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 500; }
 .vertical-note { position: absolute; z-index: 2; right: 24px; bottom: 90px; margin: 0; color: #a7a7b4; font-size: .62rem; letter-spacing: .2em; writing-mode: vertical-rl; }
 .button { display: inline-block; min-width: 190px; padding: 15px 18px; border: 1px solid transparent; border-radius: 2px; color: var(--paper); font-family: "Dela Gothic One", sans-serif; line-height: 1.15; font-weight: 400; letter-spacing: 0.01em; text-align: left; cursor: pointer; transition: transform .2s ease, background .2s ease, color .2s ease; }
 .button > span { float: none; margin: 0 -0.125em 0 0.75rem; font-size: 1em; }
@@ -487,7 +488,7 @@ body { font-family: "Work Sans", sans-serif; }
 .contact-channels .email-icon { fill: #000; stroke: none; }
 .contact { background-size: 100% 100%; }
 .hero-photo img { object-fit: fill; transform: translateZ(0); backface-visibility: hidden; }
-#hero-title { color: var(--ink); text-shadow: 0 0 7px color-mix(in srgb, #8f00ff 48%, transparent); transform: translateZ(0); will-change: transform; }
+#hero-title { color: #ffffff; text-shadow: 0 0 2px #FA00FF, 0 0 4px #FA00FF, 0 0 8px rgba(250, 0, 255, 0.95), 0 0 16px rgba(250, 0, 255, 0.85), 0 0 32px rgba(250, 0, 255, 0.65), 0 0 54px rgba(250, 0, 255, 0.45); transform: translateZ(0); will-change: transform; }
 button.brand { background: transparent; border: none; cursor: pointer; padding: 0; color: var(--paper); }
 .button, .cta-button, .service-footer a, .service-footer button, .service-request-link {
   display: inline-flex;
@@ -616,9 +617,9 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
   @media (max-width: 820px) {
     .hero { align-items: center; justify-content: center; }
     .hero-content { padding: 100px 0; justify-content: center; }
-    .hero .eyebrow { margin-bottom: 14px; font-size: 12px; color: #4400a6; }
-    #hero-title { font-size: clamp(2.5rem, 9vw, 3.625rem); white-space: normal; line-height: 1.02; }
-    .hero-copy { margin: 18px auto 30px; }
+    .hero .eyebrow, .hero-eyebrow { margin-bottom: 14px; font-size: 12px; color: #111827; font-weight: 700; text-shadow: none; }
+    #hero-title { font-size: clamp(2.5rem, 9vw, 3.625rem); white-space: normal; line-height: 1.02; color: #ffffff; text-shadow: 0 0 2px #FA00FF, 0 0 4px #FA00FF, 0 0 8px rgba(250, 0, 255, 0.95), 0 0 16px rgba(250, 0, 255, 0.85), 0 0 28px rgba(250, 0, 255, 0.65); }
+    .hero-copy { margin: 18px auto 30px; color: #111827; font-weight: 500; text-shadow: none; }
     .section { padding-block: 72px; }
     .section-heading { margin-bottom: 40px; }
     .section-heading h2 { font-size: clamp(2.5rem, 9vw, 4rem); }
@@ -628,9 +629,9 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
   }
   @media (max-width: 560px) {
     .hero-content { padding: 80px 0; }
-    #hero-title { font-size: clamp(2rem, 10vw, 3.5rem); line-height: 1.0; }
-    .hero .eyebrow { font-size: 12px; letter-spacing: .14em; color: #4400a6; }
-    .hero-copy { margin: 14px auto 24px; }
+    #hero-title { font-size: clamp(2rem, 10vw, 3.5rem); line-height: 1.0; color: #ffffff; text-shadow: 0 0 2px #FA00FF, 0 0 4px #FA00FF, 0 0 8px rgba(250, 0, 255, 0.95), 0 0 16px rgba(250, 0, 255, 0.85), 0 0 24px rgba(250, 0, 255, 0.65); }
+    .hero .eyebrow, .hero-eyebrow { font-size: 12px; letter-spacing: .14em; color: #111827; font-weight: 700; text-shadow: none; }
+    .hero-copy { margin: 14px auto 24px; color: #111827; font-weight: 500; text-shadow: none; }
     .hero-cta { width: 100%; max-width: 18rem; height: 3.5rem; line-height: calc(3.5rem - 2px); font-size: 1rem; }
     .section { padding-block: 64px; }
     .services { padding-block: 64px; }
@@ -674,7 +675,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
       <div class="iridescence-zone-content">
         <section class="hero" id="top" aria-labelledby="hero-title">
           <div class="hero-content">
-            <p class="eyebrow">Producer · Engineer · Sound Designer</p>
+            <p class="eyebrow hero-eyebrow">Producer · Engineer · Sound Designer</p>
             <h1 id="hero-title">Music Producer</h1>
             <p class="hero-copy">Beats, Mixing &amp; Vocal Production<br>Focused on clean, impactful sound with fast delivery</p>
             <button type="button" class="button button-primary cta-button hero-cta" data-scroll-to="showcase">Listen to Tracks <span aria-hidden="true">›</span></button>
