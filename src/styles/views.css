@@ -47,7 +47,7 @@ nav a, .nav-btn {
   padding: 8px 12px;
   border-radius: 999px;
   color: #17151f;
-  font-family: "Work Sans", sans-serif;
+  font-family: "Work Sans", "WorkSans-Fallback", "DM Sans", sans-serif;
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
@@ -200,7 +200,7 @@ nav a:hover, nav a:focus-visible,
   border-radius: 999px;
   padding: 10px 22px;
   color: #ffffff;
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 0.9rem;
   font-weight: 400;
   cursor: pointer;
@@ -228,7 +228,7 @@ nav a:hover, nav a:focus-visible,
   display: flex;
   align-items: center;
   gap: 12px;
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 1.05rem;
   letter-spacing: 0.02em;
 }
@@ -243,7 +243,7 @@ nav a:hover, nav a:focus-visible,
 
 .view-brand-indicator span.view-name {
   color: var(--signal-bright);
-  font-family: "Work Sans", sans-serif;
+  font-family: "Work Sans", "WorkSans-Fallback", "DM Sans", sans-serif;
   font-weight: 700;
   font-size: 0.9rem;
   text-transform: uppercase;
@@ -265,7 +265,7 @@ nav a:hover, nav a:focus-visible,
   border-radius: 999px;
   padding: 9px 18px;
   color: #ffffff;
-  font-family: "Work Sans", sans-serif;
+  font-family: "Work Sans", "WorkSans-Fallback", "DM Sans", sans-serif;
   font-weight: 700;
   font-size: 0.85rem;
   cursor: pointer;
@@ -325,7 +325,7 @@ nav a:hover, nav a:focus-visible,
   background: rgba(108, 99, 229, 0.15);
   border: 1px solid rgba(108, 99, 229, 0.35);
   color: var(--signal-bright);
-  font-family: "Work Sans", sans-serif;
+  font-family: "Work Sans", "WorkSans-Fallback", "DM Sans", sans-serif;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -334,7 +334,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .view-title {
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: clamp(2.4rem, 5vw, 4.4rem);
   line-height: 1.12;
   margin: 0 0 16px;
@@ -351,7 +351,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .view-section-label {
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 1.35rem;
   margin: 0 0 20px;
   color: #ffffff;
@@ -373,7 +373,7 @@ nav a:hover, nav a:focus-visible,
   border: 1px solid transparent;
   border-radius: 999px;
   padding: 12px 24px;
-  font-family: "Work Sans", sans-serif;
+  font-family: "Work Sans", "WorkSans-Fallback", "DM Sans", sans-serif;
   font-weight: 700;
   font-size: 0.92rem;
   cursor: pointer;
@@ -391,7 +391,7 @@ nav a:hover, nav a:focus-visible,
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 999px;
   padding: 10px 20px;
-  font-family: "Work Sans", sans-serif;
+  font-family: "Work Sans", "WorkSans-Fallback", "DM Sans", sans-serif;
   font-weight: 600;
   font-size: 0.88rem;
   cursor: pointer;
@@ -526,7 +526,7 @@ nav a:hover, nav a:focus-visible,
   border-radius: 999px;
   padding: 8px 18px;
   color: var(--muted);
-  font-family: "Work Sans", sans-serif;
+  font-family: "Work Sans", "WorkSans-Fallback", "DM Sans", sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
@@ -638,7 +638,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .beat-name {
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 1.45rem;
   margin: 0;
   color: #ffffff;
@@ -724,7 +724,7 @@ nav a:hover, nav a:focus-visible,
   border: none;
   border-radius: 999px;
   padding: 12px 22px;
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 0.92rem;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -754,7 +754,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .licensing-header h2 {
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 2rem;
   margin: 0 0 10px;
 }
@@ -802,13 +802,13 @@ nav a:hover, nav a:focus-visible,
 }
 
 .lic-name {
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 1.3rem;
   margin-bottom: 12px;
 }
 
 .lic-price {
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 2.4rem;
   color: #ffffff;
   margin-bottom: 12px;
@@ -817,7 +817,7 @@ nav a:hover, nav a:focus-visible,
 .lic-price span {
   font-size: 0.9rem;
   color: var(--muted);
-  font-family: "Work Sans", sans-serif;
+  font-family: "Work Sans", "WorkSans-Fallback", "DM Sans", sans-serif;
 }
 
 .lic-desc {
@@ -895,7 +895,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .kokonut-card-title {
-  font-family: "Space Grotesk", sans-serif;
+  font-family: "Work Sans", "Space Grotesk", sans-serif;
   font-size: 1.05rem;
   font-weight: 700;
   color: #ffffff;
@@ -1139,7 +1139,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .kokonut-price-amount {
-  font-family: "Space Grotesk", sans-serif;
+  font-family: "Work Sans", "Space Grotesk", sans-serif;
   font-size: 1.35rem;
   font-weight: 700;
   color: #10b981;
@@ -1410,7 +1410,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .dropzone h3 {
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 1.3rem;
   margin: 0 0 8px;
 }
@@ -1676,7 +1676,7 @@ nav a:hover, nav a:focus-visible,
   border-radius: 6px;
   background: rgba(108, 99, 229, 0.2);
   color: var(--signal-bright);
-  font-family: "Work Sans", sans-serif;
+  font-family: "Work Sans", "WorkSans-Fallback", "DM Sans", sans-serif;
   font-weight: 700;
   font-size: 0.8rem;
   letter-spacing: 0.08em;
@@ -1684,7 +1684,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .order-title {
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 1.45rem;
   margin: 0 0 6px;
 }
@@ -1813,7 +1813,7 @@ nav a:hover, nav a:focus-visible,
   color: #ffffff;
   border-radius: 999px;
   padding: 12px 22px;
-  font-family: "Work Sans", sans-serif;
+  font-family: "Work Sans", "WorkSans-Fallback", "DM Sans", sans-serif;
   font-weight: 700;
   font-size: 0.9rem;
   text-decoration: none;
@@ -1862,7 +1862,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .support-card h3 {
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 1.25rem;
   margin: 0 0 10px;
 }
@@ -1891,7 +1891,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .cart-items-header h2 {
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 1.4rem;
   margin: 0;
 }
@@ -1937,7 +1937,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .cart-item-title {
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 1.2rem;
   margin: 4px 0;
 }
@@ -1979,7 +1979,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .cart-item-price {
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 1.35rem;
   color: #ffffff;
   min-width: 70px;
@@ -2011,7 +2011,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .cart-summary-card h3 {
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 1.4rem;
   margin: 0 0 20px;
 }
@@ -2046,7 +2046,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .sum-total-row .total-price {
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 1.8rem;
   color: #00ffaa;
 }
@@ -2164,7 +2164,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .cart-empty-state h2 {
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 2.2rem;
   margin: 0 0 10px;
 }
@@ -2214,7 +2214,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .confirmed-card h2 {
-  font-family: "Dela Gothic One", sans-serif;
+  font-family: "Dela Gothic One", "Dela-Fallback", "Arial Black", Impact, sans-serif;
   font-size: 2.2rem;
   margin: 0 0 12px;
 }
@@ -2237,7 +2237,7 @@ nav a:hover, nav a:focus-visible,
 
 .confirmed-order-id strong {
   color: var(--signal-bright);
-  font-family: "Work Sans", sans-serif;
+  font-family: "Work Sans", "WorkSans-Fallback", "DM Sans", sans-serif;
 }
 
 .confirmed-actions {
