@@ -61,7 +61,8 @@ h1 { max-width: 760px; font-size: clamp(5rem, 15vw, 11.5rem); }
 .button-outline:hover { background: var(--signal); color: var(--paper); }
 .section { width: calc(100% - (var(--page-gutter) * 2)); margin: 0 auto; padding: 112px 0; }
 .section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 48px; margin-bottom: 52px; }
-.section-heading h2, .contact h2 { font-size: clamp(3rem, 7vw, 6.2rem); }
+.section-heading h2 { font-size: clamp(4.5rem, 9.6vw, 9.2rem); line-height: 0.98; margin-top: calc(-1 * clamp(18px, 3.2vw, 46px)); margin-bottom: 0; }
+.contact h2 { font-size: clamp(3rem, 7vw, 6.2rem); }
 .section-heading > p { max-width: 380px; margin: 0; color: #111827; font-weight: 500; }
 .player-shell { width: min(92%, 1280px); overflow: visible; padding: 0; border: 0; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
 .now-playing { display: grid; grid-template-columns: 160px minmax(0, 1fr) auto; align-items: center; gap: 32px; padding: 34px 0; }
@@ -132,9 +133,9 @@ input[type="range"] { width: 100%; height: 3px; accent-color: var(--signal); cur
 .contact-copy > a { border-bottom: 1px solid var(--signal-bright); color: var(--signal-bright); font-weight: 700; }
 .contact-form { display: flex; flex-direction: column; gap: 24px; padding-top: 8px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.contact label, .form-select-group label, .form-label-text { color: #111827; font-size: 0.90rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; text-shadow: none; -webkit-font-smoothing: antialiased; }
+.contact label, .form-select-group label, .form-label-text { color: #111827; font-size: 0.90rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; text-shadow: none; -webkit-font-smoothing: antialiased; }
 .form-label-text { display: block; margin-bottom: 2px; }
-label { display: flex; flex-direction: column; gap: 9px; color: var(--muted); font-size: .90rem; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; }
+label { display: flex; flex-direction: column; gap: 9px; color: var(--muted); font-size: .90rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
 .contact input, .contact textarea { border-bottom-color: color-mix(in srgb, var(--ink) 25%, transparent); color: #0d0d11; font-weight: 450; }
 .contact select { border-bottom-color: color-mix(in srgb, var(--ink) 25%, transparent); color: #0d0d11; font-weight: 550; }
 .contact input::placeholder, .contact textarea::placeholder { color: rgba(13, 13, 17, 0.65); }
@@ -234,7 +235,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab;
 .contact-channels svg { width: 38px; height: 38px; }
 .contact-channels img { width: 32px; height: 32px; object-fit: contain; filter: brightness(0); transition: filter .125s ease; }
 .contact-channels a:hover img { filter: brightness(0); }
-.contact label, .form-select-group label, .form-label-text { font-weight: 500; font-size: 0.90rem; }
+.contact label, .form-select-group label, .form-label-text { font-weight: 600; font-size: 0.90rem; }
 .form-select-group { display: flex; flex-direction: column; gap: 9px; width: 100%; }
 .contact input, .contact textarea { border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); border-radius: 16px; padding: 16px 20px; background: color-mix(in srgb, var(--paper) 90%, transparent); color: #0d0d11; font-weight: 450; transition: border-color .12s ease, background .12s ease, box-shadow .12s ease; }
 .contact select, .custom-select-label:not(.is-placeholder) { font-weight: 550; }
@@ -503,6 +504,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab;
 }
 body { font-family: "Work Sans", sans-serif; }
 #beats-title em { color: #6C63E5; }
+#delivery-title { transform: translateY(clamp(-18px, -1.8vw, -8px)); }
 @media (min-width: 821px) { .hero-photo img { object-fit: fill; transform: translateZ(0); backface-visibility: hidden; } }
 .track-visualizer { background: transparent; gap: 2px; padding: 1px 2px; }
 .track-visualizer span { min-width: 3px; border-radius: 999px 999px 2px 2px; background: #99FFFF; box-shadow: 0 0 9px rgba(153, 255, 255, .42); opacity: .9; }
@@ -771,7 +773,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
     .hero-copy { margin: 18px auto 30px; color: #111827; font-weight: 500; text-shadow: none; }
     .section { padding-block: 72px; }
     .section-heading { margin-bottom: 40px; }
-    .section-heading h2 { font-size: clamp(2.5rem, 9vw, 4rem); }
+    .section-heading h2 { font-size: clamp(3.6rem, 11vw, 5.8rem); line-height: 1.0; margin-top: calc(-1 * clamp(14px, 2.5vw, 28px)); margin-bottom: 0; }
     .services { padding-block: 72px; }
     .process-section, .delivery-section { padding-block: 72px; }
     .service-card { min-height: 340px; }
@@ -785,7 +787,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
     .section { padding-block: 64px; }
     .services { padding-block: 64px; }
     .section-heading { margin-bottom: 36px; }
-    .section-heading h2 { font-size: clamp(2.25rem, 10vw, 3.5rem); }
+    .section-heading h2 { font-size: clamp(3rem, 13vw, 4.5rem); line-height: 1.0; margin-top: calc(-1 * clamp(10px, 2.2vw, 20px)); margin-bottom: 0; }
     .process-section, .delivery-section { padding-block: 64px; }
     .service-card { min-height: 0; }
   }
@@ -864,7 +866,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
           </div>
         </section>
         <section class="process-section" id="process" aria-labelledby="process-title">
-          <div class="section-heading process-heading"><div><p class="eyebrow">How the work is made</p><h2 id="process-title">The <em>Process</em></h2></div><p>A simple, creative workflow designed to bring your sound to life.</p></div>
+          <div class="section-heading process-heading"><div><h2 id="process-title">The <em>Process</em></h2></div><p>A simple, creative workflow designed to bring your sound to life.</p></div>
           <div class="process-trust-line"><span>100% Original</span><strong>·</strong><span>No AI Used</span></div>
           <div class="process-grid">
             <article class="process-card"><span class="process-mark">01 / Discuss</span><h3>Discuss</h3><p>We discuss your ideas, references, and goals to get what you want to achieve.</p></article>
@@ -877,7 +879,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
           <div class="process-closing"><h3>100% Original Build For You. Each Time.</h3><p>No templates. No shortcuts. Just honest music, crafted to tell your story.</p><div class="process-badges"><div class="process-badge">No AI Used</div><div class="process-badge">Made From Scratch</div><div class="process-badge">Built Around Your Sound</div><div class="process-badge">Ready To Release</div></div></div>
         </section>
         <section class="section services" id="services" aria-labelledby="services-title">
-          <div class="section-heading"><div><p class="eyebrow">Made for your next release</p><h2 id="services-title">Studio <em>Services</em></h2></div><p>Professional sound, straightforward pricing, and a process built around your vision.</p></div>
+          <div class="section-heading"><div><h2 id="services-title">Studio <em>Services</em></h2></div><p>Professional sound, straightforward pricing, and a process built around your vision.</p></div>
           <div class="service-grid">
             <article class="service-card"><p class="service-index">01 / Bespoke</p><h3>Custom Beat Production</h3><p>An original instrumental shaped around your voice, references, and release vision.</p><div class="service-footer"><strong>From $299</strong><button type="button" class="service-request-link" data-scroll-to="contact" aria-label="Request custom beat production">Request <span aria-hidden="true">›</span></button></div></article>
             <article class="service-card"><p class="service-index">02 / Release</p><h3>Mixing &amp; Mastering</h3><p>Dimensional, detailed mixes and competitive masters ready for every platform.</p><div class="service-footer"><strong>From $149</strong><button type="button" class="service-request-link" data-scroll-to="contact" aria-label="Request mixing and mastering">Request <span aria-hidden="true">›</span></button></div></article>
@@ -888,7 +890,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
           </div>
         </section>
         <section class="delivery-section" id="delivery" aria-labelledby="delivery-title">
-          <div class="section-heading"><div><p class="eyebrow">From request to final files</p><h2 id="delivery-title">Delivery <em>&amp;</em><br>Payments</h2></div><p>A straightforward handoff with the important details clear before work begins.</p></div>
+          <div class="section-heading"><div><h2 id="delivery-title">Delivery <em>&amp;</em><br>Payments</h2></div><p>A straightforward handoff with the important details clear before work begins.</p></div>
           <div class="delivery-layout">
             <div class="delivery-panel delivery-steps">
               <div class="delivery-step"><span class="delivery-step-number">01</span><div><h3>UPI / GPay / PhonePe accepted</h3><p>* Projects are confirmed upon advance payment.</p></div></div>
