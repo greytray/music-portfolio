@@ -492,8 +492,8 @@ nav a:hover, .nav-btn:hover {
 
 .contact-intro > p {
   color: #111827 !important;
-  font-weight: 550 !important;
-  letter-spacing: 0.015em !important;
+  font-weight: 500 !important;
+  letter-spacing: normal !important;
   text-shadow: none !important;
   -webkit-font-smoothing: antialiased !important;
 }
@@ -506,8 +506,8 @@ nav a:hover, .nav-btn:hover {
 
 .contact-copy > p:not(.eyebrow) {
   color: #111827 !important;
-  font-weight: 550 !important;
-  letter-spacing: 0.015em !important;
+  font-weight: 500 !important;
+  letter-spacing: normal !important;
   text-shadow: none !important;
   -webkit-font-smoothing: antialiased !important;
 }
@@ -522,7 +522,7 @@ nav a:hover, .nav-btn:hover {
   color: #111827 !important;
   font-family: "Work Sans", "DM Sans", sans-serif !important;
   font-size: 0.90rem !important;
-  font-weight: 700 !important;
+  font-weight: 500 !important;
   letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
   text-shadow: none !important;

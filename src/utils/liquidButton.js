@@ -18,8 +18,8 @@ import { getFrameInterval } from './perf.js';
 export function initLiquidGlassButtons() {
   const buttons = document.querySelectorAll('.hero-cta, .liquid-glass-btn');
 
-  // Slow-medium breathing cycle duration (3.6 seconds = calm, consistent pace)
-  const BREATHE_PERIOD_MS = 3600;
+  // Refined breathing cycle duration (2.6 seconds = slightly faster, energetic breathing pace)
+  const BREATHE_PERIOD_MS = 2600;
   const BREATHE_SCALE_RANGE = 0.035; // Maximum growth: +3.5%, contraction: -3.5%
 
   buttons.forEach((btn) => {

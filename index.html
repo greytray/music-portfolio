@@ -128,13 +128,13 @@ input[type="range"] { width: 100%; height: 3px; accent-color: var(--signal); cur
 .contact { width: 100%; max-width: none; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 10vw; padding-inline: var(--page-gutter); background: transparent; }
 .contact h2 { color: #ffffff; }
 .contact .eyebrow { color: #b5adff; }
-.contact-copy > p:not(.eyebrow) { max-width: 440px; color: #ffffff; font-weight: 550; letter-spacing: 0.015em; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 2px 10px rgba(0, 0, 0, 0.85); margin: 30px 0; }
+.contact-copy > p:not(.eyebrow) { max-width: 440px; color: #ffffff; font-weight: 500; letter-spacing: normal; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 2px 10px rgba(0, 0, 0, 0.85); margin: 30px 0; }
 .contact-copy > a { border-bottom: 1px solid var(--signal-bright); color: var(--signal-bright); font-weight: 700; }
 .contact-form { display: flex; flex-direction: column; gap: 24px; padding-top: 8px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.contact label, .form-select-group label, .form-label-text { color: #111827; font-size: 0.90rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; text-shadow: none; -webkit-font-smoothing: antialiased; }
+.contact label, .form-select-group label, .form-label-text { color: #111827; font-size: 0.90rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; text-shadow: none; -webkit-font-smoothing: antialiased; }
 .form-label-text { display: block; margin-bottom: 2px; }
-label { display: flex; flex-direction: column; gap: 9px; color: var(--muted); font-size: .90rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+label { display: flex; flex-direction: column; gap: 9px; color: var(--muted); font-size: .90rem; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; }
 .contact input, .contact textarea { border-bottom-color: color-mix(in srgb, var(--ink) 25%, transparent); color: #0d0d11; font-weight: 450; }
 .contact select { border-bottom-color: color-mix(in srgb, var(--ink) 25%, transparent); color: #0d0d11; font-weight: 550; }
 .contact input::placeholder, .contact textarea::placeholder { color: rgba(13, 13, 17, 0.65); }
@@ -234,7 +234,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab;
 .contact-channels svg { width: 38px; height: 38px; }
 .contact-channels img { width: 32px; height: 32px; object-fit: contain; filter: brightness(0); transition: filter .125s ease; }
 .contact-channels a:hover img { filter: brightness(0); }
-.contact label, .form-select-group label, .form-label-text { font-weight: 700; font-size: 0.90rem; }
+.contact label, .form-select-group label, .form-label-text { font-weight: 500; font-size: 0.90rem; }
 .form-select-group { display: flex; flex-direction: column; gap: 9px; width: 100%; }
 .contact input, .contact textarea { border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); border-radius: 16px; padding: 16px 20px; background: color-mix(in srgb, var(--paper) 90%, transparent); color: #0d0d11; font-weight: 450; transition: border-color .12s ease, background .12s ease, box-shadow .12s ease; }
 .contact select, .custom-select-label:not(.is-placeholder) { font-weight: 550; }
@@ -688,7 +688,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
 .contact { align-items: start; column-gap: clamp(48px, 8vw, 112px); row-gap: 0; padding-block: clamp(108px, 12vw, 156px) 4px; }
 .contact-copy { align-items: flex-start; align-self: start; text-align: left; }
 .contact-intro { display: inline-flex; flex-direction: column; align-items: center; gap: 20px; }
-.contact-intro > p { max-width: 520px; margin: 0; color: #ffffff; font-weight: 550; letter-spacing: 0.015em; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 2px 10px rgba(0, 0, 0, 0.85); font-size: clamp(1.1rem, 1.8vw, 1.35rem); line-height: 1.5; text-align: center; }
+.contact-intro > p { max-width: 520px; margin: 0; color: #ffffff; font-weight: 500; letter-spacing: normal; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 2px 10px rgba(0, 0, 0, 0.85); font-size: clamp(1.1rem, 1.8vw, 1.35rem); line-height: 1.5; text-align: center; }
 .contact-intro > p:first-of-type { padding: 20px 0 10px; }
 .contact-intro > p:last-of-type { padding-bottom: 30px; }
 .contact-channels { width: min(100%, 396px); justify-content: center; gap: clamp(12px, 3vw, 36px); }
