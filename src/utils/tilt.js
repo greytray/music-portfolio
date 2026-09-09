@@ -31,6 +31,8 @@ export function attachTiltToCard(card, index = 0) {
                        card.id === 'now-playing' || 
                        Boolean(card.closest('.now-playing'));
 
+  const isTrack = (card.classList.contains('track') || Boolean(card.closest('.track'))) && !isNowPlaying;
+
   // Set card floating index for CSS staggered floating rhythm
   card.style.setProperty('--card-float-delay', `${(index % 8) * 0.45}s`);
   card.classList.add('floating-card-item');
@@ -110,7 +112,12 @@ export function attachTiltToCard(card, index = 0) {
       const aspectCorrectionY = Math.min(1.35, Math.max(0.75, 80 / (rect.height / 2)));
 
       const maxTiltX = BASE_TILT_DEG * aspectCorrectionY;
-      const maxTiltY = BASE_TILT_DEG * aspectCorrectionX;
+      let maxTiltY = BASE_TILT_DEG * aspectCorrectionX;
+
+      if (isTrack) {
+        // Decreased maximum tilt limit on left and right sides specifically for track cards
+        maxTiltY = (BASE_TILT_DEG * 0.45) * aspectCorrectionX;
+      }
 
       let factorX = rawDx;
       let factorY = rawDy;
