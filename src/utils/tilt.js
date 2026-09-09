@@ -28,11 +28,11 @@ const activeCards = new WeakSet();
 export function attachTiltToCard(card, index = 0) {
   if (!card || activeCards.has(card)) return;
 
-  // Strictly skip Buy Beats, Sessions, and Send Audio sections - revert to original static state
+  // Strictly skip Buy Beats, Sessions, Send Audio, Orders, and any full-screen view sections - revert to clean static state
   if (
     card.closest('.fullscreen-view-container') ||
-    card.closest('.beats-view, .sessions-view, .send-audio-view') ||
-    card.matches('.beat-card, .license-card, .session-card, .kokonut-form-card, .kokonut-card, .upload-dropzone-card, .dropzone')
+    card.closest('.beats-view, .sessions-view, .send-audio-view, .orders-view, .cart-view') ||
+    card.matches('.beat-card, .license-card, .session-card, .kokonut-form-card, .kokonut-card, .upload-dropzone-card, .dropzone, .order-card, .support-card, .cert-card, .cart-item-card, .cart-summary-card, .checkout-card')
   ) {
     return;
   }
@@ -211,16 +211,7 @@ const CARD_SELECTORS = [
   '.process-card',
   '.process-closing',
   '.service-card',
-  '.delivery-panel',
-  '.order-card',
-  '.support-card',
-  '.cert-card',
-  '.cart-item-card',
-  '.cart-item',
-  '.cart-summary-card',
-  '.checkout-card',
-  '.confirmed-card',
-  '.liquid-glass-card'
+  '.delivery-panel'
 ];
 
 let globalObserver = null;

@@ -138,6 +138,17 @@ export function initLiquidGlassButtons() {
       }
     }, { passive: true });
 
+    window.addEventListener('fullscreen-overlay-change', (e) => {
+      if (e.detail && e.detail.open) {
+        if (state.rafId) {
+          cancelAnimationFrame(state.rafId);
+          state.rafId = null;
+        }
+      } else {
+        ensurePhysicsRunning();
+      }
+    }, { passive: true });
+
     // Start physics loop
     ensurePhysicsRunning();
 

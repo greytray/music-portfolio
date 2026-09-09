@@ -2593,8 +2593,8 @@ nav a:hover, nav a:focus-visible,
 }
 
 /* ==========================================================================
-   Restoration for Buy Beats, Sessions, and Send Audio
-   Reverts all liquid glass, floating animations, and 3D tilts to original styles
+   Restoration for Buy Beats, Sessions, Send Audio, and Orders
+   Reverts all liquid glass, floating animations, and 3D tilts to clean normal section styles
    ========================================================================== */
 .beats-view .beat-card,
 .beats-view .license-card,
@@ -2603,24 +2603,32 @@ nav a:hover, nav a:focus-visible,
 .send-audio-view .upload-dropzone-card,
 .send-audio-view .dropzone,
 .send-audio-view .kokonut-form-card,
+.orders-view .order-card,
+.orders-view .support-card,
+.orders-view .cert-card,
+.orders-view .lookup-input-wrap,
+.orders-view .orders-content,
 .beat-card,
 .license-card,
 .session-card,
 .kokonut-form-card,
-.upload-dropzone-card {
+.upload-dropzone-card,
+.order-card,
+.support-card,
+.cert-card {
   animation: none !important;
   transform: none !important;
 }
 
-.beat-card:hover {
-  transform: translateY(-2px) !important;
-}
-
+.beat-card:hover,
 .license-card:hover {
   transform: translateY(-2px) !important;
 }
 
-.kokonut-form-card:hover {
+.kokonut-form-card:hover,
+.order-card:hover,
+.support-card:hover,
+.cert-card:hover {
   transform: none !important;
 }
 
@@ -2635,7 +2643,13 @@ nav a:hover, nav a:focus-visible,
 .kokonut-card::before,
 .kokonut-card::after,
 .upload-dropzone-card::before,
-.upload-dropzone-card::after {
+.upload-dropzone-card::after,
+.order-card::before,
+.order-card::after,
+.support-card::before,
+.support-card::after,
+.cert-card::before,
+.cert-card::after {
   display: none !important;
   content: none !important;
 }

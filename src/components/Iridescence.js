@@ -154,12 +154,14 @@ export function mountIridescence(ctn, options = {}) {
   // Initial sizing
   resize();
 
-  // Smooth, locked 60 FPS render loop with power-saving pause guards
+  // Smooth, dynamic frame rate render loop with power-saving pause guards
   function update(t) {
     animateId = requestAnimationFrame(update);
 
-    // Power savings: Skip rendering when document is hidden or modal full-screen is open or offscreen
-    if (!isVisible || document.hidden || document.body.classList.contains('modal-open')) {
+    // Smart Viewport & Full-Screen Overlay Culling:
+    // Halt completely when element leaves the viewport, tab is hidden, or full-screen view overlays (Cart, Beats, Sessions, Orders) are open
+    const isFullscreenOverlayOpen = document.body.classList.contains('modal-open') || Boolean(document.getElementById('fullscreen-view-container')?.classList.contains('is-open'));
+    if (!isVisible || document.hidden || isFullscreenOverlayOpen) {
       return;
     }
 
@@ -227,14 +229,20 @@ export function mountIridescence(ctn, options = {}) {
     window.addEventListener('touchmove', handleTouchMove, { passive: true });
   }
 
-  // Tab visibility listener
+  // Tab visibility and overlay change listeners
   function handleVisibilityChange() {
     if (!document.hidden) {
       isVisible = true;
       lastFrameTime = performance.now();
     }
   }
+  function handleOverlayChange(e) {
+    if (e.detail && !e.detail.open) {
+      lastFrameTime = performance.now();
+    }
+  }
   document.addEventListener('visibilitychange', handleVisibilityChange);
+  window.addEventListener('fullscreen-overlay-change', handleOverlayChange);
 
   // Return cleanup method
   return function cleanup() {
@@ -242,6 +250,7 @@ export function mountIridescence(ctn, options = {}) {
     if (resizeRafId) cancelAnimationFrame(resizeRafId);
     window.removeEventListener('resize', queueResize);
     document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.removeEventListener('fullscreen-overlay-change', handleOverlayChange);
     if (resizeObserver) resizeObserver.disconnect();
     if (intersectionObserver) intersectionObserver.disconnect();
     

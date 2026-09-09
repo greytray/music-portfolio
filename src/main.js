@@ -122,6 +122,7 @@ export function initHiddenPageArchitecture() {
     // 5. Open overlay container
     overlay.classList.add('is-open');
     overlay.scrollTop = 0;
+    window.dispatchEvent(new CustomEvent('fullscreen-overlay-change', { detail: { open: true, viewId } }));
 
     // 6. Check if view was already loaded in memory (on-demand cache)
     if (loadedViews.has(viewId)) {
@@ -209,6 +210,7 @@ export function initHiddenPageArchitecture() {
     currentOpenViewId = null;
     overlay.classList.remove('is-open');
     document.body.classList.remove('modal-open');
+    window.dispatchEvent(new CustomEvent('fullscreen-overlay-change', { detail: { open: false } }));
 
     // Cleanly clear hash in address bar without scrolling
     if (clearHash) {
