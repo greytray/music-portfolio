@@ -26,6 +26,10 @@
   overflow: hidden;
   margin-bottom: -100vh;
   margin-bottom: -100svh;
+  contain: strict;
+  isolation: isolate;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 .iridescence-canvas-host {
@@ -35,7 +39,9 @@
   height: 100%;
   pointer-events: none;
   opacity: 1;
-  transform: translateZ(0);
+  contain: strict;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 .iridescence-canvas-host canvas {
@@ -46,6 +52,9 @@
   height: 100% !important;
   display: block;
   pointer-events: none;
+  image-rendering: auto;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 /* Content layer that scrolls smoothly over the fixed background */
@@ -1273,8 +1282,9 @@ nav a:hover, .nav-btn:hover {
 
 .track,
 .iridescence-zone-content .track {
+  position: relative !important;
   border-radius: 22px !important;
-  grid-template-columns: 36px minmax(0, max-content) 1fr auto !important;
+  grid-template-columns: 36px 1fr auto !important;
 }
 
 .track-length {
@@ -1287,11 +1297,22 @@ nav a:hover, .nav-btn:hover {
 }
 
 .track-tap-prompt {
+  position: absolute !important;
+  left: 54% !important;
+  right: auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
   display: inline-flex !important;
   align-items: center !important;
-  justify-content: center !important;
-  justify-self: center !important;
-  margin-inline: auto !important;
+  justify-content: flex-start !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  pointer-events: none !important;
 }
 
 .track.active,

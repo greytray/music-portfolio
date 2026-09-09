@@ -14,7 +14,11 @@ void main() {
 `;
 
 const fragmentShader = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
 precision mediump float;
+#endif
 
 uniform float uTime;
 uniform vec3 uColor;
@@ -33,7 +37,7 @@ void main() {
 
   float d = -uTime * 0.5 * uSpeed;
   float a = 0.0;
-  for (float i = 0.0; i < 6.0; ++i) {
+  for (float i = 0.0; i < 5.0; ++i) {
     a += cos(i - d - a * uv.x);
     d += sin(uv.y * i + a);
   }
@@ -45,13 +49,13 @@ void main() {
 `;
 
 /**
- * Mounts an optimized Iridescence WebGL background shader instance into a DOM element.
+ * Mounts an ultra-smooth, lightweight, power-efficient Iridescence WebGL background instance.
  * 
  * @param {HTMLElement} ctn - Target container element
  * @param {Object} options - Configuration options
  * @param {number[]} [options.color=[1, 1, 1]] - RGB color modulation [r, g, b]
  * @param {number} [options.speed=2.7] - Speed of wave motion
- * @param {number} [options.amplitude=1.0] - Distortion amplitude (including mouse reactivity)
+ * @param {number} [options.amplitude=1.0] - Distortion amplitude
  * @param {boolean} [options.mouseReact=true] - Whether to react to mouse movement
  * @param {HTMLElement} [options.mouseTarget] - Element to listen for mouse moves on
  * @returns {Function} cleanup - Function to destroy and dispose the WebGL instance
@@ -71,9 +75,9 @@ export function mountIridescence(ctn, options = {}) {
   try {
     renderer = new Renderer({
       alpha: true,
-      antialias: false, // Turned off for dramatic performance boost with zero perceived loss on high DPI
-      powerPreference: 'high-performance',
-      dpr: Math.min(window.devicePixelRatio || 1, 1.35)
+      antialias: false,
+      powerPreference: 'low-power',
+      dpr: Math.min(window.devicePixelRatio || 1, 1.5)
     });
   } catch (err) {
     console.warn('WebGL not supported for Iridescence background:', err);
@@ -84,32 +88,46 @@ export function mountIridescence(ctn, options = {}) {
   gl.clearColor(0, 0, 0, 0);
 
   const mousePos = { x: 0.5, y: 0.5 };
-  let targetMouse = { x: 0.5, y: 0.5 };
+  const targetMouse = { x: 0.5, y: 0.5 };
+  const mouseArr = new Float32Array([0.5, 0.5]);
+  const resolutionColor = new Color(300, 300, 1);
+  const themeColor = new Color(...color);
+
   let program;
   let isVisible = true;
   let animateId = null;
   let resizeRafId = null;
+  let lastFrameTime = 0;
+  const targetFPS = 60;
+  const frameInterval = 1000 / targetFPS; // ~16.6ms max frame rate limiter
 
   function resize() {
     if (!ctn) return;
     const width = ctn.offsetWidth || ctn.clientWidth || window.innerWidth || 300;
     const height = ctn.offsetHeight || ctn.clientHeight || window.innerHeight || 300;
     
-    // Balanced DPR for flawless 60-120fps on all mobile and desktop devices
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.35);
-    renderer.setSize(width * dpr, height * dpr);
-    gl.canvas.style.width = '100%';
-    gl.canvas.style.height = '100%';
-    gl.canvas.style.transform = 'translateZ(0)';
-    gl.canvas.style.willChange = 'transform';
-    gl.canvas.style.pointerEvents = 'none';
+    // Balanced crisp DPR (max 1.5x) eliminates pixelation without GPU strain
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    renderer.setSize(Math.round(width * dpr), Math.round(height * dpr));
+    
+    if (gl.canvas) {
+      gl.canvas.style.width = '100%';
+      gl.canvas.style.height = '100%';
+      gl.canvas.style.position = 'absolute';
+      gl.canvas.style.top = '0';
+      gl.canvas.style.left = '0';
+      gl.canvas.style.pointerEvents = 'none';
+      gl.canvas.style.transform = 'translateZ(0)';
+      gl.canvas.style.imageRendering = 'auto';
+    }
 
     if (program && program.uniforms && program.uniforms.uResolution) {
-      program.uniforms.uResolution.value.set(
+      resolutionColor.set(
         gl.canvas.width,
         gl.canvas.height,
         gl.canvas.width / Math.max(1, gl.canvas.height)
       );
+      program.uniforms.uResolution.value = resolutionColor;
     }
   }
 
@@ -124,11 +142,9 @@ export function mountIridescence(ctn, options = {}) {
     fragment: fragmentShader,
     uniforms: {
       uTime: { value: 0 },
-      uColor: { value: new Color(...color) },
-      uResolution: {
-        value: new Color(gl.canvas.width || 300, gl.canvas.height || 300, (gl.canvas.width || 300) / Math.max(1, gl.canvas.height || 300))
-      },
-      uMouse: { value: new Float32Array([mousePos.x, mousePos.y]) },
+      uColor: { value: themeColor },
+      uResolution: { value: resolutionColor },
+      uMouse: { value: mouseArr },
       uAmplitude: { value: amplitude },
       uSpeed: { value: speed }
     }
@@ -139,16 +155,27 @@ export function mountIridescence(ctn, options = {}) {
   // Initial sizing
   resize();
 
-  // Animation loop with steady framerate preservation
+  // Smooth, locked 60 FPS render loop with power-saving pause guards
   function update(t) {
     animateId = requestAnimationFrame(update);
-    if (!isVisible || document.hidden) return;
 
-    // Smooth mouse interpolation for fluid liquid feel
+    // Power savings: Skip rendering when document is hidden or modal full-screen is open or offscreen
+    if (!isVisible || document.hidden || document.body.classList.contains('modal-open')) {
+      return;
+    }
+
+    // Lock to 60 FPS maximum to prevent battery drain and thermal drops on 120Hz/144Hz displays
+    const delta = t - lastFrameTime;
+    if (delta < frameInterval - 1) {
+      return;
+    }
+    lastFrameTime = t - (delta % frameInterval);
+
+    // Smooth mouse lerp
     mousePos.x += (targetMouse.x - mousePos.x) * 0.08;
     mousePos.y += (targetMouse.y - mousePos.y) * 0.08;
-    program.uniforms.uMouse.value[0] = mousePos.x;
-    program.uniforms.uMouse.value[1] = mousePos.y;
+    mouseArr[0] = mousePos.x;
+    mouseArr[1] = mousePos.y;
 
     program.uniforms.uTime.value = t * 0.001;
     renderer.render({ scene: mesh });
@@ -165,19 +192,18 @@ export function mountIridescence(ctn, options = {}) {
   }
   window.addEventListener('resize', queueResize, { passive: true });
 
-  // Keep background alive when in viewport without stutter
+  // Viewport culling observer
   let intersectionObserver = null;
   if (typeof IntersectionObserver !== 'undefined') {
     intersectionObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
-        // As long as any portion of the zone or stage is visible, keep background running
         isVisible = entry.isIntersecting || entry.intersectionRatio > 0;
       });
     }, { threshold: [0, 0.01] });
     intersectionObserver.observe(mouseTarget || ctn);
   }
 
-  // Mouse movement tracking (uses normalized viewport coords)
+  // Mouse tracking
   function handleMouseMove(e) {
     const x = e.clientX / (window.innerWidth || 1);
     const y = 1.0 - (e.clientY / (window.innerHeight || 1));
@@ -204,8 +230,8 @@ export function mountIridescence(ctn, options = {}) {
   // Tab visibility listener
   function handleVisibilityChange() {
     if (!document.hidden) {
-      // Re-trigger render immediately when returning to tab
       isVisible = true;
+      lastFrameTime = performance.now();
     }
   }
   document.addEventListener('visibilitychange', handleVisibilityChange);

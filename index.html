@@ -26,7 +26,7 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; background: var(--ink); }
 body { margin: 0; background: transparent; color: var(--paper); font-family: "DM Sans", sans-serif; line-height: 1.55; overflow-x: hidden; }
-body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: radial-gradient(circle at 18% 24%, color-mix(in srgb, var(--brand-deep) 30%, transparent) 0, transparent 38%), radial-gradient(circle at 82% 62%, color-mix(in srgb, var(--signal) 18%, transparent) 0, transparent 34%), var(--ink); pointer-events: none; transform: translateZ(0); will-change: transform; }
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: radial-gradient(circle at 18% 24%, color-mix(in srgb, var(--brand-deep) 30%, transparent) 0, transparent 38%), radial-gradient(circle at 82% 62%, color-mix(in srgb, var(--signal) 18%, transparent) 0, transparent 34%), var(--ink); pointer-events: none; }
 a { color: inherit; text-decoration: none; }
 button, input, textarea, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
@@ -80,32 +80,31 @@ h1 { max-width: 760px; font-size: clamp(5rem, 15vw, 11.5rem); }
 .timeline { display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; gap: 14px; padding: 0 0 28px; color: var(--muted); font-size: .75rem; }
 input[type="range"] { width: 100%; height: 3px; accent-color: var(--signal); cursor: pointer; }
 .playlist { border: none; }
-.track { position: relative; width: 100%; display: grid; grid-template-columns: 36px minmax(0, max-content) 1fr auto; align-items: center; gap: 14px; padding: 20px 18px; border: 1px solid rgba(255, 255, 255, 0.15); background: transparent; color: var(--paper); text-align: left; cursor: pointer; transition: background .3s ease, transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease; }
+.track { position: relative; width: 100%; display: grid; grid-template-columns: 36px 1fr auto; align-items: center; gap: 14px; padding: 20px 18px; border: 1px solid rgba(255, 255, 255, 0.15); background: transparent; color: var(--paper); text-align: left; cursor: pointer; transition: background .3s ease, transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease; }
 .track::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 2px; background: var(--signal); transform: scaleY(0); transition: transform .3s ease; }
 .track:hover { z-index: 1; background: color-mix(in srgb, var(--signal) 10%, var(--panel)); transform: translateX(6px); box-shadow: -12px 0 40px rgba(0, 0, 0, .18); }
 .track:hover::before, .track.active::before { transform: scaleY(1); }
 .track.active { background: color-mix(in srgb, var(--signal) 8%, var(--panel)); }
 .track-number, .track .track-number, .track.active .track-number { color: #14182A !important; font-size: .78rem !important; font-weight: 400 !important; }
 .track.active .track-action { color: var(--signal-bright); }
-.track-name { min-width: 0; font-weight: 700; }
+.track-name { min-width: 0; font-weight: 700; padding-right: 110px; }
 .track-name small { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--muted); font-weight: 400; }
-.track-tap-prompt { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.25); border: 1px solid rgba(20, 24, 42, 0.2); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 1.5px rgba(255, 255, 255, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); justify-self: center; margin-inline: auto; opacity: 0; transform: scale(0.85); pointer-events: none; transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); will-change: opacity, transform; user-select: none; white-space: nowrap; }
-.track-tap-prompt.is-visible { opacity: 1; transform: scale(1); }
-.tap-gesture-box { position: relative; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.tap-hand-svg { width: 16px; height: 16px; stroke: #14182A; fill: rgba(20, 24, 42, 0.12); transform-origin: 50% 90%; animation: tapHandAction 3s ease-in-out infinite; }
-.tap-ripple-effect { position: absolute; top: 0px; left: 3px; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #14182A; opacity: 0; pointer-events: none; animation: tapRippleWave 3s ease-out infinite; }
-.tap-action-wrap { position: relative; display: inline-flex; align-items: center; min-width: 40px; height: 18px; }
-.tap-action-state { position: absolute; left: 0; font-size: 0.76rem; font-weight: 700; letter-spacing: 0.02em; color: #14182A; white-space: nowrap; transition: opacity 0.22s ease, transform 0.22s ease; }
-.action-play { animation: tapPlaySwitch 3s ease-in-out infinite; }
-.action-pause { animation: tapPauseSwitch 3s ease-in-out infinite; }
-.track.is-playing .tap-hand-svg { animation: none !important; }
-.track.is-playing .tap-ripple-effect { animation: none !important; }
-.track.is-playing .action-play { animation: none !important; opacity: 0 !important; transform: translateY(-5px) !important; }
-.track.is-playing .action-pause { animation: none !important; opacity: 1 !important; transform: translateY(0) !important; }
-@keyframes tapHandAction { 0% { transform: translateY(0) scale(1); } 8% { transform: translateY(3px) scale(0.92); } 16% { transform: translateY(0) scale(1); } 46% { transform: translateY(0) scale(1); } 54% { transform: translateY(3px) scale(0.92); } 62% { transform: translateY(0) scale(1); } 100% { transform: translateY(0) scale(1); } }
-@keyframes tapRippleWave { 0%, 6% { opacity: 0; transform: scale(0.4); } 8% { opacity: 0.85; transform: scale(0.65); } 22% { opacity: 0; transform: scale(2.2); } 46%, 52% { opacity: 0; transform: scale(0.4); } 54% { opacity: 0.85; transform: scale(0.65); } 68% { opacity: 0; transform: scale(2.2); } 100% { opacity: 0; transform: scale(0.4); } }
-@keyframes tapPlaySwitch { 0%, 46% { opacity: 1; transform: translateY(0); } 50%, 96% { opacity: 0; transform: translateY(-5px); } 100% { opacity: 1; transform: translateY(0); } }
-@keyframes tapPauseSwitch { 0%, 46% { opacity: 0; transform: translateY(5px); } 50%, 96% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(5px); } }
+.track-tap-prompt { position: absolute !important; left: 54% !important; right: auto !important; top: 50% !important; transform: translateY(-50%) !important; z-index: 5 !important; display: inline-flex !important; align-items: center !important; justify-content: flex-start !important; gap: 8px !important; padding: 0 !important; margin: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; opacity: 0; pointer-events: none !important; user-select: none !important; white-space: nowrap !important; will-change: opacity, transform; }
+.track-tap-prompt.is-visible { animation: tapPromptLifecycle 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.track-tap-prompt.is-visible .tap-hand-svg { animation: tapHandAction 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.track-tap-prompt.is-visible .tap-ripple-effect { animation: tapRippleWave 2.5s ease-out forwards; }
+.track-tap-prompt.is-visible .action-play { animation: tapPlaySeq 2.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+.track-tap-prompt.is-visible .action-pause { animation: tapPauseSeq 2.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+.tap-gesture-box { position: relative; width: 17px; height: 17px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.tap-hand-svg { width: 16px; height: 16px; stroke: #000000; stroke-width: 1.3px !important; fill: none !important; transform-origin: 50% 90%; will-change: transform, opacity; }
+.tap-ripple-effect { position: absolute; top: 0px; left: 3px; width: 12px; height: 12px; border-radius: 50%; border: 1px solid #000000; opacity: 0; pointer-events: none; will-change: transform, opacity; }
+.tap-action-wrap { position: relative; display: inline-flex; align-items: center; min-width: 44px; height: 18px; perspective: 240px; transform-style: preserve-3d; }
+.tap-action-state { position: absolute; left: 0; top: 50%; transform: translateY(-50%); transform-origin: 50% 50%; font-family: "Work Sans", sans-serif; font-size: 0.78rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; color: #000000; white-space: nowrap; opacity: 0; backface-visibility: hidden; will-change: opacity, transform; }
+@keyframes tapPromptLifecycle { 0% { opacity: 0; transform: translateY(-50%) scale(0.82); } 8% { opacity: 1; transform: translateY(-50%) scale(1.02); } 12% { opacity: 1; transform: translateY(-50%) scale(1); } 82% { opacity: 1; transform: translateY(-50%) scale(1); } 96%, 100% { opacity: 0; transform: translateY(-50%) scale(0.82); pointer-events: none; } }
+@keyframes tapHandAction { 0% { opacity: 0; transform: translateY(6px) scale(0.82); } 7% { opacity: 1; transform: translateY(0) scale(1.03); } 10% { transform: translateY(0) scale(1); } 13% { transform: translateY(3.2px) scale(0.92); } 19% { transform: translateY(0) scale(1); } 46% { transform: translateY(0) scale(1); } 52% { transform: translateY(3.2px) scale(0.92); } 58% { transform: translateY(0) scale(1); } 82% { opacity: 1; transform: translateY(0) scale(1); } 96%, 100% { opacity: 0; transform: translateY(4px) scale(0.85); } }
+@keyframes tapRippleWave { 0%, 12.9% { opacity: 0; transform: scale(0.4); } 13% { opacity: 0.85; transform: scale(0.4); } 26% { opacity: 0; transform: scale(2.0); } 27%, 51.9% { opacity: 0; transform: scale(0.4); } 52% { opacity: 0.85; transform: scale(0.4); } 65% { opacity: 0; transform: scale(2.0); } 66%, 100% { opacity: 0; transform: scale(0.4); } }
+@keyframes tapPlaySeq { 0%, 11.9% { opacity: 0; transform: translateY(-50%) scale(0.85); } 13% { opacity: 0.5; transform: translateY(-50%) scale(0.92); } 18% { opacity: 1; transform: translateY(-50%) scale(1); } 51.9% { opacity: 1; transform: translateY(-50%) rotateX(0deg); } 52% { opacity: 1; transform: translateY(-50%) rotateX(0deg); } 58% { opacity: 0; transform: translateY(calc(-50% + 8px)) rotateX(75deg); } 100% { opacity: 0; transform: translateY(calc(-50% + 8px)) rotateX(75deg); } }
+@keyframes tapPauseSeq { 0%, 51.9% { opacity: 0; transform: translateY(calc(-50% - 8px)) rotateX(-75deg); } 52% { opacity: 0; transform: translateY(calc(-50% - 8px)) rotateX(-75deg); } 58% { opacity: 1; transform: translateY(-50%) rotateX(0deg); } 82% { opacity: 1; transform: translateY(-50%); } 96%, 100% { opacity: 0; transform: translateY(-50%) scale(0.85); } }
 .track-length, .track-action { color: var(--muted); font-size: .78rem; }
 .track-length { justify-self: end; text-align: right; }
 .track-action { display: none !important; }
@@ -152,7 +151,7 @@ select option { background: #181723; color: #ffffff; }
 .contact-copyright { grid-column: 1 / -1; margin: 56px 0 0; padding-top: 28px; border-top: 1px solid color-mix(in srgb, var(--paper) 15%, transparent); color: #232230; font-size: .72rem; font-weight: 400; text-align: center; }
 @media (min-width: 1200px) { .contact { background-size: 100% 100%; } }
 @media (max-width: 820px) { nav { display: none; } .vertical-note { display: none; } .hero-content { padding-bottom: 64px; } .section { padding: 80px 0; } .contact { padding-inline: 20px; } .section-heading { align-items: flex-start; flex-direction: column; gap: 22px; } .now-playing { grid-template-columns: 105px 1fr auto; gap: 18px; } .main-play { width: 58px; height: 58px; } .service-grid { grid-template-columns: 1fr; } .service-card { min-height: 470px; border-right: 0; border-bottom: 1px solid color-mix(in srgb, var(--paper) 15%, transparent); } .service-card:last-child { border-bottom: 0; } .contact { grid-template-columns: 1fr; gap: 64px; } .contact h2 { font-size: clamp(3rem, 12vw, 5rem); white-space: normal; } .contact-copyright { margin-top: 20px; } }
-@media (max-width: 560px) { h1 { font-size: clamp(4.2rem, 25vw, 7rem); } .now-playing { grid-template-columns: 76px 1fr; } .main-play { grid-column: 1 / -1; width: 100%; height: 48px; border-radius: 2px; } .track { grid-template-columns: 28px minmax(0, max-content) 1fr auto; padding-inline: 14px; gap: 8px; } .track-tap-prompt { padding: 3px 8px; gap: 4px; } .tap-hand-svg { width: 14px; height: 14px; } .tap-action-wrap { min-width: 34px; } .tap-action-state { font-size: 0.7rem; } .form-row { grid-template-columns: 1fr; gap: 24px; } .service-card { padding: 28px 24px; } }
+@media (max-width: 560px) { h1 { font-size: clamp(4.2rem, 25vw, 7rem); } .now-playing { grid-template-columns: 76px 1fr; } .main-play { grid-column: 1 / -1; width: 100%; height: 48px; border-radius: 2px; } .track { grid-template-columns: 28px 1fr auto; padding-inline: 14px; gap: 8px; } .track-name { padding-right: 76px !important; } .track-tap-prompt { right: 50px !important; gap: 5px !important; } .tap-hand-svg { width: 15px !important; height: 15px !important; } .tap-action-wrap { min-width: 34px !important; } .tap-action-state { font-size: 0.72rem !important; } .form-row { grid-template-columns: 1fr; gap: 24px; } .service-card { padding: 28px 24px; } }
 .hero-photo img { object-fit: fill; transform: translateZ(0); filter: none; backface-visibility: hidden; }
 .hero-content { display: flex; flex-direction: column; align-items: center; text-align: center; }
 .hero-copy { margin-inline: auto; }
@@ -384,7 +383,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab;
   }
   .track {
     display: grid !important;
-    grid-template-columns: 24px minmax(0, max-content) 1fr auto !important;
+    grid-template-columns: 24px 1fr auto !important;
     gap: 8px !important;
     padding: 14px 12px !important;
     border-radius: 14px !important;
@@ -397,6 +396,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+    padding-right: 90px !important;
   }
   .track-name small {
     display: block !important;
@@ -405,6 +405,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab;
     text-overflow: ellipsis !important;
   }
   .track-length { font-size: 0.78rem !important; }
+  .track-tap-prompt { right: 62px !important; }
   .track-action { width: 36px !important; height: 36px !important; min-width: 36px !important; }
   .track-visualizer { display: none !important; }
   .services { padding-inline: 18px !important; width: 100% !important; }
@@ -847,12 +848,12 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
               </div>
             </div>
             <div class="playlist" id="playlist" aria-label="Beat playlist">
-              <button class="track active" type="button" data-src="./assets/audio/feeling mello.mp3" data-title="Feeling Mello" data-style="Original production" aria-label="Play Feeling Mello"><span class="track-number">01</span><span class="track-name">Feeling Mello<small>Original production</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:44</span></button>
-              <button class="track" type="button" data-src="./assets/audio/broken jar mastered.mp3" data-title="Broken Jar" data-style="Mastered production" aria-label="Play Broken Jar"><span class="track-number">02</span><span class="track-name">Broken Jar<small>Mastered production</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:38</span></button>
-              <button class="track" type="button" data-src="./assets/audio/Kpop beat.mp3" data-title="Kpop Beat" data-style="K-Pop production" aria-label="Play Kpop Beat"><span class="track-number">03</span><span class="track-name">Kpop Beat<small>K-Pop production</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">1:14</span></button>
-              <button class="track" type="button" data-src="./assets/audio/Kensuke.mp3" data-title="Kensuke" data-style="Original production" aria-label="Play Kensuke"><span class="track-number">04</span><span class="track-name">Kensuke<small>Original production</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:45</span></button>
-              <button class="track" type="button" data-src="./assets/audio/K-Pop post fx.mp3" data-title="K-Pop Post FX" data-style="Post-production mix" aria-label="Play K-Pop Post FX"><span class="track-number">05</span><span class="track-name">K-Pop Post FX<small>Post-production mix</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:14</span></button>
-              <button class="track" type="button" data-src="./assets/audio/Aiobahn maybe last mix.mp3" data-title="Aiobahn Maybe Last Mix" data-style="Final mix" aria-label="Play Aiobahn Maybe Last Mix"><span class="track-number">06</span><span class="track-name">Aiobahn Maybe Last Mix<small>Final mix</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:53</span></button>
+              <button class="track active" type="button" data-src="./assets/audio/feeling mello.mp3" data-title="Feeling Mello" data-style="Original production" aria-label="Play Feeling Mello"><span class="track-number">01</span><span class="track-name">Feeling Mello<small>Original production</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:44</span></button>
+              <button class="track" type="button" data-src="./assets/audio/broken jar mastered.mp3" data-title="Broken Jar" data-style="Mastered production" aria-label="Play Broken Jar"><span class="track-number">02</span><span class="track-name">Broken Jar<small>Mastered production</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:38</span></button>
+              <button class="track" type="button" data-src="./assets/audio/Kpop beat.mp3" data-title="Kpop Beat" data-style="K-Pop production" aria-label="Play Kpop Beat"><span class="track-number">03</span><span class="track-name">Kpop Beat<small>K-Pop production</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">1:14</span></button>
+              <button class="track" type="button" data-src="./assets/audio/Kensuke.mp3" data-title="Kensuke" data-style="Original production" aria-label="Play Kensuke"><span class="track-number">04</span><span class="track-name">Kensuke<small>Original production</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:45</span></button>
+              <button class="track" type="button" data-src="./assets/audio/K-Pop post fx.mp3" data-title="K-Pop Post FX" data-style="Post-production mix" aria-label="Play K-Pop Post FX"><span class="track-number">05</span><span class="track-name">K-Pop Post FX<small>Post-production mix</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:14</span></button>
+              <button class="track" type="button" data-src="./assets/audio/Aiobahn maybe last mix.mp3" data-title="Aiobahn Maybe Last Mix" data-style="Final mix" aria-label="Play Aiobahn Maybe Last Mix"><span class="track-number">06</span><span class="track-name">Aiobahn Maybe Last Mix<small>Final mix</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:53</span></button>
             </div>
             <audio id="audio" preload="auto" src="./assets/audio/feeling mello.mp3"></audio>
           </div>
@@ -1004,8 +1005,10 @@ let animHideTimeout = null;
 let playReappearTimeout = null;
 
 function showTrackTapPrompts() {
-  if (isPermanentlyDismissedTrackAnim) return;
+  if (isPermanentlyDismissedTrackAnim || userHasPlayedTrack) return;
   trackTapPrompts.forEach((prompt) => {
+    prompt.classList.remove('is-visible');
+    void prompt.offsetWidth; // Trigger DOM reflow to restart CSS keyframes reliably
     prompt.classList.add('is-visible');
   });
 }
@@ -1016,10 +1019,25 @@ function hideTrackTapPrompts() {
   });
 }
 
+function runIdleCycle() {
+  if (userHasPlayedTrack || isPermanentlyDismissedTrackAnim) return;
+  showTrackTapPrompts();
+
+  animHideTimeout = setTimeout(() => {
+    if (userHasPlayedTrack || isPermanentlyDismissedTrackAnim) return;
+    hideTrackTapPrompts();
+
+    idleLoopTimeout = setTimeout(() => {
+      if (!userHasPlayedTrack && !isPermanentlyDismissedTrackAnim) {
+        runIdleCycle();
+      }
+    }, 7000);
+  }, 2500);
+}
+
 function permanentlyDismissTrackTapPrompts() {
   if (isPermanentlyDismissedTrackAnim) return;
   isPermanentlyDismissedTrackAnim = true;
-  hideTrackTapPrompts();
   if (idleLoopTimeout) {
     clearTimeout(idleLoopTimeout);
     idleLoopTimeout = null;
@@ -1032,25 +1050,12 @@ function permanentlyDismissTrackTapPrompts() {
     clearTimeout(playReappearTimeout);
     playReappearTimeout = null;
   }
+  hideTrackTapPrompts();
   setTimeout(() => {
     trackTapPrompts.forEach((prompt) => {
       prompt.style.display = 'none';
     });
-  }, 500);
-}
-
-function runIdleCycle() {
-  if (userHasPlayedTrack || isPermanentlyDismissedTrackAnim) return;
-  showTrackTapPrompts();
-  animHideTimeout = setTimeout(() => {
-    if (userHasPlayedTrack || isPermanentlyDismissedTrackAnim) return;
-    hideTrackTapPrompts();
-    idleLoopTimeout = setTimeout(() => {
-      if (!userHasPlayedTrack && !isPermanentlyDismissedTrackAnim) {
-        runIdleCycle();
-      }
-    }, 7000);
-  }, 3000);
+  }, 400);
 }
 
 function triggerInitialTrackAnim() {
@@ -1074,12 +1079,17 @@ function triggerPlayTrackAnim() {
 
   hideTrackTapPrompts();
 
+  // 15-second logic: Reappears once for a reminder cycle, then permanently dismisses
   playReappearTimeout = setTimeout(() => {
     if (isPermanentlyDismissedTrackAnim) return;
-    showTrackTapPrompts();
+    trackTapPrompts.forEach((prompt) => {
+      prompt.classList.remove('is-visible');
+      void prompt.offsetWidth;
+      prompt.classList.add('is-visible');
+    });
     setTimeout(() => {
       permanentlyDismissTrackTapPrompts();
-    }, 3000);
+    }, 2500);
   }, 15000);
 }
 
