@@ -342,7 +342,7 @@ nav a:hover, nav a:focus-visible,
 }
 
 .view-subtitle {
-  color: #111827;
+  color: var(--muted);
   font-size: clamp(1rem, 1.4vw, 1.2rem);
   font-weight: 500;
   line-height: 1.6;
@@ -905,7 +905,7 @@ nav a:hover, nav a:focus-visible,
 
 .kokonut-card-subtitle {
   font-size: 0.8rem;
-  color: #111827;
+  color: var(--muted);
   font-weight: 500;
   margin: 3px 0 0 0;
 }
@@ -2592,5 +2592,52 @@ nav a:hover, nav a:focus-visible,
   }
 }
 
-/* Master Liquid Glassmorphism is managed comprehensively via Iridescence.css */
+/* ==========================================================================
+   Restoration for Buy Beats, Sessions, and Send Audio
+   Reverts all liquid glass, floating animations, and 3D tilts to original styles
+   ========================================================================== */
+.beats-view .beat-card,
+.beats-view .license-card,
+.sessions-view .kokonut-form-card,
+.sessions-view .kokonut-card,
+.send-audio-view .upload-dropzone-card,
+.send-audio-view .dropzone,
+.send-audio-view .kokonut-form-card,
+.beat-card,
+.license-card,
+.session-card,
+.kokonut-form-card,
+.upload-dropzone-card {
+  animation: none !important;
+  transform: none !important;
+}
+
+.beat-card:hover {
+  transform: translateY(-2px) !important;
+}
+
+.license-card:hover {
+  transform: translateY(-2px) !important;
+}
+
+.kokonut-form-card:hover {
+  transform: none !important;
+}
+
+.beat-card::before,
+.beat-card::after,
+.license-card::before,
+.license-card::after,
+.session-card::before,
+.session-card::after,
+.kokonut-form-card::before,
+.kokonut-form-card::after,
+.kokonut-card::before,
+.kokonut-card::after,
+.upload-dropzone-card::before,
+.upload-dropzone-card::after {
+  display: none !important;
+  content: none !important;
+}
+
 

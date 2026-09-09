@@ -25,6 +25,16 @@ const activeCards = new WeakSet();
  */
 export function attachTiltToCard(card, index = 0) {
   if (!card || activeCards.has(card)) return;
+
+  // Strictly skip Buy Beats, Sessions, and Send Audio sections - revert to original static state
+  if (
+    card.closest('.fullscreen-view-container') ||
+    card.closest('.beats-view, .sessions-view, .send-audio-view') ||
+    card.matches('.beat-card, .license-card, .session-card, .kokonut-form-card, .kokonut-card, .upload-dropzone-card, .dropzone')
+  ) {
+    return;
+  }
+
   activeCards.add(card);
 
   const isNowPlaying = card.classList.contains('now-playing') || 
@@ -183,12 +193,6 @@ const CARD_SELECTORS = [
   '.process-closing',
   '.service-card',
   '.delivery-panel',
-  '.beat-card',
-  '.license-card',
-  '.session-card',
-  '.kokonut-form-card',
-  '.kokonut-card',
-  '.upload-dropzone-card',
   '.order-card',
   '.support-card',
   '.cert-card',
