@@ -12,8 +12,82 @@
  * - Seamless support for reduced motion preferences
  */
 
+let activeScrollAnimationFrame = null;
+
+function customFastScrollToY(targetY, isReduced, callback) {
+  if (typeof window === 'undefined') return;
+
+  if (isReduced) {
+    window.scrollTo(0, targetY);
+    if (typeof callback === 'function') callback();
+    return;
+  }
+
+  const startY = window.scrollY || window.pageYOffset;
+  const distance = targetY - startY;
+  const absDist = Math.abs(distance);
+
+  if (absDist < 2) {
+    window.scrollTo(0, targetY);
+    if (typeof callback === 'function') callback();
+    return;
+  }
+
+  if (activeScrollAnimationFrame) {
+    cancelAnimationFrame(activeScrollAnimationFrame);
+    activeScrollAnimationFrame = null;
+  }
+
+  // Freeze hover state triggers and pointer events during high-speed motion
+  document.body.classList.add('is-fast-scrolling');
+
+  // Ultra-snappy duration (150ms min, 210ms max) for instant response
+  const duration = Math.min(210, Math.max(150, Math.pow(absDist, 0.36) * 7.5));
+  const startTime = performance.now();
+
+  // Instant easeOutQuart curve: launches immediately on Frame 1 without slow S-curve delays
+  const easeOutQuart = (t) => 1 - Math.pow(1 - t, 4);
+
+  const cleanupFastScroll = () => {
+    document.body.classList.remove('is-fast-scrolling');
+    window.removeEventListener('wheel', cancelOnUserInteraction);
+    window.removeEventListener('touchstart', cancelOnUserInteraction);
+  };
+
+  const cancelOnUserInteraction = () => {
+    if (activeScrollAnimationFrame) {
+      cancelAnimationFrame(activeScrollAnimationFrame);
+      activeScrollAnimationFrame = null;
+    }
+    cleanupFastScroll();
+  };
+
+  window.addEventListener('wheel', cancelOnUserInteraction, { passive: true, once: true });
+  window.addEventListener('touchstart', cancelOnUserInteraction, { passive: true, once: true });
+
+  const step = (currentTime) => {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(1, elapsed / duration);
+    const easeProgress = easeOutQuart(progress);
+
+    const currentY = startY + distance * easeProgress;
+    window.scrollTo(0, Math.round(currentY));
+
+    if (progress < 1) {
+      activeScrollAnimationFrame = requestAnimationFrame(step);
+    } else {
+      activeScrollAnimationFrame = null;
+      window.scrollTo(0, targetY);
+      cleanupFastScroll();
+      if (typeof callback === 'function') callback();
+    }
+  };
+
+  activeScrollAnimationFrame = requestAnimationFrame(step);
+}
+
 /**
- * Scroll smoothly to an element, selector, or pixel position.
+ * Scroll smoothly to an element, selector, or pixel position with snappy execution.
  * 
  * @param {HTMLElement|string|number} target - Target element, ID/selector, or pixel Y
  * @param {Object} [options]
@@ -24,18 +98,10 @@ export function fastSmoothScrollTo(target, options = {}) {
   const isReduced = typeof window !== 'undefined' &&
     window.matchMedia &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const behavior = isReduced ? 'auto' : 'smooth';
 
   // 1. Scroll to Top
   if (target === 0 || target === 'top' || target === '#top') {
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior
-    });
-    if (typeof options.onComplete === 'function') {
-      setTimeout(options.onComplete, isReduced ? 0 : 450);
-    }
+    customFastScrollToY(0, isReduced, options.onComplete);
     return;
   }
 
@@ -51,7 +117,7 @@ export function fastSmoothScrollTo(target, options = {}) {
     el = target;
   }
 
-  // 3. Perform Smooth Scroll exactly to section start
+  // 3. Perform Fast Smooth Scroll exactly to section start
   if (el) {
     const getHeaderOffset = () => {
       const headerEl = typeof document !== 'undefined' ? document.querySelector('.site-header') : null;
@@ -61,67 +127,21 @@ export function fastSmoothScrollTo(target, options = {}) {
       return window.innerWidth <= 820 ? 54 : 68;
     };
 
-    const performScroll = (scrollBehavior) => {
-      const headerOffset = getHeaderOffset();
-      const isDesktop = typeof window !== 'undefined' && window.innerWidth > 820;
-      const isContactTarget = target === 'contact' || target === '#contact' || (el && el.id === 'contact');
+    const headerOffset = getHeaderOffset();
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth > 820;
+    const isContactTarget = target === 'contact' || target === '#contact' || (el && el.id === 'contact');
 
-      let targetY;
-      if (isContactTarget && isDesktop) {
-        targetY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-      } else {
-        const rect = el.getBoundingClientRect();
-        targetY = Math.max(0, Math.round(rect.top + window.scrollY - headerOffset + (options.offset || 0)));
-      }
-
-      window.scrollTo({
-        top: targetY,
-        left: 0,
-        behavior: scrollBehavior
-      });
-      return { targetY, headerOffset, isContactTarget, isDesktop };
-    };
-
-    const { headerOffset, isContactTarget, isDesktop } = performScroll(behavior);
-
-    // Single post-animation verification pass (550ms) after smooth scroll completes.
-    // Never interrupt an in-flight smooth scroll animation mid-flight!
-    if (behavior === 'smooth') {
-      setTimeout(() => {
-        if (isContactTarget && isDesktop) {
-          const maxScrollY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-          if (Math.abs(window.scrollY - maxScrollY) > 12) {
-            window.scrollTo({
-              top: maxScrollY,
-              left: 0,
-              behavior: 'smooth'
-            });
-          }
-        } else {
-          const currentHeaderOffset = getHeaderOffset();
-          const currentRect = el.getBoundingClientRect();
-          const delta = Math.abs(currentRect.top - currentHeaderOffset - (options.offset || 0));
-          if (delta > 12) {
-            const adjustedY = Math.max(0, Math.round(currentRect.top + window.scrollY - currentHeaderOffset + (options.offset || 0)));
-            window.scrollTo({
-              top: adjustedY,
-              left: 0,
-              behavior: 'smooth'
-            });
-          }
-        }
-      }, 550);
+    let targetY;
+    if (isContactTarget && isDesktop) {
+      targetY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    } else {
+      const rect = el.getBoundingClientRect();
+      targetY = Math.max(0, Math.round(rect.top + window.scrollY - headerOffset + (options.offset || 0)));
     }
-  } else if (typeof target === 'number') {
-    window.scrollTo({
-      top: target,
-      left: 0,
-      behavior
-    });
-  }
 
-  if (typeof options.onComplete === 'function') {
-    setTimeout(options.onComplete, isReduced ? 0 : 450);
+    customFastScrollToY(targetY, isReduced, options.onComplete);
+  } else if (typeof target === 'number') {
+    customFastScrollToY(target, isReduced, options.onComplete);
   }
 }
 

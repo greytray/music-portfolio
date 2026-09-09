@@ -32,7 +32,7 @@ body { margin: 0; background: transparent; color: var(--paper); font-family: "DM
 body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: radial-gradient(circle at 18% 24%, color-mix(in srgb, var(--brand-deep) 30%, transparent) 0, transparent 38%), radial-gradient(circle at 82% 62%, color-mix(in srgb, var(--signal) 18%, transparent) 0, transparent 34%), var(--ink); pointer-events: none; }
 a { color: inherit; text-decoration: none; }
 button, input, textarea, select { font: inherit; }
-button, a { -webkit-tap-highlight-color: transparent; }
+button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .site-header { position: sticky; z-index: 1000; top: 0; left: 0; right: 0; width: 100%; transform: none; display: flex; align-items: center; justify-content: space-between; padding: 16px var(--page-gutter, 28px); box-sizing: border-box; background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.05) 100%); backdrop-filter: blur(36px) saturate(200%) brightness(112%); -webkit-backdrop-filter: blur(36px) saturate(200%) brightness(112%); border-bottom: 1px solid rgba(255, 255, 255, 0.22); box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.45), 0 16px 40px -10px rgba(0, 0, 0, 0.35), 0 4px 12px -2px rgba(0, 0, 0, 0.15); }
 .brand { display: inline-block; font-family: "Dela Gothic One", sans-serif; line-height: 1.15; font-weight: 400; letter-spacing: 0.01em; font-size: 1.15rem; color: var(--paper); }
 .brand span, em { color: var(--signal); font-style: normal; }
@@ -46,7 +46,8 @@ nav a:hover, nav a:focus-visible { color: #9084ff; }
 .hero .eyebrow, .hero-eyebrow { color: #111827; font-size: .72rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; text-shadow: none; margin: 0 auto 18px; text-align: center; }
 h1, h2, h3 { display: block; font-family: "Dela Gothic One", sans-serif; line-height: 1.15; margin: 0; color: #ffffff; font-weight: 400; letter-spacing: 0.01em; }
 h1 { max-width: 760px; font-size: clamp(5rem, 15vw, 11.5rem); }
-#hero-title { display: inline-block; color: #ffffff; transform: translateZ(0); will-change: text-shadow; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; font-feature-settings: "kern" 1, "liga" 1; font-kerning: normal; backface-visibility: hidden; text-shadow: 0 0 1px rgba(250, 0, 255, 0.90), 0 0 3px rgba(250, 0, 255, 0.80), 0 0 8px rgba(250, 0, 255, 0.65), 0 0 20px rgba(250, 0, 255, 0.50), 0 0 45px rgba(250, 0, 255, 0.35), 0 0 80px rgba(250, 0, 255, 0.22), 0 0 130px rgba(250, 0, 255, 0.12); }
+#hero-title { display: inline-block; color: #ffffff; transform: translateZ(0); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; font-feature-settings: "kern" 1, "liga" 1; font-kerning: normal; backface-visibility: hidden; text-shadow: 0 0 4px rgba(250, 0, 255, 0.85), 0 0 20px rgba(250, 0, 255, 0.55), 0 0 50px rgba(250, 0, 255, 0.25); }
+body.is-fast-scrolling, body.is-fast-scrolling * { pointer-events: none !important; }
 .hero-copy { max-width: 680px; margin: 28px auto 0; color: #111827; font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 500; text-align: center; }
 @media (min-width: 821px) {
   .hero-copy { max-width: none; margin-inline: auto; }

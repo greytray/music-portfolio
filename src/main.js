@@ -162,9 +162,7 @@ export function initHiddenPageArchitecture() {
         navigateTo: (dest) => {
           if (dest === 'top' || dest === 'showcase' || dest === 'contact' || dest === 'services' || dest === 'process' || dest === 'delivery') {
             closeCurrentView();
-            setTimeout(() => {
-              fastSmoothScrollTo(dest === 'top' ? 0 : dest);
-            }, 60);
+            fastSmoothScrollTo(dest === 'top' ? 0 : dest);
           } else {
             openView(dest);
           }
@@ -233,21 +231,15 @@ export function initHiddenPageArchitecture() {
     });
   });
 
-  // Attach smooth scrolling buttons with luxury pillowy easing
+  // Attach smooth scrolling buttons with instant execution
   document.querySelectorAll('[data-scroll-to]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       const targetId = btn.dataset.scrollTo;
       if (currentOpenViewId) {
         closeCurrentView();
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            fastSmoothScrollTo(targetId === 'top' ? 0 : targetId);
-          }, 60);
-        });
-      } else {
-        fastSmoothScrollTo(targetId === 'top' ? 0 : targetId);
       }
+      fastSmoothScrollTo(targetId === 'top' ? 0 : targetId);
     });
   });
 
@@ -267,16 +259,11 @@ export function initHiddenPageArchitecture() {
     // Check if hash is one of our dynamic views
     if (VIEW_CONFIG[rawHash]) {
       openView(rawHash, false);
-    } else if (currentOpenViewId) {
-      // Hash changed to landing section like #showcase, #services, #contact
-      closeCurrentView(false);
-      setTimeout(() => {
-        fastSmoothScrollTo(rawHash === 'top' ? 0 : rawHash);
-      }, 60);
     } else {
-      setTimeout(() => {
-        fastSmoothScrollTo(rawHash === 'top' ? 0 : rawHash);
-      }, 40);
+      if (currentOpenViewId) {
+        closeCurrentView(false);
+      }
+      fastSmoothScrollTo(rawHash === 'top' ? 0 : rawHash);
     }
   }
 
