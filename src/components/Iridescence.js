@@ -1,4 +1,5 @@
 import { Renderer, Program, Mesh, Color, Triangle } from 'ogl';
+import { getFrameInterval } from '../utils/perf.js';
 import './Iridescence.css';
 
 const vertexShader = `
@@ -98,8 +99,6 @@ export function mountIridescence(ctn, options = {}) {
   let animateId = null;
   let resizeRafId = null;
   let lastFrameTime = 0;
-  const targetFPS = 60;
-  const frameInterval = 1000 / targetFPS; // ~16.6ms max frame rate limiter
 
   function resize() {
     if (!ctn) return;
@@ -164,8 +163,9 @@ export function mountIridescence(ctn, options = {}) {
       return;
     }
 
-    // Lock to 60 FPS maximum to prevent battery drain and thermal drops on 120Hz/144Hz displays
+    // Enforce dynamic frame rate limiter (up to 120 FPS on capable devices, 60 FPS fallback on weak devices)
     const delta = t - lastFrameTime;
+    const frameInterval = getFrameInterval(120);
     if (delta < frameInterval - 1) {
       return;
     }

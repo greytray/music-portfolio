@@ -13,6 +13,8 @@
  * - Organic staggered floating levitation animations remain intact.
  */
 
+import { getFrameInterval } from './perf.js';
+
 const BASE_TILT_DEG = 8.5; // Base maximum tilt angle in degrees
 const BASE_DEPRESS_PX = 7; // Inward depth displacement in pixels
 
@@ -49,6 +51,7 @@ export function attachTiltToCard(card, index = 0) {
 
   let state = {
     rafId: null,
+    lastFrameTime: 0,
     isHovered: false,
     currentRx: 0,
     currentRy: 0,
@@ -65,7 +68,23 @@ export function attachTiltToCard(card, index = 0) {
   const hoverLerp = isNowPlaying ? 0.14 : 0.22;
   const decayLerp = isNowPlaying ? 0.08 : 0.10;
 
-  function update() {
+  function update(now) {
+    if (document.hidden || !card.isConnected || document.body.classList.contains('modal-open')) {
+      card.style.transform = '';
+      card.classList.remove('is-tilting');
+      state.rafId = null;
+      return;
+    }
+
+    const timestamp = typeof now === 'number' ? now : performance.now();
+    const delta = timestamp - state.lastFrameTime;
+    const frameInterval = getFrameInterval(120);
+    if (delta < frameInterval - 1) {
+      state.rafId = requestAnimationFrame(update);
+      return;
+    }
+    state.lastFrameTime = timestamp - (delta % frameInterval);
+
     const currentLerp = state.isHovered ? hoverLerp : decayLerp;
     state.currentRx += (state.targetRx - state.currentRx) * currentLerp;
     state.currentRy += (state.targetRy - state.currentRy) * currentLerp;

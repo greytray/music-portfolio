@@ -153,6 +153,11 @@ select option { background: #181723; color: #ffffff; }
 @media (max-width: 820px) { nav { display: none; } .vertical-note { display: none; } .hero-content { padding-bottom: 64px; } .section { padding: 80px 0; } .contact { padding-inline: 20px; } .section-heading { align-items: flex-start; flex-direction: column; gap: 22px; } .now-playing { grid-template-columns: 105px 1fr auto; gap: 18px; } .main-play { width: 58px; height: 58px; } .service-grid { grid-template-columns: 1fr; } .service-card { min-height: 470px; border-right: 0; border-bottom: 1px solid color-mix(in srgb, var(--paper) 15%, transparent); } .service-card:last-child { border-bottom: 0; } .contact { grid-template-columns: 1fr; gap: 64px; } .contact h2 { font-size: clamp(3rem, 12vw, 5rem); white-space: normal; } .contact-copyright { margin-top: 20px; } }
 @media (max-width: 560px) { h1 { font-size: clamp(4.2rem, 25vw, 7rem); } .now-playing { grid-template-columns: 76px 1fr; } .main-play { grid-column: 1 / -1; width: 100%; height: 48px; border-radius: 2px; } .track { grid-template-columns: 28px 1fr auto; padding-inline: 14px; gap: 8px; } .track-name { padding-right: 76px !important; } .track-tap-prompt { right: 50px !important; gap: 5px !important; } .tap-hand-svg { width: 15px !important; height: 15px !important; } .tap-action-wrap { min-width: 34px !important; } .tap-action-state { font-size: 0.72rem !important; } .form-row { grid-template-columns: 1fr; gap: 24px; } .service-card { padding: 28px 24px; } }
 .hero-photo img { object-fit: fill; transform: translateZ(0); filter: none; backface-visibility: hidden; }
+/* Smart Resource Management: Containment & Content Visibility for off-screen sections */
+.services, .process-section, .delivery-section, .contact {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px;
+}
 .hero-content { display: flex; flex-direction: column; align-items: center; text-align: center; }
 .hero-copy { margin-inline: auto; }
 h1 { max-width: none; }
@@ -956,6 +961,10 @@ let sourceNode;
 let frequencyData;
 let visualizerFrame;
 let timelineFrame;
+let lastVisFrameTime = 0;
+let lastTimelineFrameTime = 0;
+const getAudioFrameInterval = () => (typeof window.getSiteFrameInterval === 'function' ? window.getSiteFrameInterval(120) : (1000 / 120));
+let isShowcaseInView = true;
 let bandLevels = Array(30).fill(0);
 let kickEnvelope = 0;
 let previousKickEnergy = 0;
@@ -967,13 +976,43 @@ trackVisualizer.setAttribute('aria-hidden', 'true');
 trackVisualizer.replaceChildren(...Array.from({ length: 30 }, () => document.createElement('span')));
 activeTrack.append(trackVisualizer);
 
+// Viewport observer for Showcase audio player to disable visualizer calculations when off-screen
+if (typeof IntersectionObserver !== 'undefined') {
+  const showcaseEl = document.querySelector('#showcase') || document.querySelector('.player-shell');
+  if (showcaseEl) {
+    const scObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        isShowcaseInView = entry.isIntersecting || entry.intersectionRatio > 0;
+        if (isShowcaseInView && !audio.paused && !visualizerFrame) {
+          startVisualizer();
+        }
+      });
+    }, { threshold: [0, 0.05] });
+    scObserver.observe(showcaseEl);
+  }
+}
+
 // Do not reset audio.src if already present to preserve initial buffering
 if (!audio.getAttribute('src')) {
   audio.src = activeTrack.dataset.src;
 }
 
-function renderVisualizer() {
-  if (!analyser || audio.paused || document.hidden || reduceMotion.matches || !desktopPlayer.matches) { visualizerFrame = undefined; return; }
+function renderVisualizer(now) {
+  if (!analyser || audio.paused || document.hidden || reduceMotion.matches || !desktopPlayer.matches || !isShowcaseInView || document.body.classList.contains('modal-open')) {
+    visualizerFrame = undefined;
+    return;
+  }
+  
+  visualizerFrame = requestAnimationFrame(renderVisualizer);
+
+  const timestamp = typeof now === 'number' ? now : performance.now();
+  const delta = timestamp - lastVisFrameTime;
+  const frameInterval = getAudioFrameInterval();
+  if (delta < frameInterval - 1) {
+    return;
+  }
+  lastVisFrameTime = timestamp - (delta % frameInterval);
+
   analyser.getByteFrequencyData(frequencyData);
   const bars = [...trackVisualizer.children];
   const nyquist = audioContext.sampleRate / 2;
@@ -984,7 +1023,6 @@ function renderVisualizer() {
   const kickTarget = kickTransient > .045 ? Math.min(1, (kickTransient - .045) * 8.5) : 0;
   kickEnvelope = kickTarget > kickEnvelope ? kickTarget : kickEnvelope * .48;
   bars.forEach((bar, index) => { const distance = Math.abs(index - (bars.length - 1) / 2) / (bars.length / 2); const silhouette = .28 + Math.pow(1 - distance, .7) * .72; const target = kickEnvelope * silhouette; bandLevels[index] = target > bandLevels[index] ? target : bandLevels[index] * .46; const level = bandLevels[index] < .025 ? 0 : bandLevels[index]; bar.style.setProperty('--level', level.toFixed(3)); bar.style.setProperty('--active', level > 0 ? '1' : '0'); });
-  visualizerFrame = requestAnimationFrame(renderVisualizer);
 }
 async function ensureAudioGraph() {
   if (reduceMotion.matches || !desktopPlayer.matches) return;
@@ -1214,7 +1252,7 @@ function updateProgressFill(val) {
   progress.style.setProperty('--progress-pct', `${pct}%`);
 }
 
-function renderTimeline() {
+function renderTimeline(now) {
   if (!isUserScrubbing) {
     if (seekLockTarget !== null) {
       if (Math.abs(audio.currentTime - seekLockTarget) < 0.6 || (!audio.seeking && audio.currentTime >= seekLockTarget - 0.3)) {
@@ -1230,7 +1268,17 @@ function renderTimeline() {
       updateProgressFill(pct);
     }
   }
-  if (!audio.paused) timelineFrame = requestAnimationFrame(renderTimeline);
+  if (!audio.paused && !document.hidden && !document.body.classList.contains('modal-open')) {
+    const timestamp = typeof now === 'number' ? now : performance.now();
+    const delta = timestamp - lastTimelineFrameTime;
+    const frameInterval = getAudioFrameInterval();
+    if (delta >= frameInterval - 1) {
+      lastTimelineFrameTime = timestamp - (delta % frameInterval);
+    }
+    timelineFrame = requestAnimationFrame(renderTimeline);
+  } else {
+    timelineFrame = undefined;
+  }
 }
 
 function startTimeline() { if (!timelineFrame) timelineFrame = requestAnimationFrame(renderTimeline); }
