@@ -160,9 +160,11 @@ export function initHiddenPageArchitecture() {
       // Create view element passing navigation helper
       const viewElement = factoryFn({
         navigateTo: (dest) => {
-          if (dest === 'top' || dest === 'showcase' || dest === 'contact' || dest === 'services') {
+          if (dest === 'top' || dest === 'showcase' || dest === 'contact' || dest === 'services' || dest === 'process' || dest === 'delivery') {
             closeCurrentView();
-            fastSmoothScrollTo(dest === 'top' ? 0 : dest);
+            setTimeout(() => {
+              fastSmoothScrollTo(dest === 'top' ? 0 : dest);
+            }, 60);
           } else {
             openView(dest);
           }
@@ -239,7 +241,9 @@ export function initHiddenPageArchitecture() {
       if (currentOpenViewId) {
         closeCurrentView();
         requestAnimationFrame(() => {
-          fastSmoothScrollTo(targetId === 'top' ? 0 : targetId);
+          setTimeout(() => {
+            fastSmoothScrollTo(targetId === 'top' ? 0 : targetId);
+          }, 60);
         });
       } else {
         fastSmoothScrollTo(targetId === 'top' ? 0 : targetId);
@@ -266,7 +270,13 @@ export function initHiddenPageArchitecture() {
     } else if (currentOpenViewId) {
       // Hash changed to landing section like #showcase, #services, #contact
       closeCurrentView(false);
-      fastSmoothScrollTo(rawHash === 'top' ? 0 : rawHash);
+      setTimeout(() => {
+        fastSmoothScrollTo(rawHash === 'top' ? 0 : rawHash);
+      }, 60);
+    } else {
+      setTimeout(() => {
+        fastSmoothScrollTo(rawHash === 'top' ? 0 : rawHash);
+      }, 40);
     }
   }
 

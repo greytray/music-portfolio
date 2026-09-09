@@ -53,15 +53,65 @@ export function fastSmoothScrollTo(target, options = {}) {
 
   // 3. Perform Smooth Scroll exactly to section start
   if (el) {
-    const rect = el.getBoundingClientRect();
-    const headerEl = typeof document !== 'undefined' ? document.querySelector('.site-header') : null;
-    const headerOffset = headerEl ? headerEl.offsetHeight : 0;
-    const targetY = Math.max(0, Math.round(rect.top + window.scrollY - headerOffset + (options.offset || 0)));
-    window.scrollTo({
-      top: targetY,
-      left: 0,
-      behavior
-    });
+    const getHeaderOffset = () => {
+      const headerEl = typeof document !== 'undefined' ? document.querySelector('.site-header') : null;
+      if (headerEl && headerEl.offsetHeight > 0) {
+        return headerEl.offsetHeight;
+      }
+      return window.innerWidth <= 820 ? 54 : 68;
+    };
+
+    const performScroll = (scrollBehavior) => {
+      const headerOffset = getHeaderOffset();
+      const isDesktop = typeof window !== 'undefined' && window.innerWidth > 820;
+      const isContactTarget = target === 'contact' || target === '#contact' || (el && el.id === 'contact');
+
+      let targetY;
+      if (isContactTarget && isDesktop) {
+        targetY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      } else {
+        const rect = el.getBoundingClientRect();
+        targetY = Math.max(0, Math.round(rect.top + window.scrollY - headerOffset + (options.offset || 0)));
+      }
+
+      window.scrollTo({
+        top: targetY,
+        left: 0,
+        behavior: scrollBehavior
+      });
+      return { targetY, headerOffset, isContactTarget, isDesktop };
+    };
+
+    const { headerOffset, isContactTarget, isDesktop } = performScroll(behavior);
+
+    // Single post-animation verification pass (550ms) after smooth scroll completes.
+    // Never interrupt an in-flight smooth scroll animation mid-flight!
+    if (behavior === 'smooth') {
+      setTimeout(() => {
+        if (isContactTarget && isDesktop) {
+          const maxScrollY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+          if (Math.abs(window.scrollY - maxScrollY) > 12) {
+            window.scrollTo({
+              top: maxScrollY,
+              left: 0,
+              behavior: 'smooth'
+            });
+          }
+        } else {
+          const currentHeaderOffset = getHeaderOffset();
+          const currentRect = el.getBoundingClientRect();
+          const delta = Math.abs(currentRect.top - currentHeaderOffset - (options.offset || 0));
+          if (delta > 12) {
+            const adjustedY = Math.max(0, Math.round(currentRect.top + window.scrollY - currentHeaderOffset + (options.offset || 0)));
+            window.scrollTo({
+              top: adjustedY,
+              left: 0,
+              behavior: 'smooth'
+            });
+          }
+        }
+      }, 550);
+    }
   } else if (typeof target === 'number') {
     window.scrollTo({
       top: target,
