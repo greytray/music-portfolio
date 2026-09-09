@@ -707,11 +707,10 @@ nav a:hover, .nav-btn:hover {
 
 /* ==========================================================================
    Apple Liquid Glassmorphism System
-   - Clean single 1px specular glass borders (no double stroke or bottom outline)
-   - Top-edge subtle specular sheen
-   - Rich ambient multi-layer drop shadows
-   - Organic staggered floating animations
-   - 3D perspective tilt with cursor weight press
+   - Glassy highlight glow and reactive fluid caustics (same as CTA button)
+   - Clean specular glass bevels & upper meniscus curved highlight
+   - Multi-layer chromatic aura on hover
+   - Organic staggered floating animations & 3D perspective weight tilt intact
    ========================================================================== */
 
 /* Enhanced organic floating animation rhythm (animates translate so 3D tilt can run continuously without snapping) */
@@ -734,21 +733,339 @@ nav a:hover, .nav-btn:hover {
   will-change: transform, translate;
 }
 
+/* Master Shared Glassy Liquid Card System */
+.liquid-glass-card,
+.now-playing,
+.iridescence-zone-content .now-playing,
+.track,
+.iridescence-zone-content .track,
+.process-card,
+.iridescence-zone-content .process-card,
+.process-closing,
+.iridescence-zone-content .process-closing,
+.service-card,
+.iridescence-zone-content .service-card,
+.delivery-panel,
+.iridescence-zone-content .delivery-panel,
+.beat-card,
+.license-card,
+.session-card,
+.kokonut-form-card,
+.kokonut-card,
+.upload-dropzone-card,
+.order-card,
+.support-card,
+.cert-card,
+.cart-item-card,
+.cart-item,
+.cart-summary-card,
+.checkout-card,
+.confirmed-card,
+.success-modal-card {
+  position: relative !important;
+  overflow: hidden !important;
+  contain: paint !important;
+  --liquid-x: 50%;
+  --liquid-y: 50%;
+  
+  /* Ultra-refractive liquid glass background matching the CTA button */
+  background: 
+    radial-gradient(
+      ellipse 85% 65% at 50% -25%,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0.06) 45%,
+      transparent 75%
+    ),
+    linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.14) 0%,
+      rgba(248, 235, 255, 0.06) 32%,
+      rgba(225, 245, 255, 0.05) 65%,
+      rgba(250, 0, 255, 0.05) 100%
+    ) !important;
+    
+  backdrop-filter: blur(28px) saturate(220%) brightness(112%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(220%) brightness(112%) !important;
+  
+  border: 1.5px solid rgba(255, 255, 255, 0.70) !important;
+  
+  /* Multi-stop specular & internal Fresnel bounce bevels */
+  box-shadow: 
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.95),
+    inset 0 2.5px 4px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -2px 3px 0 rgba(15, 23, 42, 0.08),
+    inset 0 0 20px rgba(250, 0, 255, 0.12),
+    inset 0 0 16px rgba(56, 189, 248, 0.15),
+    0 16px 40px -8px rgba(0, 0, 0, 0.35),
+    0 4px 14px rgba(15, 23, 42, 0.06) !important;
+    
+  transition: box-shadow 0.35s ease, border-color 0.35s ease, background 0.35s ease !important;
+}
+
+/* Water drop upper meniscus curved highlight for all cards */
+.liquid-glass-card::after,
+.now-playing::after,
+.iridescence-zone-content .now-playing::after,
+.track::after,
+.iridescence-zone-content .track::after,
+.process-card::after,
+.iridescence-zone-content .process-card::after,
+.process-closing::after,
+.iridescence-zone-content .process-closing::after,
+.service-card::after,
+.iridescence-zone-content .service-card::after,
+.delivery-panel::after,
+.iridescence-zone-content .delivery-panel::after,
+.beat-card::after,
+.license-card::after,
+.session-card::after,
+.kokonut-form-card::after,
+.kokonut-card::after,
+.upload-dropzone-card::after,
+.order-card::after,
+.support-card::after,
+.cert-card::after,
+.cart-item-card::after,
+.cart-item::after,
+.cart-summary-card::after,
+.checkout-card::after,
+.confirmed-card::after,
+.success-modal-card::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 1.5px !important;
+  left: 4% !important;
+  right: 4% !important;
+  height: 38% !important;
+  border-radius: inherit !important;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.90) 0%,
+    rgba(255, 255, 255, 0.42) 45%,
+    rgba(255, 255, 255, 0) 100%
+  ) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  opacity: 0.88 !important;
+  transition: opacity 0.3s ease !important;
+}
+
+/* Reactive fluid light caustics moving with pointer for all cards */
+.liquid-glass-card::before,
+.now-playing::before,
+.iridescence-zone-content .now-playing::before,
+.track::before,
+.iridescence-zone-content .track::before,
+.process-card::before,
+.iridescence-zone-content .process-card::before,
+.process-closing::before,
+.iridescence-zone-content .process-closing::before,
+.service-card::before,
+.iridescence-zone-content .service-card::before,
+.delivery-panel::before,
+.iridescence-zone-content .delivery-panel::before,
+.beat-card::before,
+.license-card::before,
+.session-card::before,
+.kokonut-form-card::before,
+.kokonut-card::before,
+.upload-dropzone-card::before,
+.order-card::before,
+.support-card::before,
+.cert-card::before,
+.cart-item-card::before,
+.cart-item::before,
+.cart-summary-card::before,
+.checkout-card::before,
+.confirmed-card::before,
+.success-modal-card::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  background: radial-gradient(
+    circle 280px at var(--liquid-x, 50%) var(--liquid-y, 50%),
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(216, 180, 254, 0.42) 30%,
+    rgba(56, 189, 248, 0.28) 55%,
+    transparent 80%
+  ) !important;
+  opacity: 0.35 !important;
+  transition: opacity 0.35s ease !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+  mix-blend-mode: overlay !important;
+}
+
+/* On hover: enhanced fluid highlight glow & liquid aura (identical to CTA button) */
+.liquid-glass-card:hover::before,
+.liquid-glass-card:focus-within::before,
+.now-playing:hover::before,
+.now-playing:focus-within::before,
+.iridescence-zone-content .now-playing:hover::before,
+.track:hover::before,
+.track:focus-within::before,
+.iridescence-zone-content .track:hover::before,
+.process-card:hover::before,
+.process-card:focus-within::before,
+.iridescence-zone-content .process-card:hover::before,
+.process-closing:hover::before,
+.process-closing:focus-within::before,
+.iridescence-zone-content .process-closing:hover::before,
+.service-card:hover::before,
+.service-card:focus-within::before,
+.iridescence-zone-content .service-card:hover::before,
+.delivery-panel:hover::before,
+.delivery-panel:focus-within::before,
+.iridescence-zone-content .delivery-panel:hover::before,
+.beat-card:hover::before,
+.beat-card:focus-within::before,
+.license-card:hover::before,
+.license-card:focus-within::before,
+.session-card:hover::before,
+.session-card:focus-within::before,
+.kokonut-form-card:hover::before,
+.kokonut-form-card:focus-within::before,
+.kokonut-card:hover::before,
+.kokonut-card:focus-within::before,
+.upload-dropzone-card:hover::before,
+.upload-dropzone-card:focus-within::before,
+.order-card:hover::before,
+.order-card:focus-within::before,
+.support-card:hover::before,
+.support-card:focus-within::before,
+.cert-card:hover::before,
+.cert-card:focus-within::before,
+.cart-item-card:hover::before,
+.cart-item-card:focus-within::before,
+.cart-item:hover::before,
+.cart-item:focus-within::before,
+.cart-summary-card:hover::before,
+.cart-summary-card:focus-within::before,
+.checkout-card:hover::before,
+.checkout-card:focus-within::before,
+.confirmed-card:hover::before,
+.confirmed-card:focus-within::before,
+.success-modal-card:hover::before,
+.success-modal-card:focus-within::before {
+  opacity: 0.95 !important;
+}
+
+.liquid-glass-card:hover::after,
+.liquid-glass-card:focus-within::after,
+.now-playing:hover::after,
+.track:hover::after,
+.process-card:hover::after,
+.process-closing:hover::after,
+.service-card:hover::after,
+.delivery-panel:hover::after,
+.beat-card:hover::after,
+.license-card:hover::after,
+.session-card:hover::after,
+.kokonut-form-card:hover::after,
+.kokonut-card:hover::after,
+.upload-dropzone-card:hover::after,
+.order-card:hover::after,
+.support-card:hover::after,
+.cert-card:hover::after,
+.cart-item-card:hover::after,
+.cart-item:hover::after,
+.cart-summary-card:hover::after,
+.checkout-card:hover::after,
+.confirmed-card:hover::after,
+.success-modal-card:hover::after {
+  opacity: 1 !important;
+}
+
+.liquid-glass-card:hover,
+.liquid-glass-card:focus-within,
+.now-playing:hover,
+.now-playing:focus-within,
+.iridescence-zone-content .now-playing:hover,
+.track:hover,
+.track:focus-within,
+.iridescence-zone-content .track:hover,
+.process-card:hover,
+.process-card:focus-within,
+.iridescence-zone-content .process-card:hover,
+.process-closing:hover,
+.process-closing:focus-within,
+.iridescence-zone-content .process-closing:hover,
+.service-card:hover,
+.service-card:focus-within,
+.iridescence-zone-content .service-card:hover,
+.delivery-panel:hover,
+.delivery-panel:focus-within,
+.iridescence-zone-content .delivery-panel:hover,
+.beat-card:hover,
+.beat-card:focus-within,
+.license-card:hover,
+.license-card:focus-within,
+.session-card:hover,
+.session-card:focus-within,
+.kokonut-form-card:hover,
+.kokonut-form-card:focus-within,
+.kokonut-card:hover,
+.kokonut-card:focus-within,
+.upload-dropzone-card:hover,
+.upload-dropzone-card:focus-within,
+.order-card:hover,
+.order-card:focus-within,
+.support-card:hover,
+.support-card:focus-within,
+.cert-card:hover,
+.cert-card:focus-within,
+.cart-item-card:hover,
+.cart-item-card:focus-within,
+.cart-item:hover,
+.cart-item:focus-within,
+.cart-summary-card:hover,
+.cart-summary-card:focus-within,
+.checkout-card:hover,
+.checkout-card:focus-within,
+.confirmed-card:hover,
+.confirmed-card:focus-within,
+.success-modal-card:hover,
+.success-modal-card:focus-within {
+  border-color: rgba(255, 255, 255, 1) !important;
+  box-shadow: 
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 1),
+    inset 0 3px 5px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -2.5px 4px 0 rgba(0, 0, 0, 0.06),
+    inset 0 0 28px rgba(250, 0, 255, 0.24),
+    inset 0 0 20px rgba(56, 189, 248, 0.22),
+    0 22px 54px -6px rgba(250, 0, 255, 0.26),
+    0 8px 24px rgba(15, 23, 42, 0.16) !important;
+}
+
+/* Ensure all inner content layers stay crisp above the glass pseudo overlays */
+.now-playing > *,
+.track > *,
+.process-card > *,
+.process-closing > *,
+.service-card > *,
+.delivery-panel > *,
+.beat-card > *,
+.license-card > *,
+.kokonut-form-card > *,
+.order-card > *,
+.support-card > *,
+.cert-card > *,
+.cart-item-card > *,
+.cart-summary-card > *,
+.confirmed-card > * {
+  position: relative;
+  z-index: 3;
+}
+
 /* 1. Main Now-Playing Audio Player Card (with integrated timeline playbar) */
 .now-playing,
 .iridescence-zone-content .now-playing {
   display: flex !important;
   flex-direction: column !important;
   gap: 14px !important;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.04) 100%) !important;
-  backdrop-filter: blur(36px) saturate(190%) brightness(108%) !important;
-  -webkit-backdrop-filter: blur(36px) saturate(190%) brightness(108%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
   border-radius: 28px !important;
-  box-shadow: 
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.40),
-    0 24px 60px -12px rgba(0, 0, 0, 0.45),
-    0 8px 24px -4px rgba(0, 0, 0, 0.22) !important;
   margin-bottom: 24px !important;
   padding: clamp(22px, 2.8vw, 34px) !important;
 }
@@ -918,106 +1235,41 @@ nav a:hover, .nav-btn:hover {
 
 .track,
 .iridescence-zone-content .track {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
-  backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 22px !important;
-  box-shadow: 
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.32),
-    0 16px 36px -8px rgba(0, 0, 0, 0.32) !important;
-  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.35s ease !important;
-}
-
-.track:hover,
-.iridescence-zone-content .track:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 100%) !important;
-  border-color: rgba(255, 255, 255, 0.34) !important;
-  box-shadow: 
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.55),
-    0 24px 48px -10px rgba(0, 0, 0, 0.42) !important;
 }
 
 .track.active,
 .iridescence-zone-content .track.active {
   background: linear-gradient(135deg, rgba(120, 80, 255, 0.34) 0%, rgba(255, 255, 255, 0.12) 100%) !important;
-  border-color: rgba(200, 180, 255, 0.50) !important;
+  border-color: rgba(200, 180, 255, 0.75) !important;
   box-shadow: 
-    inset 0 1px 2px 0 rgba(255, 255, 255, 0.70),
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.85),
+    inset 0 0 28px rgba(250, 0, 255, 0.35),
     0 24px 50px -8px rgba(90, 40, 220, 0.42) !important;
 }
 
 /* 4. Process Cards */
 .process-card,
 .iridescence-zone-content .process-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
-  backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
   border-radius: 28px !important;
-  box-shadow: 
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.35),
-    0 20px 45px -10px rgba(0, 0, 0, 0.35) !important;
-  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.35s ease !important;
-}
-
-.process-card:hover,
-.iridescence-zone-content .process-card:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 100%) !important;
-  border-color: rgba(255, 255, 255, 0.34) !important;
-  box-shadow: 
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.55),
-    0 28px 56px -12px rgba(0, 0, 0, 0.45) !important;
 }
 
 /* Process Closing Card */
 .process-closing,
 .iridescence-zone-content .process-closing {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.04) 100%) !important;
-  backdrop-filter: blur(36px) saturate(190%) brightness(108%) !important;
-  -webkit-backdrop-filter: blur(36px) saturate(190%) brightness(108%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
   border-radius: 28px !important;
-  box-shadow: 
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.38),
-    0 24px 54px -10px rgba(0, 0, 0, 0.40) !important;
 }
 
 /* 5. Studio Service Cards */
 .service-card,
 .iridescence-zone-content .service-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
-  backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
   border-radius: 28px !important;
-  box-shadow: 
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.35),
-    0 20px 45px -10px rgba(0, 0, 0, 0.35) !important;
-  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.35s ease !important;
-}
-
-.service-card:hover,
-.iridescence-zone-content .service-card:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 100%) !important;
-  border-color: rgba(255, 255, 255, 0.34) !important;
-  box-shadow: 
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.55),
-    0 28px 56px -12px rgba(0, 0, 0, 0.45) !important;
 }
 
 /* 6. Delivery & Payment Panels */
 .delivery-panel,
 .iridescence-zone-content .delivery-panel {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
-  backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(105%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
   border-radius: 28px !important;
-  box-shadow: 
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.35),
-    0 20px 45px -10px rgba(0, 0, 0, 0.35) !important;
 }
 
 /* Liquid Glass Capsules & Badges */
