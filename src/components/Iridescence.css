@@ -194,9 +194,19 @@
 /* Revert numbers */
 .service-index,
 .delivery-step-number,
-.track-number,
 .track-length {
   color: var(--signal-bright, #9084ff) !important;
+}
+
+/* Track card numbers in showcase */
+.track-number,
+.track .track-number,
+.track.active .track-number,
+.iridescence-zone-content .track .track-number,
+.iridescence-zone-content .track.active .track-number {
+  color: #14182A !important;
+  font-size: 0.78rem !important;
+  font-weight: 400 !important;
 }
 
 /* Revert all Dela Gothic font titles and headings back to display white */
@@ -1264,6 +1274,26 @@ nav a:hover, .nav-btn:hover {
 .track,
 .iridescence-zone-content .track {
   border-radius: 22px !important;
+  grid-template-columns: 36px minmax(0, max-content) 1fr auto !important;
+}
+
+.track-length {
+  justify-self: end !important;
+  text-align: right !important;
+}
+
+.track-action {
+  display: none !important;
+}
+
+.track-anim-circle {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 50px !important;
+  height: 50px !important;
+  justify-self: center !important;
+  margin-inline: auto !important;
 }
 
 .track.active,
