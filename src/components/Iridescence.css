@@ -120,13 +120,9 @@
   font-kerning: normal;
   backface-visibility: hidden !important;
   text-shadow: 
-    0 0 1px rgba(250, 0, 255, 0.90),
-    0 0 3px rgba(250, 0, 255, 0.80),
-    0 0 8px rgba(250, 0, 255, 0.65),
-    0 0 20px rgba(250, 0, 255, 0.50),
-    0 0 45px rgba(250, 0, 255, 0.35),
-    0 0 80px rgba(250, 0, 255, 0.22),
-    0 0 130px rgba(250, 0, 255, 0.12) !important;
+    0 1px 2px rgba(0, 0, 0, 0.95),
+    0 4px 16px rgba(0, 0, 0, 0.75),
+    0 12px 35px rgba(0, 0, 0, 0.60) !important;
 }
 
 .hero .eyebrow,
@@ -218,17 +214,31 @@
   font-weight: 400 !important;
 }
 
-/* Revert all Dela Gothic font titles and headings back to display white */
+/* Razor v4 Card and Track Titles */
 .process-card h3,
 .process-closing h3,
 .service-card h3,
 .delivery-step h3,
-.payment-panel h3,
-.track-meta h3,
+.payment-panel h3 {
+  color: #0a0b12 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+}
+
 #current-title,
+.now-playing .track-meta h3 {
+  color: #0a0b12 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+}
+
 .track-name,
-.delivery-timing strong {
-  color: #ffffff !important;
+.track .track-name,
+#playlist .track-name,
+.playlist .track-name,
+.track:hover .track-name,
+.track.active .track-name,
+.track:focus-visible .track-name {
+  color: #0a0b12 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) !important;
 }
 
 @media (min-width: 821px) {
@@ -487,7 +497,28 @@ nav a:hover, .nav-btn:hover {
 }
 
 .contact h2 em {
-  color: #9084ff !important;
+  color: #0a0b12 !important;
+  font-style: normal !important;
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.85) !important;
+}
+
+#beats-title,
+#process-title,
+#services-title,
+#delivery-title,
+#contact-title {
+  color: #ffffff !important;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7), 0 8px 28px rgba(0, 0, 0, 0.45) !important;
+}
+
+#beats-title em,
+#process-title em,
+#services-title em,
+#delivery-title em,
+#contact-title em {
+  color: #0a0b12 !important;
+  font-style: normal !important;
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.85) !important;
 }
 
 .contact-intro > p {

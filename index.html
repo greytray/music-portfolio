@@ -623,7 +623,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; cursor: grab;
   }
 }
 body { font-family: "Work Sans", "WorkSans-Fallback", "DM Sans", "DMSans-Fallback", sans-serif; }
-#beats-title em { color: #6C63E5; }
+#beats-title em { color: #0a0b12; }
 #delivery-title { transform: translateY(clamp(-18px, -1.8vw, -8px)); }
 @media (min-width: 821px) { .hero-photo img { object-fit: fill; transform: translateZ(0); backface-visibility: hidden; } }
 .track-visualizer { background: transparent; gap: 2px; padding: 1px 2px; }
@@ -910,6 +910,143 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
     .section-heading h2 { font-size: clamp(3rem, 13vw, 4.5rem); line-height: 1.0; margin-top: calc(-1 * clamp(10px, 2.2vw, 20px)); margin-bottom: 0; }
     .process-section, .delivery-section { padding-block: 64px; }
     .service-card { min-height: 0; }
+  }
+
+  /* ==========================================================================
+     RAZOR V4: PERMANENT TITLE & TRACK STYLES
+     Strictly constrained to the 24 requested titles/text items:
+     1. "Music Producer"
+     2. "The Work"
+     3. Track name in the now playing card
+     4. all track names
+     5. "The Process"
+     6. "Discuss"
+     7. "Plan"
+     8. "Create"
+     9. "Mix & Refine"
+     10. "Master"
+     11. "Deliver"
+     12. "100% Original Build For You. Each Time."
+     13. "Studio Services"
+     14. "Custom Beat Production"
+     15. "Mixing & Mastering"
+     16. "Vocal Mixing"
+     17. "Audio Editing"
+     18. "Beat Lease"
+     19. "Production Lessons"
+     20. "Delivery & Payments"
+     21. "UPI / GPay / PhonePe accepted"
+     22. "Pay any way you like"
+     23. "Fast turnaround"
+     24. "Let's Work"
+     ========================================================================== */
+
+  /* 1. "Music Producer" */
+  #hero-title {
+    color: #ffffff !important;
+    text-shadow: 
+      0 1px 2px rgba(0, 0, 0, 0.95),
+      0 4px 16px rgba(0, 0, 0, 0.75),
+      0 12px 35px rgba(0, 0, 0, 0.60) !important;
+  }
+
+  /* 2. "The Work" */
+  #beats-title {
+    color: #ffffff !important;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7), 0 8px 28px rgba(0, 0, 0, 0.45) !important;
+  }
+  #beats-title em {
+    color: #0a0b12 !important;
+    font-style: normal !important;
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.85) !important;
+  }
+
+  /* 3. Track name in the now playing card */
+  #current-title,
+  .now-playing .track-meta h3 {
+    color: #0a0b12 !important;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+  }
+
+  /* 4. all track names */
+  .track-name {
+    color: #0a0b12 !important;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+  }
+
+  /* 5. "The Process" */
+  #process-title {
+    color: #ffffff !important;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7), 0 8px 28px rgba(0, 0, 0, 0.45) !important;
+  }
+  #process-title em {
+    color: #0a0b12 !important;
+    font-style: normal !important;
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.85) !important;
+  }
+
+  /* 6. "Discuss", 7. "Plan", 8. "Create", 9. "Mix & Refine", 10. "Master", 11. "Deliver" */
+  .process-card h3 {
+    color: #0a0b12 !important;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+  }
+
+  /* 12. "100% Original Build For You. Each Time." */
+  .process-closing h3 {
+    color: #0a0b12 !important;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+  }
+
+  /* 13. "Studio Services" */
+  #services-title {
+    color: #ffffff !important;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7), 0 8px 28px rgba(0, 0, 0, 0.45) !important;
+  }
+  #services-title em {
+    color: #0a0b12 !important;
+    font-style: normal !important;
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.85) !important;
+  }
+
+  /* 14. "Custom Beat Production", 15. "Mixing & Mastering", 16. "Vocal Mixing",
+     17. "Audio Editing", 18. "Beat Lease", 19. "Production Lessons" */
+  .service-card h3 {
+    color: #0a0b12 !important;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+  }
+
+  /* 20. "Delivery & Payments" */
+  #delivery-title {
+    color: #ffffff !important;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7), 0 8px 28px rgba(0, 0, 0, 0.45) !important;
+  }
+  #delivery-title em {
+    color: #0a0b12 !important;
+    font-style: normal !important;
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.85) !important;
+  }
+
+  /* 21. "UPI / GPay / PhonePe accepted", 22. "Pay any way you like" */
+  .delivery-step h3 {
+    color: #0a0b12 !important;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+  }
+
+  /* 23. "Fast turnaround" */
+  .payment-panel h3 {
+    color: #0a0b12 !important;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+  }
+
+  /* 24. "Let's Work" */
+  #contact-title {
+    color: #ffffff !important;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7), 0 8px 28px rgba(0, 0, 0, 0.45) !important;
+  }
+  #contact-title em {
+    color: #0a0b12 !important;
+    font-style: normal !important;
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.85) !important;
   }
   </style>
   <meta property="og:image" content="https://bolt.new/static/og_default.png">

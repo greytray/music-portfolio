@@ -298,6 +298,17 @@ export function initSectionIridescence() {
   return cleanup;
 }
 
+// Clean up any legacy palette tester storage entries
+try {
+  localStorage.removeItem('eko_active_palette');
+  localStorage.removeItem('eko_palette_switcher_minimized');
+  localStorage.removeItem('eko_custom_accent_color');
+  localStorage.removeItem('eko_accent_panel_open');
+  document.documentElement.removeAttribute('data-palette');
+} catch {
+  // Ignore in environments where localStorage is restricted
+}
+
 // Auto-run initialization when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
