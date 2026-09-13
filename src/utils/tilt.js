@@ -13,6 +13,16 @@ const BASE_DEPRESS_PX = 7; // Inward depth displacement in pixels
 
 const activeCards = new WeakSet();
 
+let cardVisibilityObserver = null;
+if (typeof IntersectionObserver !== 'undefined') {
+  cardVisibilityObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      const inView = entry.isIntersecting || entry.intersectionRatio > 0;
+      entry.target.classList.toggle('is-offscreen', !inView);
+    });
+  }, { threshold: [0, 0.05], rootMargin: '120px 0px 120px 0px' });
+}
+
 /**
  * Initializes cursor weight-press tilt on an individual card element.
  * @param {HTMLElement} card - The card DOM element
@@ -41,6 +51,10 @@ export function attachTiltToCard(card, index = 0) {
   // Set card floating index for CSS staggered floating rhythm
   card.style.setProperty('--card-float-delay', `${(index % 8) * 0.45}s`);
   card.classList.add('floating-card-item');
+
+  if (cardVisibilityObserver) {
+    cardVisibilityObserver.observe(card);
+  }
 
   let state = {
     rafId: null,

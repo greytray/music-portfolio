@@ -252,6 +252,16 @@
   }
 }
 
+/* Water Drop Liquid Glass Idle Breathing (Pure CSS Compositor animation) */
+@keyframes liquidButtonBreathe {
+  0%, 100% {
+    transform: scale(1.0);
+  }
+  50% {
+    transform: scale(1.035);
+  }
+}
+
 /* Water Drop Liquid Glass Interactive Button */
 .hero-cta,
 .liquid-glass-btn,
@@ -272,6 +282,7 @@
   border-radius: 9999px !important;
   margin-inline: auto !important;
   align-self: center !important;
+  animation: liquidButtonBreathe 2.6s ease-in-out infinite !important;
   
   /* Ultra-realistic liquid glass refraction and caustics */
   background: 
@@ -319,6 +330,13 @@
   --liquid-y: 50%;
   user-select: none !important;
   -webkit-user-select: none !important;
+}
+
+.hero-cta.is-active-physics,
+.hero-cta.is-offscreen,
+.water-liquid-btn.is-active-physics,
+.water-liquid-btn.is-offscreen {
+  animation-play-state: paused !important;
 }
 
 /* Water drop upper meniscus curved highlight */
@@ -862,7 +880,8 @@ nav a:hover, .nav-btn:hover {
   will-change: transform, translate;
 }
 
-.floating-card-item.is-tilting {
+.floating-card-item.is-tilting,
+.floating-card-item.is-offscreen {
   animation-play-state: paused !important;
 }
 

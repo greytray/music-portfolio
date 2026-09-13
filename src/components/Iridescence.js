@@ -104,10 +104,12 @@ export function mountIridescence(ctn, options = {}) {
     const width = window.innerWidth || ctn.offsetWidth || 300;
     const height = window.innerHeight || ctn.offsetHeight || 300;
     
-    // Balanced render resolution: clamps width/height to efficient budget for smooth 60/120fps
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.0);
-    const renderW = Math.min(1920, Math.round(width * dpr));
-    const renderH = Math.min(1080, Math.round(height * dpr));
+    // Balanced render resolution:
+    // Fluid gradient shaders look identical and silky-smooth with bilinear texture interpolation
+    // at 0.5x - 0.6x resolution while drastically reducing GPU pixel shader fill-rate!
+    const renderScale = window.innerWidth <= 820 ? 0.45 : 0.55;
+    const renderW = Math.min(960, Math.max(240, Math.round(width * renderScale)));
+    const renderH = Math.min(540, Math.max(135, Math.round(height * renderScale)));
 
     renderer.setSize(renderW, renderH);
     
@@ -155,15 +157,18 @@ export function mountIridescence(ctn, options = {}) {
   // Initial sizing
   resize();
 
-  // Pure vsync-synchronized render loop with smart power-saving pause guards
-  function update(t) {
-    animateId = requestAnimationFrame(update);
-
-    // Smart Viewport & Full-Screen Overlay Culling:
+  function shouldRun() {
     const isFullscreenOverlayOpen = document.body.classList.contains('modal-open') || Boolean(document.getElementById('fullscreen-view-container')?.classList.contains('is-open'));
-    if (!isVisible || document.hidden || isFullscreenOverlayOpen) {
+    return isVisible && !document.hidden && !isFullscreenOverlayOpen;
+  }
+
+  function update(t) {
+    if (!shouldRun()) {
+      animateId = null;
       return;
     }
+
+    animateId = requestAnimationFrame(update);
 
     // Smooth mouse lerp
     mousePos.x += (targetMouse.x - mousePos.x) * 0.08;
@@ -175,7 +180,20 @@ export function mountIridescence(ctn, options = {}) {
     renderer.render({ scene: mesh });
   }
 
-  animateId = requestAnimationFrame(update);
+  function ensureRunning() {
+    if (!animateId && shouldRun()) {
+      animateId = requestAnimationFrame(update);
+    }
+  }
+
+  function pauseRunning() {
+    if (animateId) {
+      cancelAnimationFrame(animateId);
+      animateId = null;
+    }
+  }
+
+  ensureRunning();
   ctn.appendChild(gl.canvas);
 
   // Resize handling
@@ -191,7 +209,13 @@ export function mountIridescence(ctn, options = {}) {
   if (typeof IntersectionObserver !== 'undefined') {
     intersectionObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
-        isVisible = entry.isIntersecting || entry.intersectionRatio > 0;
+        const inView = entry.isIntersecting || entry.intersectionRatio > 0;
+        isVisible = inView;
+        if (inView) {
+          ensureRunning();
+        } else {
+          pauseRunning();
+        }
       });
     }, { threshold: [0, 0.01] });
     intersectionObserver.observe(mouseTarget || ctn);
@@ -224,17 +248,29 @@ export function mountIridescence(ctn, options = {}) {
   // Tab visibility and overlay change listeners
   function handleVisibilityChange() {
     if (!document.hidden) {
-      isVisible = true;
+      ensureRunning();
+    } else {
+      pauseRunning();
     }
   }
   document.addEventListener('visibilitychange', handleVisibilityChange);
 
+  function handleOverlayChange(e) {
+    if (e.detail && e.detail.open) {
+      pauseRunning();
+    } else {
+      ensureRunning();
+    }
+  }
+  window.addEventListener('fullscreen-overlay-change', handleOverlayChange);
+
   // Return cleanup method
   return function cleanup() {
-    if (animateId) cancelAnimationFrame(animateId);
+    pauseRunning();
     if (resizeRafId) cancelAnimationFrame(resizeRafId);
     window.removeEventListener('resize', queueResize);
     document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.removeEventListener('fullscreen-overlay-change', handleOverlayChange);
     if (resizeObserver) resizeObserver.disconnect();
     if (intersectionObserver) intersectionObserver.disconnect();
     
