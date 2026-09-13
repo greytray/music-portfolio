@@ -1284,20 +1284,16 @@ async function ensureAudioGraph() {
 function startVisualizer() { if (!visualizerFrame && !reduceMotion.matches) visualizerFrame = requestAnimationFrame(renderVisualizer); }
 function stopVisualizer() { if (visualizerFrame) cancelAnimationFrame(visualizerFrame); visualizerFrame = undefined; bandLevels.fill(0); kickEnvelope = 0; previousKickEnergy = 0; [...trackVisualizer.children].forEach((bar) => { bar.style.setProperty('--level', '0'); bar.style.setProperty('--active', '0'); }); }
 
-// Clean Tap to Play/Pause Animation Controller for Showcase Track Cards
+// Gentle one-time Tap to Play hint controller for Showcase Track Cards
 const trackTapPrompts = document.querySelectorAll('.track-tap-prompt');
 let hasShownInitialTrackAnim = false;
 let userHasPlayedTrack = false;
 let isPermanentlyDismissedTrackAnim = false;
-let idleLoopTimeout = null;
 let animHideTimeout = null;
-let playReappearTimeout = null;
 
 function showTrackTapPrompts() {
   if (isPermanentlyDismissedTrackAnim || userHasPlayedTrack) return;
   trackTapPrompts.forEach((prompt) => {
-    prompt.classList.remove('is-visible');
-    void prompt.offsetWidth; // Trigger DOM reflow to restart CSS keyframes reliably
     prompt.classList.add('is-visible');
   });
 }
@@ -1308,78 +1304,29 @@ function hideTrackTapPrompts() {
   });
 }
 
-function runIdleCycle() {
-  if (userHasPlayedTrack || isPermanentlyDismissedTrackAnim) return;
-  showTrackTapPrompts();
-
-  animHideTimeout = setTimeout(() => {
-    if (userHasPlayedTrack || isPermanentlyDismissedTrackAnim) return;
-    hideTrackTapPrompts();
-
-    idleLoopTimeout = setTimeout(() => {
-      if (!userHasPlayedTrack && !isPermanentlyDismissedTrackAnim) {
-        runIdleCycle();
-      }
-    }, 7000);
-  }, 2500);
-}
-
 function permanentlyDismissTrackTapPrompts() {
   if (isPermanentlyDismissedTrackAnim) return;
   isPermanentlyDismissedTrackAnim = true;
-  if (idleLoopTimeout) {
-    clearTimeout(idleLoopTimeout);
-    idleLoopTimeout = null;
-  }
   if (animHideTimeout) {
     clearTimeout(animHideTimeout);
     animHideTimeout = null;
   }
-  if (playReappearTimeout) {
-    clearTimeout(playReappearTimeout);
-    playReappearTimeout = null;
-  }
   hideTrackTapPrompts();
-  setTimeout(() => {
-    trackTapPrompts.forEach((prompt) => {
-      prompt.style.display = 'none';
-    });
-  }, 400);
 }
 
 function triggerInitialTrackAnim() {
   if (hasShownInitialTrackAnim || isPermanentlyDismissedTrackAnim || userHasPlayedTrack) return;
   hasShownInitialTrackAnim = true;
-  runIdleCycle();
+  showTrackTapPrompts();
+  animHideTimeout = setTimeout(() => {
+    permanentlyDismissTrackTapPrompts();
+  }, 3200);
 }
 
 function triggerPlayTrackAnim() {
   if (userHasPlayedTrack || isPermanentlyDismissedTrackAnim) return;
   userHasPlayedTrack = true;
-
-  if (idleLoopTimeout) {
-    clearTimeout(idleLoopTimeout);
-    idleLoopTimeout = null;
-  }
-  if (animHideTimeout) {
-    clearTimeout(animHideTimeout);
-    animHideTimeout = null;
-  }
-
-  hideTrackTapPrompts();
-
-  // 15-second logic: Reappears once for a reminder cycle, then permanently dismisses
-  playReappearTimeout = setTimeout(() => {
-    if (isPermanentlyDismissedTrackAnim) return;
-    trackTapPrompts.forEach((prompt) => {
-      prompt.classList.remove('is-visible');
-      void prompt.offsetWidth;
-      prompt.classList.add('is-visible');
-    });
-    setTimeout(() => {
-      permanentlyDismissTrackTapPrompts();
-    }, 2500);
-  }, 15000);
+  permanentlyDismissTrackTapPrompts();
 }
 
 const playlistElement = document.querySelector('#playlist');
@@ -1411,61 +1358,6 @@ const KNOWN_DURATIONS = {
   './assets/audio/K-Pop post fx.mp3': 14,
   './assets/audio/Aiobahn maybe last mix.mp3': 53
 };
-
-// In-memory audio Blob cache to guarantee instant, 100% reliable seeking with zero network roundtrips
-window.__AUDIO_BLOB_CACHE__ = window.__AUDIO_BLOB_CACHE__ || new Map();
-const audioBlobCache = window.__AUDIO_BLOB_CACHE__;
-window.__AUDIO_BLOB_PROMISES__ = window.__AUDIO_BLOB_PROMISES__ || new Map();
-const audioBlobPromises = window.__AUDIO_BLOB_PROMISES__;
-
-function ensureTrackBlob(src) {
-  if (!src) return Promise.resolve(null);
-  if (audioBlobCache.has(src)) return Promise.resolve(audioBlobCache.get(src));
-  if (audioBlobPromises.has(src)) return audioBlobPromises.get(src);
-
-  const promise = fetch(src)
-    .then((res) => {
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.blob();
-    })
-    .then((blob) => {
-      const blobUrl = URL.createObjectURL(blob);
-      audioBlobCache.set(src, blobUrl);
-      return blobUrl;
-    })
-    .catch((err) => {
-      console.warn('Audio blob load failed for', src, err);
-      return src;
-    });
-
-  audioBlobPromises.set(src, promise);
-  return promise;
-}
-
-// Immediately start caching the initial track
-ensureTrackBlob(activeTrack.dataset.src).then((blobUrl) => {
-  if (blobUrl && !audio.src.startsWith('blob:')) {
-    if (audio.paused && (!audio.currentTime || audio.currentTime === 0)) {
-      audio.src = blobUrl;
-    }
-  }
-});
-
-// Prefetch remaining tracks sequentially in the background
-function prefetchOtherTracks() {
-  tracks.forEach((t, idx) => {
-    if (t !== activeTrack) {
-      setTimeout(() => {
-        ensureTrackBlob(t.dataset.src);
-      }, (idx + 1) * 150);
-    }
-  });
-}
-if ('requestIdleCallback' in window) {
-  window.requestIdleCallback(prefetchOtherTracks);
-} else {
-  setTimeout(prefetchOtherTracks, 200);
-}
 
 let isUserScrubbing = false;
 let seekLockTarget = null;
@@ -1568,13 +1460,7 @@ async function selectTrack(track, shouldPlay = true) {
     updateNowPlaying(activeTrack);
 
     const src = activeTrack.dataset.src;
-    let blobUrl = audioBlobCache.get(src);
-    if (!blobUrl && audioBlobPromises.has(src)) {
-      blobUrl = await audioBlobPromises.get(src);
-    } else if (!blobUrl) {
-      blobUrl = await ensureTrackBlob(src);
-    }
-    audio.src = blobUrl || src;
+    audio.src = src;
   }
   if (shouldPlay) {
     if (!changed && !audio.paused) {
@@ -1590,13 +1476,6 @@ async function selectTrack(track, shouldPlay = true) {
 mainPlay.addEventListener('click', async () => {
   if (audio.paused) {
     await ensureAudioGraph();
-    const src = activeTrack.dataset.src;
-    const cachedBlob = audioBlobCache.get(src);
-    if (cachedBlob && audio.src !== cachedBlob) {
-      const prevTime = audio.currentTime;
-      audio.src = cachedBlob;
-      if (prevTime > 0) audio.currentTime = prevTime;
-    }
     if (typeof triggerPlayTrackAnim === 'function') triggerPlayTrackAnim();
     audio.play().catch(() => setPlayingState(false));
   } else {
@@ -1639,18 +1518,6 @@ function commitSeek(targetPercent) {
   progress.value = seekPct;
   updateProgressFill(seekPct);
   lastSeekActionTime = Date.now();
-
-  const src = activeTrack.dataset.src;
-  const cachedBlob = audioBlobCache.get(src);
-  if (cachedBlob && audio.src !== cachedBlob) {
-    const wasPlaying = !audio.paused;
-    audio.src = cachedBlob;
-    audio.currentTime = targetTime;
-    if (wasPlaying) {
-      audio.play().catch(() => {});
-    }
-    return;
-  }
 
   applySeekTarget(targetTime);
 }

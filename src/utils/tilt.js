@@ -216,26 +216,5 @@ export function initAllCardTilts(root = document) {
   cards.forEach((card, index) => {
     attachTiltToCard(card, index);
   });
-
-  if (!globalObserver && typeof MutationObserver !== 'undefined') {
-    globalObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === 1) {
-            if (node.matches && node.matches(selector)) {
-              attachTiltToCard(node);
-            }
-            const nestedCards = node.querySelectorAll ? node.querySelectorAll(selector) : [];
-            nestedCards.forEach((c) => attachTiltToCard(c));
-          }
-        });
-      });
-    });
-
-    globalObserver.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-  }
 }
 

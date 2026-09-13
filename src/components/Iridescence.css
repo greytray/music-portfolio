@@ -860,29 +860,9 @@ nav a:hover, .nav-btn:hover {
    - Organic staggered floating animations & 3D perspective weight tilt intact
    ========================================================================== */
 
-/* Enhanced organic floating animation rhythm (animates translate property so transform rotateX/rotateY tilt works cleanly) */
-@keyframes cardLevitate {
-  0% {
-    translate: 0 0px;
-  }
-  50% {
-    translate: 0 -6px;
-  }
-  100% {
-    translate: 0 0px;
-  }
-}
-
 .floating-card-item {
-  animation: cardLevitate 6.5s ease-in-out infinite;
-  animation-delay: var(--card-float-delay, 0s);
   transform-style: preserve-3d;
-  will-change: transform, translate;
-}
-
-.floating-card-item.is-tilting,
-.floating-card-item.is-offscreen {
-  animation-play-state: paused !important;
+  will-change: transform;
 }
 
 /* Master Shared Glassy Liquid Card System - High-Performance Composited Glass */
