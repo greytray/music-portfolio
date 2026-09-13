@@ -232,15 +232,15 @@ export function initHiddenPageArchitecture() {
   });
 
   // Attach smooth scrolling buttons with instant execution
-  document.querySelectorAll('[data-scroll-to]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const targetId = btn.dataset.scrollTo;
-      if (currentOpenViewId) {
-        closeCurrentView();
-      }
-      fastSmoothScrollTo(targetId === 'top' ? 0 : targetId);
-    });
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-scroll-to]');
+    if (!btn) return;
+    e.preventDefault();
+    const targetId = btn.dataset.scrollTo;
+    if (currentOpenViewId) {
+      closeCurrentView();
+    }
+    fastSmoothScrollTo(targetId === 'top' ? 0 : targetId);
   });
 
   // Handle URL hash changes (Back / Forward buttons)
