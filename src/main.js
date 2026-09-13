@@ -4,6 +4,7 @@ import { fastSmoothScrollTo } from './utils/scroll.js';
 import { mountIridescence } from './components/Iridescence.js';
 import { initAllCardTilts } from './utils/tilt.js';
 import { initLiquidGlassButtons } from './utils/liquidButton.js';
+import { initServicesCatalog } from './components/servicesCatalog.js';
 
 // Dynamic modules registry for on-demand lazy loading
 const VIEW_LOADERS = {
@@ -316,11 +317,13 @@ if (document.readyState === 'loading') {
     initSectionIridescence();
     initAllCardTilts();
     initLiquidGlassButtons();
+    initServicesCatalog();
   });
 } else {
   initHiddenPageArchitecture();
   initSectionIridescence();
   initAllCardTilts();
   initLiquidGlassButtons();
+  initServicesCatalog();
 }
 

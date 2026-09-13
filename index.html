@@ -15,9 +15,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Non-blocking background font fallback for extended glyph coverage -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Dela+Gothic+One&amp;family=Work+Sans:wght@400;500;600;700&amp;display=swap" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Dela+Gothic+One&amp;family=Kanit:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,700&amp;family=Work+Sans:wght@400;500;600;700&amp;display=swap" media="print" onload="this.media='all'">
   <noscript>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Dela+Gothic+One&amp;family=Work+Sans:wght@400;500;600;700&amp;display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Dela+Gothic+One&amp;family=Kanit:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,700&amp;family=Work+Sans:wght@400;500;600;700&amp;display=swap">
   </noscript>
   <script>
     (function() {
@@ -1136,14 +1136,527 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
           <div class="process-closing"><h3>100% Original Build For You. Each Time.</h3><p>No templates. No shortcuts. Just honest music, crafted to tell your story.</p><div class="process-badges"><div class="process-badge">No AI Used</div><div class="process-badge">Made From Scratch</div><div class="process-badge">Built Around Your Sound</div><div class="process-badge">Ready To Release</div></div></div>
         </section>
         <section class="section services" id="services" aria-labelledby="services-title">
-          <div class="section-heading"><div><h2 id="services-title">Studio <em>Services</em></h2></div><p>Professional sound, straightforward pricing, and a process built around your vision.</p></div>
-          <div class="service-grid">
-            <article class="service-card"><p class="service-index">01 / Bespoke</p><h3>Custom Beat Production</h3><p>An original instrumental shaped around your voice, references, and release vision.</p><div class="service-footer"><strong>From $299</strong><button type="button" class="service-request-link" data-scroll-to="contact" aria-label="Request custom beat production">Request <span aria-hidden="true">›</span></button></div></article>
-            <article class="service-card"><p class="service-index">02 / Release</p><h3>Mixing &amp; Mastering</h3><p>Dimensional, detailed mixes and competitive masters ready for every platform.</p><div class="service-footer"><strong>From $149</strong><button type="button" class="service-request-link" data-scroll-to="contact" aria-label="Request mixing and mastering">Request <span aria-hidden="true">›</span></button></div></article>
-            <article class="service-card"><p class="service-index">03 / Voice</p><h3>Vocal Mixing</h3><p>For artists with a beat and recorded vocals who need polish, balance, and presence.</p><div class="service-footer"><strong>From $99</strong><button type="button" class="service-request-link" data-scroll-to="contact" aria-label="Request vocal mixing">Request <span aria-hidden="true">›</span></button></div></article>
-            <article class="service-card"><p class="service-index">04 / Restoration</p><h3>Audio Editing</h3><p>Professional enhancement for treated podcasts, extracted acapellas, and noisy recordings.</p><div class="service-footer"><strong>From $79</strong><button type="button" class="service-request-link" data-scroll-to="contact" aria-label="Request audio editing">Request <span aria-hidden="true">›</span></button></div></article>
-            <article class="service-card"><p class="service-index">05 / Catalog</p><h3>Beat Lease</h3><p>Release-ready instrumentals with flexible licensing for independent artists.</p><div class="service-footer"><strong>From $49</strong><button type="button" class="service-request-link" data-view-trigger="beats" aria-label="Browse beats to lease">Browse <span aria-hidden="true">›</span></button></div></article>
-            <article class="service-card"><p class="service-index">06 / Mentorship</p><h3>Production Lessons</h3><p>Focused one-to-one sessions covering arrangement, sound selection, and workflow.</p><div class="service-footer"><strong>From $75</strong><button type="button" class="service-request-link" data-scroll-to="contact" aria-label="Request production lessons">Request <span aria-hidden="true">›</span></button></div></article>
+          <div class="section-heading">
+            <div><h2 id="services-title">Studio<br><em>Services</em></h2></div>
+            <p>Professional sound, straightforward pricing, and a process built around your vision.</p>
+          </div>
+
+          <div class="services-catalog-stack" id="services-catalog-stack">
+            <!-- Card 01: Custom Beat Production -->
+            <div class="services-card-wrapper" data-category="beats" data-index="0" style="--card-index: 0;">
+              <article class="services-catalog-card" id="service-card-01">
+                <div class="card-top-row">
+                  <div class="card-top-left">
+                    <span class="card-number" aria-hidden="true">01</span>
+                    <div class="card-title-group">
+                      <div class="card-category-row">
+                        <span class="card-category">Bespoke Production</span>
+                        <span class="card-price-chip">From $299</span>
+                      </div>
+                      <h3 class="card-name">Custom Beat &amp; Instrumental</h3>
+                    </div>
+                  </div>
+                  <button type="button" class="card-action-btn" data-action="request" data-service="Custom Beat Production" aria-label="Request custom beat production">
+                    Request Beat
+                  </button>
+                </div>
+                <div class="card-catalog-layout">
+                  <div class="catalog-stacked-col">
+                    <div class="catalog-tile">
+                      <img class="catalog-photo" src="./assets/images/midi_beat_arranger_1789337019783.jpg" alt="Digital MIDI Pattern Sequencer" loading="lazy">
+                    </div>
+                    <div class="catalog-tile">
+                      <img class="catalog-photo" src="./assets/images/digital_reverb_dsp_1789337033441.jpg" alt="Digital Sound Design & Reverb" loading="lazy">
+                    </div>
+                  </div>
+                  <div class="catalog-hero-col">
+                    <div class="catalog-hero-img-wrap">
+                      <img class="catalog-photo" src="./assets/images/curved_daw_monitor_1789336964825.jpg" alt="Curved DAW Multitrack Arrangement" loading="lazy">
+                    </div>
+                    <div class="catalog-audio-dock">
+                      <div class="catalog-audio-pair">
+                        <!-- Before: Rough Idea Demo -->
+                        <div class="catalog-audio-track" data-track-type="before">
+                          <div class="catalog-track-top">
+                            <span class="catalog-track-tag before">Before</span>
+                            <span class="catalog-track-tag-desc">Rough Sketch</span>
+                          </div>
+                          <div class="catalog-track-controls">
+                            <button type="button" class="catalog-play-btn" data-audio="./assets/audio/feeling mello.mp3" data-title="Rough Idea Demo" aria-label="Listen to rough sketch">
+                              <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                              <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                            </button>
+                            <div class="showcase-audio-meta">
+                              <span class="showcase-audio-title">Initial Idea</span>
+                              <span class="showcase-audio-sub">Basic melody draft</span>
+                            </div>
+                            <div class="catalog-waveform" aria-hidden="true">
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- After: Finished Studio Beat -->
+                        <div class="catalog-audio-track" data-track-type="after">
+                          <div class="catalog-track-top">
+                            <span class="catalog-track-tag after">After</span>
+                            <span class="catalog-track-tag-desc">Finished Beat</span>
+                          </div>
+                          <div class="catalog-track-controls">
+                            <button type="button" class="catalog-play-btn" data-audio="./assets/audio/Kpop beat.mp3" data-title="Finished Studio Beat" aria-label="Listen to finished beat">
+                              <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                              <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                            </button>
+                            <div class="showcase-audio-meta">
+                              <span class="showcase-audio-title">Full Production</span>
+                              <span class="showcase-audio-sub">Arranged drums & bass</span>
+                            </div>
+                            <div class="catalog-waveform" aria-hidden="true">
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <!-- Card 02: Mixing & Mastering -->
+            <div class="services-card-wrapper" data-category="mixing" data-index="1" style="--card-index: 1;">
+              <article class="services-catalog-card" id="service-card-02">
+                <div class="card-top-row">
+                  <div class="card-top-left">
+                    <span class="card-number" aria-hidden="true">02</span>
+                    <div class="card-title-group">
+                      <div class="card-category-row">
+                        <span class="card-category">Release Engineering</span>
+                        <span class="card-price-chip">From $149</span>
+                      </div>
+                      <h3 class="card-name">Mixing &amp; Mastering</h3>
+                    </div>
+                  </div>
+                  <button type="button" class="card-action-btn" data-view-trigger="send-audio" aria-label="Send audio for mixing and mastering">
+                    Send Audio
+                  </button>
+                </div>
+                <div class="card-catalog-layout">
+                  <div class="catalog-stacked-col">
+                    <div class="catalog-tile">
+                      <img class="catalog-photo" src="./assets/images/digital_eq_compressor_1789337007076.jpg" alt="Digital EQ & Multiband Compressor" loading="lazy">
+                    </div>
+                    <div class="catalog-tile">
+                      <img class="catalog-photo" src="./assets/images/spectral_cleanup_dsp_1789336993282.jpg" alt="Master Spectrum Frequency Analyzer" loading="lazy">
+                    </div>
+                  </div>
+                  <div class="catalog-hero-col">
+                    <div class="catalog-hero-img-wrap">
+                      <img class="catalog-photo" src="./assets/images/curved_daw_monitor_1789336964825.jpg" alt="Curved Display Digital Mixing Station" loading="lazy">
+                    </div>
+                    <div class="catalog-audio-dock">
+                      <div class="catalog-audio-pair">
+                        <!-- Before: Unmixed Audio -->
+                        <div class="catalog-audio-track" data-track-type="before">
+                          <div class="catalog-track-top">
+                            <span class="catalog-track-tag before">Before</span>
+                            <span class="catalog-track-tag-desc">Unmixed Raw</span>
+                          </div>
+                          <div class="catalog-track-controls">
+                            <button type="button" class="catalog-play-btn" data-audio="./assets/audio/Kensuke.mp3" data-title="Unmixed Raw Audio" aria-label="Listen to unmixed audio">
+                              <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                              <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                            </button>
+                            <div class="showcase-audio-meta">
+                              <span class="showcase-audio-title">Raw Audio</span>
+                              <span class="showcase-audio-sub">Flat &amp; unmastered</span>
+                            </div>
+                            <div class="catalog-waveform" aria-hidden="true">
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- After: Mastered Audio -->
+                        <div class="catalog-audio-track" data-track-type="after">
+                          <div class="catalog-track-top">
+                            <span class="catalog-track-tag after">After</span>
+                            <span class="catalog-track-tag-desc">Mastered Final</span>
+                          </div>
+                          <div class="catalog-track-controls">
+                            <button type="button" class="catalog-play-btn" data-audio="./assets/audio/broken jar mastered.mp3" data-title="Mastered Final Audio" aria-label="Listen to mastered final audio">
+                              <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                              <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                            </button>
+                            <div class="showcase-audio-meta">
+                              <span class="showcase-audio-title">Polished Master</span>
+                              <span class="showcase-audio-sub">Loud, wide &amp; clear</span>
+                            </div>
+                            <div class="catalog-waveform" aria-hidden="true">
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <!-- Card 03: Vocal Mixing & Tuning -->
+            <div class="services-card-wrapper" data-category="vocals" data-index="2" style="--card-index: 2;">
+              <article class="services-catalog-card" id="service-card-03">
+                <div class="card-top-row">
+                  <div class="card-top-left">
+                    <span class="card-number" aria-hidden="true">03</span>
+                    <div class="card-title-group">
+                      <div class="card-category-row">
+                        <span class="card-category">Vocal Production</span>
+                        <span class="card-price-chip">From $99</span>
+                      </div>
+                      <h3 class="card-name">Vocal Mixing &amp; Tuning</h3>
+                    </div>
+                  </div>
+                  <button type="button" class="card-action-btn" data-view-trigger="send-audio" aria-label="Send vocals for vocal tuning and mixing">
+                    Send Vocals
+                  </button>
+                </div>
+                <div class="card-catalog-layout">
+                  <div class="catalog-stacked-col">
+                    <div class="catalog-tile">
+                      <img class="catalog-photo" src="./assets/images/vocal_tuning_plugin_1789336979208.jpg" alt="Vocal Pitch & Formant Tuning DSP" loading="lazy">
+                    </div>
+                    <div class="catalog-tile">
+                      <img class="catalog-photo" src="./assets/images/digital_reverb_dsp_1789337033441.jpg" alt="Vocal Plate Reverb & Spatial Width" loading="lazy">
+                    </div>
+                  </div>
+                  <div class="catalog-hero-col">
+                    <div class="catalog-hero-img-wrap">
+                      <img class="catalog-photo" src="./assets/images/vocal_tuning_plugin_1789336979208.jpg" alt="Digital Vocal Alignment & Processing Suite" loading="lazy">
+                    </div>
+                    <div class="catalog-audio-dock">
+                      <div class="catalog-audio-pair">
+                        <!-- Before: Dry Vocals -->
+                        <div class="catalog-audio-track" data-track-type="before">
+                          <div class="catalog-track-top">
+                            <span class="catalog-track-tag before">Before</span>
+                            <span class="catalog-track-tag-desc">Raw Vocals</span>
+                          </div>
+                          <div class="catalog-track-controls">
+                            <button type="button" class="catalog-play-btn" data-audio="./assets/audio/K-Pop post fx.mp3" data-title="Raw Microphone Vocal" aria-label="Listen to raw vocal take">
+                              <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                              <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                            </button>
+                            <div class="showcase-audio-meta">
+                              <span class="showcase-audio-title">Dry Mic Take</span>
+                              <span class="showcase-audio-sub">Unedited vocal track</span>
+                            </div>
+                            <div class="catalog-waveform" aria-hidden="true">
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- After: Tuned & Polished -->
+                        <div class="catalog-audio-track" data-track-type="after">
+                          <div class="catalog-track-top">
+                            <span class="catalog-track-tag after">After</span>
+                            <span class="catalog-track-tag-desc">Studio Vocal</span>
+                          </div>
+                          <div class="catalog-track-controls">
+                            <button type="button" class="catalog-play-btn" data-audio="./assets/audio/K-Pop post fx.mp3" data-title="Tuned & FX Vocal" aria-label="Listen to tuned studio vocal">
+                              <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                              <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                            </button>
+                            <div class="showcase-audio-meta">
+                              <span class="showcase-audio-title">Tuned &amp; Polished</span>
+                              <span class="showcase-audio-sub">Pitch fixed &amp; space FX</span>
+                            </div>
+                            <div class="catalog-waveform" aria-hidden="true">
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <!-- Card 04: Beat Store & Catalog -->
+            <div class="services-card-wrapper" data-category="store" data-index="3" style="--card-index: 3;">
+              <article class="services-catalog-card" id="service-card-04">
+                <div class="card-top-row">
+                  <div class="card-top-left">
+                    <span class="card-number" aria-hidden="true">04</span>
+                    <div class="card-title-group">
+                      <div class="card-category-row">
+                        <span class="card-category">Catalog &amp; Licenses</span>
+                        <span class="card-price-chip">From $49</span>
+                      </div>
+                      <h3 class="card-name">Beat Store &amp; Leasing</h3>
+                    </div>
+                  </div>
+                  <button type="button" class="card-action-btn" data-view-trigger="beats" aria-label="Browse full beat store catalog">
+                    Browse Store
+                  </button>
+                </div>
+                <div class="card-catalog-layout">
+                  <div class="catalog-stacked-col">
+                    <div class="catalog-tile">
+                      <img class="catalog-photo" src="./assets/images/midi_beat_arranger_1789337019783.jpg" alt="Commercial Beat Production" loading="lazy">
+                    </div>
+                    <div class="catalog-tile">
+                      <img class="catalog-photo" src="./assets/images/digital_eq_compressor_1789337007076.jpg" alt="Mastered High Quality Beat Files" loading="lazy">
+                    </div>
+                  </div>
+                  <div class="catalog-hero-col">
+                    <div class="catalog-hero-img-wrap">
+                      <img class="catalog-photo" src="./assets/images/curved_daw_monitor_1789336964825.jpg" alt="Instant Untagged Beat Download Library" loading="lazy">
+                    </div>
+                    <div class="catalog-audio-dock">
+                      <div class="catalog-audio-pair">
+                        <!-- Before: Tagged Sample Preview -->
+                        <div class="catalog-audio-track" data-track-type="before">
+                          <div class="catalog-track-top">
+                            <span class="catalog-track-tag before">Preview</span>
+                            <span class="catalog-track-tag-desc">Web Stream</span>
+                          </div>
+                          <div class="catalog-track-controls">
+                            <button type="button" class="catalog-play-btn" data-audio="./assets/audio/Kpop beat.mp3" data-title="Tagged Web Preview" aria-label="Listen to preview stream">
+                              <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                              <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                            </button>
+                            <div class="showcase-audio-meta">
+                              <span class="showcase-audio-title">Tagged Preview</span>
+                              <span class="showcase-audio-sub">Web compressed demo</span>
+                            </div>
+                            <div class="catalog-waveform" aria-hidden="true">
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- After: Purchased Lossless Master -->
+                        <div class="catalog-audio-track" data-track-type="after">
+                          <div class="catalog-track-top">
+                            <span class="catalog-track-tag after">Clean File</span>
+                            <span class="catalog-track-tag-desc">Master WAV</span>
+                          </div>
+                          <div class="catalog-track-controls">
+                            <button type="button" class="catalog-play-btn" data-audio="./assets/audio/feeling mello.mp3" data-title="Lossless WAV Beat" aria-label="Listen to untagged clean master">
+                              <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                              <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                            </button>
+                            <div class="showcase-audio-meta">
+                              <span class="showcase-audio-title">Untagged Master</span>
+                              <span class="showcase-audio-sub">Full WAV + track stems</span>
+                            </div>
+                            <div class="catalog-waveform" aria-hidden="true">
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <!-- Card 05: Production Lessons -->
+            <div class="services-card-wrapper" data-category="mentorship" data-index="4" style="--card-index: 4;">
+              <article class="services-catalog-card" id="service-card-05">
+                <div class="card-top-row">
+                  <div class="card-top-left">
+                    <span class="card-number" aria-hidden="true">05</span>
+                    <div class="card-title-group">
+                      <div class="card-category-row">
+                        <span class="card-category">Mentorship &amp; Coaching</span>
+                        <span class="card-price-chip">From $75 / hr</span>
+                      </div>
+                      <h3 class="card-name">1-on-1 Production Lessons</h3>
+                    </div>
+                  </div>
+                  <button type="button" class="card-action-btn" data-view-trigger="sessions" aria-label="Book a 1-on-1 mentorship session">
+                    Book Session
+                  </button>
+                </div>
+                <div class="card-catalog-layout">
+                  <div class="catalog-stacked-col">
+                    <div class="catalog-tile">
+                      <img class="catalog-photo" src="./assets/images/curved_daw_monitor_1789336964825.jpg" alt="Online DAW Project Coaching" loading="lazy">
+                    </div>
+                    <div class="catalog-tile">
+                      <img class="catalog-photo" src="./assets/images/digital_eq_compressor_1789337007076.jpg" alt="Plugin Technique & Compression Analysis" loading="lazy">
+                    </div>
+                  </div>
+                  <div class="catalog-hero-col">
+                    <div class="catalog-hero-img-wrap">
+                      <img class="catalog-photo" src="./assets/images/midi_beat_arranger_1789337019783.jpg" alt="Arrangement & Beatmaking Breakdown" loading="lazy">
+                    </div>
+                    <div class="catalog-audio-dock">
+                      <div class="catalog-audio-pair">
+                        <!-- Before: Student Draft -->
+                        <div class="catalog-audio-track" data-track-type="before">
+                          <div class="catalog-track-top">
+                            <span class="catalog-track-tag before">Before</span>
+                            <span class="catalog-track-tag-desc">Student Draft</span>
+                          </div>
+                          <div class="catalog-track-controls">
+                            <button type="button" class="catalog-play-btn" data-audio="./assets/audio/Kensuke.mp3" data-title="Student Mix Draft" aria-label="Listen to student draft">
+                              <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                              <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                            </button>
+                            <div class="showcase-audio-meta">
+                              <span class="showcase-audio-title">Initial Draft</span>
+                              <span class="showcase-audio-sub">Muddy low-end mix</span>
+                            </div>
+                            <div class="catalog-waveform" aria-hidden="true">
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- After: Post-Coaching Final -->
+                        <div class="catalog-audio-track" data-track-type="after">
+                          <div class="catalog-track-top">
+                            <span class="catalog-track-tag after">After</span>
+                            <span class="catalog-track-tag-desc">Post-Lesson</span>
+                          </div>
+                          <div class="catalog-track-controls">
+                            <button type="button" class="catalog-play-btn" data-audio="./assets/audio/Aiobahn maybe last mix.mp3" data-title="Post-Lesson Final Mix" aria-label="Listen to post-lesson final mix">
+                              <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                              <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                            </button>
+                            <div class="showcase-audio-meta">
+                              <span class="showcase-audio-title">Coached Mix</span>
+                              <span class="showcase-audio-sub">Clean space &amp; punch</span>
+                            </div>
+                            <div class="catalog-waveform" aria-hidden="true">
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <!-- Card 06: Audio Editing & Restoration -->
+            <div class="services-card-wrapper" data-category="restoration" data-index="5" style="--card-index: 5;">
+              <article class="services-catalog-card" id="service-card-06">
+                <div class="card-top-row">
+                  <div class="card-top-left">
+                    <span class="card-number" aria-hidden="true">06</span>
+                    <div class="card-title-group">
+                      <div class="card-category-row">
+                        <span class="card-category">Restoration &amp; Repair</span>
+                        <span class="card-price-chip">From $79</span>
+                      </div>
+                      <h3 class="card-name">Audio Editing &amp; Cleanup</h3>
+                    </div>
+                  </div>
+                  <button type="button" class="card-action-btn" data-view-trigger="send-audio" aria-label="Submit audio files for cleanup and restoration">
+                    Submit Audio
+                  </button>
+                </div>
+                <div class="card-catalog-layout">
+                  <div class="catalog-stacked-col">
+                    <div class="catalog-tile">
+                      <img class="catalog-photo" src="./assets/images/spectral_cleanup_dsp_1789336993282.jpg" alt="Spectral Noise Removal & Cleanup" loading="lazy">
+                    </div>
+                    <div class="catalog-tile">
+                      <img class="catalog-photo" src="./assets/images/vocal_tuning_plugin_1789336979208.jpg" alt="De-Click & Sibilance Repair" loading="lazy">
+                    </div>
+                  </div>
+                  <div class="catalog-hero-col">
+                    <div class="catalog-hero-img-wrap">
+                      <img class="catalog-photo" src="./assets/images/spectral_cleanup_dsp_1789336993282.jpg" alt="Precision Spectral Frequency Repair" loading="lazy">
+                    </div>
+                    <div class="catalog-audio-dock">
+                      <div class="catalog-audio-pair">
+                        <!-- Before: Noisy Audio -->
+                        <div class="catalog-audio-track" data-track-type="before">
+                          <div class="catalog-track-top">
+                            <span class="catalog-track-tag before">Before</span>
+                            <span class="catalog-track-tag-desc">Noisy Audio</span>
+                          </div>
+                          <div class="catalog-track-controls">
+                            <button type="button" class="catalog-play-btn" data-audio="./assets/audio/Aiobahn maybe last mix.mp3" data-title="Damaged Audio Recording" aria-label="Listen to noisy audio">
+                              <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                              <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                            </button>
+                            <div class="showcase-audio-meta">
+                              <span class="showcase-audio-title">Noisy Track</span>
+                              <span class="showcase-audio-sub">Background hiss &amp; hum</span>
+                            </div>
+                            <div class="catalog-waveform" aria-hidden="true">
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- After: Cleaned & Restored Audio -->
+                        <div class="catalog-audio-track" data-track-type="after">
+                          <div class="catalog-track-top">
+                            <span class="catalog-track-tag after">After</span>
+                            <span class="catalog-track-tag-desc">Clean Master</span>
+                          </div>
+                          <div class="catalog-track-controls">
+                            <button type="button" class="catalog-play-btn" data-audio="./assets/audio/broken jar mastered.mp3" data-title="Restored & Clean Audio" aria-label="Listen to restored audio">
+                              <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                              <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                            </button>
+                            <div class="showcase-audio-meta">
+                              <span class="showcase-audio-title">Cleaned Audio</span>
+                              <span class="showcase-audio-sub">Noise removed &amp; clarified</span>
+                            </div>
+                            <div class="catalog-waveform" aria-hidden="true">
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                              <span class="catalog-waveform-bar"></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
           </div>
         </section>
         <section class="delivery-section" id="delivery" aria-labelledby="delivery-title">
