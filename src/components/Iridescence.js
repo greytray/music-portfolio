@@ -77,8 +77,8 @@ export function mountIridescence(ctn, options = {}) {
     renderer = new Renderer({
       alpha: true,
       antialias: false,
-      powerPreference: 'low-power',
-      dpr: Math.min(window.devicePixelRatio || 1, 1.5)
+      powerPreference: 'high-performance',
+      dpr: Math.min(window.devicePixelRatio || 1, 1.0)
     });
   } catch (err) {
     console.warn('WebGL not supported for Iridescence background:', err);
@@ -98,16 +98,18 @@ export function mountIridescence(ctn, options = {}) {
   let isVisible = true;
   let animateId = null;
   let resizeRafId = null;
-  let lastFrameTime = 0;
 
   function resize() {
     if (!ctn) return;
-    const width = ctn.offsetWidth || ctn.clientWidth || window.innerWidth || 300;
-    const height = ctn.offsetHeight || ctn.clientHeight || window.innerHeight || 300;
+    const width = window.innerWidth || ctn.offsetWidth || 300;
+    const height = window.innerHeight || ctn.offsetHeight || 300;
     
-    // Balanced crisp DPR (max 1.5x) eliminates pixelation without GPU strain
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-    renderer.setSize(Math.round(width * dpr), Math.round(height * dpr));
+    // Balanced render resolution: clamps width/height to efficient budget for smooth 60/120fps
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.0);
+    const renderW = Math.min(1920, Math.round(width * dpr));
+    const renderH = Math.min(1080, Math.round(height * dpr));
+
+    renderer.setSize(renderW, renderH);
     
     if (gl.canvas) {
       gl.canvas.style.width = '100%';
@@ -116,15 +118,14 @@ export function mountIridescence(ctn, options = {}) {
       gl.canvas.style.top = '0';
       gl.canvas.style.left = '0';
       gl.canvas.style.pointerEvents = 'none';
-      gl.canvas.style.transform = 'translateZ(0)';
-      gl.canvas.style.imageRendering = 'auto';
+      gl.canvas.style.transform = 'translate3d(0, 0, 0)';
     }
 
     if (program && program.uniforms && program.uniforms.uResolution) {
       resolutionColor.set(
-        gl.canvas.width,
-        gl.canvas.height,
-        gl.canvas.width / Math.max(1, gl.canvas.height)
+        renderW,
+        renderH,
+        renderW / Math.max(1, renderH)
       );
       program.uniforms.uResolution.value = resolutionColor;
     }
@@ -154,24 +155,15 @@ export function mountIridescence(ctn, options = {}) {
   // Initial sizing
   resize();
 
-  // Smooth, dynamic frame rate render loop with power-saving pause guards
+  // Pure vsync-synchronized render loop with smart power-saving pause guards
   function update(t) {
     animateId = requestAnimationFrame(update);
 
     // Smart Viewport & Full-Screen Overlay Culling:
-    // Halt completely when element leaves the viewport, tab is hidden, or full-screen view overlays (Cart, Beats, Sessions, Orders) are open
     const isFullscreenOverlayOpen = document.body.classList.contains('modal-open') || Boolean(document.getElementById('fullscreen-view-container')?.classList.contains('is-open'));
     if (!isVisible || document.hidden || isFullscreenOverlayOpen) {
       return;
     }
-
-    // Enforce dynamic frame rate limiter (up to 120 FPS on capable devices, 60 FPS fallback on weak devices)
-    const delta = t - lastFrameTime;
-    const frameInterval = getFrameInterval(120);
-    if (delta < frameInterval - 1) {
-      return;
-    }
-    lastFrameTime = t - (delta % frameInterval);
 
     // Smooth mouse lerp
     mousePos.x += (targetMouse.x - mousePos.x) * 0.08;
@@ -233,16 +225,9 @@ export function mountIridescence(ctn, options = {}) {
   function handleVisibilityChange() {
     if (!document.hidden) {
       isVisible = true;
-      lastFrameTime = performance.now();
-    }
-  }
-  function handleOverlayChange(e) {
-    if (e.detail && !e.detail.open) {
-      lastFrameTime = performance.now();
     }
   }
   document.addEventListener('visibilitychange', handleVisibilityChange);
-  window.addEventListener('fullscreen-overlay-change', handleOverlayChange);
 
   // Return cleanup method
   return function cleanup() {
@@ -250,7 +235,6 @@ export function mountIridescence(ctn, options = {}) {
     if (resizeRafId) cancelAnimationFrame(resizeRafId);
     window.removeEventListener('resize', queueResize);
     document.removeEventListener('visibilitychange', handleVisibilityChange);
-    window.removeEventListener('fullscreen-overlay-change', handleOverlayChange);
     if (resizeObserver) resizeObserver.disconnect();
     if (intersectionObserver) intersectionObserver.disconnect();
     

@@ -52,8 +52,9 @@ export function initLiquidGlassButtons() {
       targetHoverScale: 1.0
     };
 
-    function updatePhysics(now) {
-      // Smart resource management: Stop loop if not visible, tab hidden, or full-screen view open
+    let cachedBtnRect = null;
+
+    function updatePhysics(timestamp) {
       if (!state.isVisible || document.hidden || document.body.classList.contains('modal-open')) {
         state.rafId = null;
         return;
@@ -61,52 +62,39 @@ export function initLiquidGlassButtons() {
 
       state.rafId = requestAnimationFrame(updatePhysics);
 
-      const timestamp = typeof now === 'number' ? now : performance.now();
-      const delta = timestamp - state.lastFrameTime;
-      const frameInterval = getFrameInterval(120);
-      
-      // Enforce dynamic FPS cap (120 FPS on capable devices, 60 FPS fallback on weak devices)
-      if (delta < frameInterval - 1) {
-        return;
-      }
-      state.lastFrameTime = timestamp - (delta % frameInterval);
-
-      // Smoothly blend breathing amplitude (smoothly pauses on hover, smoothly resumes on leave)
-      const breatheTransitionSpeed = state.isHovered ? 0.07 : 0.04;
+      // Smoothly blend breathing amplitude
+      const breatheTransitionSpeed = state.isHovered ? 0.08 : 0.04;
       state.breatheAmp += (state.targetBreatheAmp - state.breatheAmp) * breatheTransitionSpeed;
 
-      // Deterministic, continuous sine cycle with exact constant speed across all displays/refresh rates
+      // Deterministic continuous sine cycle
       const cycleProgress = (timestamp % BREATHE_PERIOD_MS) / BREATHE_PERIOD_MS;
       const pulse = Math.sin(cycleProgress * 2 * Math.PI);
 
-      // Consistent uniform breathing scale (identical on both axes to eliminate wobbling/randomized distortion)
       const breatheScale = 1.0 + pulse * BREATHE_SCALE_RANGE * state.breatheAmp;
 
       // Smooth tilt and hover scale interpolation
-      const tiltLerp = state.isHovered ? 0.12 : 0.08;
+      const tiltLerp = state.isHovered ? 0.14 : 0.08;
       state.tiltX += (state.targetTiltX - state.tiltX) * tiltLerp;
       state.tiltY += (state.targetTiltY - state.tiltY) * tiltLerp;
       state.hoverScale += (state.targetHoverScale - state.hoverScale) * 0.08;
 
       // Dynamic specular glow coordinate interpolation
-      state.glowX += (state.targetGlowX - state.glowX) * (state.isHovered ? 0.15 : 0.06);
-      state.glowY += (state.targetGlowY - state.glowY) * (state.isHovered ? 0.15 : 0.06);
+      state.glowX += (state.targetGlowX - state.glowX) * (state.isHovered ? 0.18 : 0.06);
+      state.glowY += (state.targetGlowY - state.glowY) * (state.isHovered ? 0.18 : 0.06);
 
-      if (Math.abs(state.glowX - state.lastRenderedGlowX) > 0.05 || Math.abs(state.glowY - state.lastRenderedGlowY) > 0.05) {
-        btn.style.setProperty('--liquid-x', `${state.glowX.toFixed(2)}%`);
-        btn.style.setProperty('--liquid-y', `${state.glowY.toFixed(2)}%`);
+      if (Math.abs(state.glowX - state.lastRenderedGlowX) > 0.1 || Math.abs(state.glowY - state.lastRenderedGlowY) > 0.1) {
+        btn.style.setProperty('--liquid-x', `${state.glowX.toFixed(1)}%`);
+        btn.style.setProperty('--liquid-y', `${state.glowY.toFixed(1)}%`);
         state.lastRenderedGlowX = state.glowX;
         state.lastRenderedGlowY = state.glowY;
       }
 
-      // Combined uniform scale
       const finalScale = breatheScale * state.hoverScale;
       btn.style.transform = `perspective(600px) rotateX(${state.tiltX.toFixed(2)}deg) rotateY(${state.tiltY.toFixed(2)}deg) scale3d(${finalScale.toFixed(4)}, ${finalScale.toFixed(4)}, 1)`;
     }
 
     function ensurePhysicsRunning() {
       if (!state.rafId && state.isVisible && !document.hidden && !document.body.classList.contains('modal-open')) {
-        state.lastFrameTime = performance.now();
         state.rafId = requestAnimationFrame(updatePhysics);
       }
     }

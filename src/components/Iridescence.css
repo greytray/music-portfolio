@@ -842,13 +842,13 @@ nav a:hover, .nav-btn:hover {
    - Organic staggered floating animations & 3D perspective weight tilt intact
    ========================================================================== */
 
-/* Enhanced organic floating animation rhythm (animates translate so 3D tilt can run continuously without snapping) */
+/* Enhanced organic floating animation rhythm (animates translate property so transform rotateX/rotateY tilt works cleanly) */
 @keyframes cardLevitate {
   0% {
     translate: 0 0px;
   }
   50% {
-    translate: 0 -9px;
+    translate: 0 -6px;
   }
   100% {
     translate: 0 0px;
@@ -862,7 +862,11 @@ nav a:hover, .nav-btn:hover {
   will-change: transform, translate;
 }
 
-/* Master Shared Glassy Liquid Card System */
+.floating-card-item.is-tilting {
+  animation-play-state: paused !important;
+}
+
+/* Master Shared Glassy Liquid Card System - High-Performance Composited Glass */
 .liquid-glass-card,
 .now-playing,
 .iridescence-zone-content .now-playing,
@@ -887,7 +891,7 @@ nav a:hover, .nav-btn:hover {
 .success-modal-card {
   position: relative !important;
   overflow: hidden !important;
-  contain: paint !important;
+  contain: paint layout !important;
   --liquid-x: 50%;
   --liquid-y: 50%;
   
@@ -895,20 +899,20 @@ nav a:hover, .nav-btn:hover {
   background: 
     radial-gradient(
       ellipse 85% 65% at 50% -25%,
-      rgba(255, 255, 255, 0.22) 0%,
-      rgba(255, 255, 255, 0.06) 45%,
+      rgba(255, 255, 255, 0.28) 0%,
+      rgba(255, 255, 255, 0.08) 45%,
       transparent 75%
     ),
     linear-gradient(
       165deg,
-      rgba(255, 255, 255, 0.14) 0%,
-      rgba(248, 235, 255, 0.06) 32%,
-      rgba(225, 245, 255, 0.05) 65%,
-      rgba(250, 0, 255, 0.05) 100%
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(248, 235, 255, 0.08) 32%,
+      rgba(225, 245, 255, 0.07) 65%,
+      rgba(250, 0, 255, 0.06) 100%
     ) !important;
     
-  backdrop-filter: blur(28px) saturate(220%) brightness(112%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(220%) brightness(112%) !important;
+  backdrop-filter: blur(12px) saturate(180%) brightness(108%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) brightness(108%) !important;
   
   border: 1.5px solid rgba(255, 255, 255, 0.70) !important;
   
@@ -922,7 +926,7 @@ nav a:hover, .nav-btn:hover {
     0 16px 40px -8px rgba(0, 0, 0, 0.35),
     0 4px 14px rgba(15, 23, 42, 0.06) !important;
     
-  transition: box-shadow 0.35s ease, border-color 0.35s ease, background 0.35s ease !important;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease !important;
 }
 
 /* Water drop upper meniscus curved highlight for all cards */
@@ -968,7 +972,7 @@ nav a:hover, .nav-btn:hover {
   transition: opacity 0.3s ease !important;
 }
 
-/* Reactive fluid light caustics moving with pointer for all cards */
+/* Reactive fluid light caustics moving with pointer for all cards (hidden by default, fades in on hover, fades out on leave) */
 .liquid-glass-card::before,
 .now-playing::before,
 .iridescence-zone-content .now-playing::before,
@@ -1002,8 +1006,8 @@ nav a:hover, .nav-btn:hover {
     rgba(56, 189, 248, 0.28) 55%,
     transparent 80%
   ) !important;
-  opacity: 0.35 !important;
-  transition: opacity 0.35s ease !important;
+  opacity: 0 !important;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
   pointer-events: none !important;
   z-index: 1 !important;
   mix-blend-mode: overlay !important;

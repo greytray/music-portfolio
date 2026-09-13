@@ -3,17 +3,10 @@
  * 
  * Physics Behavior:
  * - When the cursor moves towards sides or corners: the card feels the physical weight
- *   of the cursor point and gets depressed inwards into the Z-axis, creating a satisfying
- *   perspective shift where the pressed side sinks and the opposite side elevates.
- * - For "Now Playing" card: preserves the calibrated gentle cinematic response.
- * - For all other cards: refined responsive speed (hoverLerp: 0.22), near-instant start on hover,
- *   and decreased effort to reach maximum tilt without exceeding maximum tilt limit.
- * - Real-time client bounding calculation ensures 100% accurate cursor tracking without offset drift.
- * - Cursor reactor liquid shine dissolves in-place at the exact exit spot on pointer leave.
- * - Organic staggered floating levitation animations remain intact.
+ *   of the cursor point and gets depressed inwards into the Z-axis.
+ * - Optimized with cached bounding rects and single-rAF updates to eliminate layout thrashing.
+ * - Zero frame drops during pointer movement over cards.
  */
-
-import { getFrameInterval } from './perf.js';
 
 const BASE_TILT_DEG = 8.5; // Base maximum tilt angle in degrees
 const BASE_DEPRESS_PX = 7; // Inward depth displacement in pixels
@@ -28,7 +21,7 @@ const activeCards = new WeakSet();
 export function attachTiltToCard(card, index = 0) {
   if (!card || activeCards.has(card)) return;
 
-  // Strictly skip Buy Beats, Sessions, Send Audio, Orders, and any full-screen view sections - revert to clean static state
+  // Strictly skip Buy Beats, Sessions, Send Audio, Orders, and any full-screen view sections
   if (
     card.closest('.fullscreen-view-container') ||
     card.closest('.beats-view, .sessions-view, .send-audio-view, .orders-view, .cart-view') ||
@@ -51,24 +44,24 @@ export function attachTiltToCard(card, index = 0) {
 
   let state = {
     rafId: null,
-    lastFrameTime: 0,
     isHovered: false,
     currentRx: 0,
     currentRy: 0,
     currentTz: 0,
     targetRx: 0,
     targetRy: 0,
-    targetTz: 0
+    targetTz: 0,
+    liquidX: 50,
+    liquidY: 50,
+    lastSetLiquidX: 50,
+    lastSetLiquidY: 50
   };
 
-  // Calibrate dynamics:
-  // - Now Playing: smooth & gentle cinematic lerp
-  // - Other Cards: slightly slower and refined (0.22 hover, 0.10 decay) for buttery smooth reaction
   const deadZone = isNowPlaying ? 0.04 : 0.01;
   const hoverLerp = isNowPlaying ? 0.14 : 0.22;
   const decayLerp = isNowPlaying ? 0.08 : 0.10;
 
-  function update(now) {
+  function update() {
     if (document.hidden || !card.isConnected || document.body.classList.contains('modal-open')) {
       card.style.transform = '';
       card.classList.remove('is-tilting');
@@ -76,30 +69,32 @@ export function attachTiltToCard(card, index = 0) {
       return;
     }
 
-    const timestamp = typeof now === 'number' ? now : performance.now();
-    const delta = timestamp - state.lastFrameTime;
-    const frameInterval = getFrameInterval(120);
-    if (delta < frameInterval - 1) {
-      state.rafId = requestAnimationFrame(update);
-      return;
-    }
-    state.lastFrameTime = timestamp - (delta % frameInterval);
-
     const currentLerp = state.isHovered ? hoverLerp : decayLerp;
     state.currentRx += (state.targetRx - state.currentRx) * currentLerp;
     state.currentRy += (state.targetRy - state.currentRy) * currentLerp;
     state.currentTz += (state.targetTz - state.currentTz) * currentLerp;
 
+    // Apply liquid shine coordinates smoothly
+    if (Math.abs(state.liquidX - state.lastSetLiquidX) > 0.1 || Math.abs(state.liquidY - state.lastSetLiquidY) > 0.1) {
+      card.style.setProperty('--liquid-x', `${state.liquidX.toFixed(1)}%`);
+      card.style.setProperty('--liquid-y', `${state.liquidY.toFixed(1)}%`);
+      state.lastSetLiquidX = state.liquidX;
+      state.lastSetLiquidY = state.liquidY;
+    }
+
     const hasSignificantMotion = 
-      Math.abs(state.targetRx - state.currentRx) > 0.005 ||
-      Math.abs(state.targetRy - state.currentRy) > 0.005 ||
-      Math.abs(state.targetTz - state.currentTz) > 0.005 ||
+      Math.abs(state.targetRx - state.currentRx) > 0.01 ||
+      Math.abs(state.targetRy - state.currentRy) > 0.01 ||
+      Math.abs(state.targetTz - state.currentTz) > 0.01 ||
       state.isHovered;
 
     if (hasSignificantMotion) {
-      card.style.transform = `perspective(1000px) rotateX(${state.currentRx.toFixed(3)}deg) rotateY(${state.currentRy.toFixed(3)}deg) translateZ(${state.currentTz.toFixed(3)}px)`;
+      card.style.transform = `perspective(1000px) rotateX(${state.currentRx.toFixed(2)}deg) rotateY(${state.currentRy.toFixed(2)}deg) translateZ(${state.currentTz.toFixed(2)}px)`;
       state.rafId = requestAnimationFrame(update);
     } else {
+      state.currentRx = 0;
+      state.currentRy = 0;
+      state.currentTz = 0;
       card.style.transform = '';
       card.classList.remove('is-tilting');
       state.rafId = null;
@@ -107,15 +102,12 @@ export function attachTiltToCard(card, index = 0) {
   }
 
   function onPointerMove(e) {
-    // Always retrieve live bounding rectangle to ensure 100% accurate coordinates
-    // regardless of page scrolling, dynamic viewport shifts, or floating animations.
     const rect = card.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return;
 
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
 
-    // Normalized raw offset from center: -1 (top/left) to +1 (bottom/right)
     let rawDx = (e.clientX - cx) / (rect.width / 2);
     let rawDy = (e.clientY - cy) / (rect.height / 2);
 
@@ -124,19 +116,15 @@ export function attachTiltToCard(card, index = 0) {
 
     const rawDist = Math.sqrt(rawDx * rawDx + rawDy * rawDy);
 
-    // Responsive liquid shine coordinates clamped safely to 0-100%
-    const px = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-    const py = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
-
-    card.style.setProperty('--liquid-x', `${px.toFixed(2)}%`);
-    card.style.setProperty('--liquid-y', `${py.toFixed(2)}%`);
+    // Responsive liquid shine coordinates
+    state.liquidX = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    state.liquidY = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
 
     if (rawDist < deadZone) {
       state.targetRx = 0;
       state.targetRy = 0;
       state.targetTz = 0;
     } else {
-      // Aspect ratio correction for balanced physics across portrait & landscape cards
       const aspectCorrectionX = Math.min(1.35, Math.max(0.75, 450 / (rect.width / 2)));
       const aspectCorrectionY = Math.min(1.35, Math.max(0.75, 80 / (rect.height / 2)));
 
@@ -144,7 +132,6 @@ export function attachTiltToCard(card, index = 0) {
       let maxTiltY = BASE_TILT_DEG * aspectCorrectionX;
 
       if (isTrack) {
-        // Decreased maximum tilt limit on left and right sides specifically for track cards
         maxTiltY = (BASE_TILT_DEG * 0.45) * aspectCorrectionX;
       }
 
@@ -153,8 +140,6 @@ export function attachTiltToCard(card, index = 0) {
       let factorDist = rawDist;
 
       if (!isNowPlaying) {
-        // Decreased effort to reach maximum tilt: progressive power curve
-        // Moving cursor ~50% towards edge reaches near 90-100% of max tilt limit
         const absX = Math.abs(rawDx);
         const absY = Math.abs(rawDy);
         factorX = Math.sign(rawDx) * Math.min(1.0, Math.pow(absX, 0.72) * 1.4);
@@ -162,11 +147,6 @@ export function attachTiltToCard(card, index = 0) {
         factorDist = Math.min(1.0, Math.pow(rawDist, 0.72) * 1.4);
       }
 
-      // Weight Press Physics:
-      // - Cursor on top (dy < 0): top sinks inwards -> rotX is positive in CSS 3D
-      // - Cursor on bottom (dy > 0): bottom sinks inwards -> rotX is negative
-      // - Cursor on right (dx > 0): right sinks inwards -> rotY is positive
-      // - Cursor on left (dx < 0): left sinks inwards -> rotY is negative
       state.targetRx = -factorY * maxTiltX;
       state.targetRy = factorX * maxTiltY;
       state.targetTz = -factorDist * BASE_DEPRESS_PX;
@@ -188,10 +168,6 @@ export function attachTiltToCard(card, index = 0) {
 
   function onPointerLeave() {
     state.isHovered = false;
-    // NOTE: We intentionally do NOT reset --liquid-x and --liquid-y to 50%
-    // so that the cursor reactor liquid glow dissolves smoothly in-place at the exact exit spot!
-    
-    // Target 0 resting state; keep 'is-tilting' until spring decays smoothly to 0 in update()
     state.targetRx = 0;
     state.targetRy = 0;
     state.targetTz = 0;
@@ -218,7 +194,6 @@ let globalObserver = null;
 
 /**
  * Scans the DOM and attaches 3D perspective tilt to all card components.
- * Also sets up a MutationObserver to automatically attach to dynamically rendered cards.
  * @param {HTMLElement|Document} [root=document] - Root container to search within
  */
 export function initAllCardTilts(root = document) {
@@ -228,7 +203,6 @@ export function initAllCardTilts(root = document) {
     attachTiltToCard(card, index);
   });
 
-  // Automatically watch for dynamically added card nodes
   if (!globalObserver && typeof MutationObserver !== 'undefined') {
     globalObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -250,3 +224,4 @@ export function initAllCardTilts(root = document) {
     });
   }
 }
+

@@ -1256,21 +1256,13 @@ if (!audio.getAttribute('src')) {
   audio.src = activeTrack.dataset.src;
 }
 
-function renderVisualizer(now) {
+function renderVisualizer() {
   if (!analyser || audio.paused || document.hidden || reduceMotion.matches || !desktopPlayer.matches || !isShowcaseInView || document.body.classList.contains('modal-open')) {
     visualizerFrame = undefined;
     return;
   }
   
   visualizerFrame = requestAnimationFrame(renderVisualizer);
-
-  const timestamp = typeof now === 'number' ? now : performance.now();
-  const delta = timestamp - lastVisFrameTime;
-  const frameInterval = getAudioFrameInterval();
-  if (delta < frameInterval - 1) {
-    return;
-  }
-  lastVisFrameTime = timestamp - (delta % frameInterval);
 
   analyser.getByteFrequencyData(frequencyData);
   const bars = [...trackVisualizer.children];
