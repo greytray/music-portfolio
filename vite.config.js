@@ -103,8 +103,17 @@ function audioStreamingPlugin() {
 }
 
 export default defineConfig({
-  base: "./",
+  base: "/",
   plugins: [copyAssetsPlugin(), audioStreamingPlugin()],
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.resolve(process.cwd(), "index.html"),
+        ekonova090: path.resolve(process.cwd(), "ekonova090.html"),
+        studio: path.resolve(process.cwd(), "studio.html"),
+      },
+    },
+  },
   server: {
     host: "0.0.0.0",
     port: 3000,
