@@ -216,8 +216,8 @@ export default defineType({
       title: 'Desktop Hero Title Size (rem)',
       type: 'number',
       group: 'design',
-      initialValue: 8.5,
-      description: 'Scale factor for large display H1 header (e.g. 5.0 to 12.0 rem)',
+      initialValue: 11.5,
+      description: 'Scale factor for large display H1 header (original baseline: 11.5 rem)',
       validation: (Rule) => Rule.min(3).max(16),
     }),
     defineField({
@@ -225,9 +225,9 @@ export default defineType({
       title: 'Desktop Section Heading 2 Size (rem)',
       type: 'number',
       group: 'design',
-      initialValue: 6.5,
-      description: 'Scale factor for large section H2 headings (e.g. 3.5 to 9.5 rem)',
-      validation: (Rule) => Rule.min(2.5).max(12),
+      initialValue: 9.2,
+      description: 'Scale factor for large section H2 headings like "The Work" & "The Process" (original baseline: 9.2 rem)',
+      validation: (Rule) => Rule.min(2.5).max(14),
     }),
     defineField({
       name: 'desktopCardPadding',

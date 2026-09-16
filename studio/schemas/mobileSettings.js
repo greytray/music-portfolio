@@ -35,8 +35,8 @@ export default defineType({
       title: 'Mobile Hero Title Size (rem)',
       type: 'number',
       group: 'layout',
-      initialValue: 4.2,
-      description: 'Headline H1 scale factor on smartphones (e.g. 2.8 to 5.5 rem)',
+      initialValue: 5.0,
+      description: 'Headline H1 scale factor on smartphones (original baseline: 5.0 rem)',
       validation: (Rule) => Rule.min(2.0).max(7.0),
     }),
     defineField({
@@ -44,8 +44,8 @@ export default defineType({
       title: 'Mobile Section Heading 2 Size (rem)',
       type: 'number',
       group: 'layout',
-      initialValue: 3.2,
-      description: 'Section H2 scale factor on smartphones (e.g. 2.2 to 4.5 rem)',
+      initialValue: 4.5,
+      description: 'Section H2 scale factor on smartphones (original baseline: 4.5 rem)',
       validation: (Rule) => Rule.min(1.8).max(6.0),
     }),
     defineField({

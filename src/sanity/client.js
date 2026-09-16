@@ -50,8 +50,8 @@ export const BASELINE_DESIGN = {
   desktop: {
     pageGutter: 48,
     sectionPadding: 112,
-    heroTitleSize: 8.5,
-    h2Size: 6.5,
+    heroTitleSize: 11.5,
+    h2Size: 9.2,
     cardPadding: 34,
     cardGap: 24,
     baseFontSize: 16,
@@ -61,8 +61,8 @@ export const BASELINE_DESIGN = {
   mobile: {
     pageGutter: 20,
     sectionPadding: 64,
-    heroTitleSize: 4.2,
-    h2Size: 3.2,
+    heroTitleSize: 5.0,
+    h2Size: 4.5,
     cardPadding: 20,
     cardGap: 14,
     baseFontSize: 15,
@@ -86,12 +86,6 @@ export function applyFluidDesignVariables(desktop = {}, mobile = {}) {
   const dPadding = desktop.desktopSectionPadding ?? BASELINE_DESIGN.desktop.sectionPadding;
   const mPadding = mobile.mobileSectionPadding ?? BASELINE_DESIGN.mobile.sectionPadding;
 
-  const dHeroSize = desktop.desktopHeroTitleSize ?? BASELINE_DESIGN.desktop.heroTitleSize;
-  const mHeroSize = mobile.mobileHeroTitleSize ?? BASELINE_DESIGN.mobile.heroTitleSize;
-
-  const dH2Size = desktop.desktopH2Size ?? BASELINE_DESIGN.desktop.h2Size;
-  const mH2Size = mobile.mobileH2Size ?? BASELINE_DESIGN.mobile.h2Size;
-
   const dCardPad = desktop.desktopCardPadding ?? BASELINE_DESIGN.desktop.cardPadding;
   const mCardPad = mobile.mobileCardPadding ?? BASELINE_DESIGN.mobile.cardPadding;
 
@@ -106,10 +100,6 @@ export function applyFluidDesignVariables(desktop = {}, mobile = {}) {
   root.style.setProperty('--mobile-page-gutter', `${mGutter}px`);
   root.style.setProperty('--desktop-section-padding', `${dPadding}px`);
   root.style.setProperty('--mobile-section-padding', `${mPadding}px`);
-  root.style.setProperty('--desktop-hero-title-size', `${dHeroSize}rem`);
-  root.style.setProperty('--mobile-hero-title-size', `${mHeroSize}rem`);
-  root.style.setProperty('--desktop-h2-size', `${dH2Size}rem`);
-  root.style.setProperty('--mobile-h2-size', `${mH2Size}rem`);
   root.style.setProperty('--desktop-card-padding', `${dCardPad}px`);
   root.style.setProperty('--mobile-card-padding', `${mCardPad}px`);
   root.style.setProperty('--desktop-card-gap', `${dCardGap}px`);
@@ -129,11 +119,34 @@ export function applyFluidDesignVariables(desktop = {}, mobile = {}) {
 
   root.style.setProperty('--page-gutter', fluidFormulaPx(mGutter, dGutter));
   root.style.setProperty('--section-padding', fluidFormulaPx(mPadding, dPadding));
-  root.style.setProperty('--hero-title-size', fluidFormulaRem(mHeroSize, dHeroSize));
-  root.style.setProperty('--heading-2-size', fluidFormulaRem(mH2Size, dH2Size));
   root.style.setProperty('--card-padding', fluidFormulaPx(mCardPad, dCardPad));
   root.style.setProperty('--card-gap', fluidFormulaPx(mCardGap, dCardGap));
   root.style.setProperty('--base-font-size', fluidFormulaPx(mFontSize, dFontSize));
+
+  // Only override H2 or Hero size if explicitly customized in Sanity
+  if (desktop.desktopH2Size || mobile.mobileH2Size) {
+    const dH2Size = desktop.desktopH2Size ?? BASELINE_DESIGN.desktop.h2Size;
+    const mH2Size = mobile.mobileH2Size ?? BASELINE_DESIGN.mobile.h2Size;
+    root.style.setProperty('--desktop-h2-size', `${dH2Size}rem`);
+    root.style.setProperty('--mobile-h2-size', `${mH2Size}rem`);
+    root.style.setProperty('--heading-2-size', fluidFormulaRem(mH2Size, dH2Size));
+  } else {
+    root.style.removeProperty('--desktop-h2-size');
+    root.style.removeProperty('--mobile-h2-size');
+    root.style.removeProperty('--heading-2-size');
+  }
+
+  if (desktop.desktopHeroTitleSize || mobile.mobileHeroTitleSize) {
+    const dHeroSize = desktop.desktopHeroTitleSize ?? BASELINE_DESIGN.desktop.heroTitleSize;
+    const mHeroSize = mobile.mobileHeroTitleSize ?? BASELINE_DESIGN.mobile.heroTitleSize;
+    root.style.setProperty('--desktop-hero-title-size', `${dHeroSize}rem`);
+    root.style.setProperty('--mobile-hero-title-size', `${mHeroSize}rem`);
+    root.style.setProperty('--hero-title-size', fluidFormulaRem(mHeroSize, dHeroSize));
+  } else {
+    root.style.removeProperty('--desktop-hero-title-size');
+    root.style.removeProperty('--mobile-hero-title-size');
+    root.style.removeProperty('--hero-title-size');
+  }
 
   // 3. Apply Brand Colors if configured
   if (desktop.primarySignalColor) {
