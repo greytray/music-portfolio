@@ -5,7 +5,7 @@ export function createBuyBeatsView({ navigateTo }) {
   container.className = 'view-page beats-view';
   container.id = 'buy-beats-view-content';
 
-  const BEATS = [
+  const DEFAULT_BEATS = [
     {
       id: 'beat-1',
       title: 'Feeling Mello',
@@ -79,6 +79,11 @@ export function createBuyBeatsView({ navigateTo }) {
       prices: { mp3: 49, wav: 99, stems: 199, exclusive: 599 }
     }
   ];
+
+  // Dynamically load beats managed via Sanity CMS Beats Showcase if available
+  const BEATS = (Array.isArray(window.__SANITY_BEATS__) && window.__SANITY_BEATS__.length > 0)
+    ? window.__SANITY_BEATS__
+    : DEFAULT_BEATS;
 
   let activeGenre = 'all';
   let searchQuery = '';

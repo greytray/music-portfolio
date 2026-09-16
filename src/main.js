@@ -1,4 +1,5 @@
 import './utils/perf.js';
+import './sanity/client.js';
 import { cartStore } from './store/cartStore.js';
 import { fastSmoothScrollTo } from './utils/scroll.js';
 import { mountIridescence } from './components/Iridescence.js';
