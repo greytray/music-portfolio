@@ -25,6 +25,119 @@ export function getSanityClient() {
   return clientInstance;
 }
 
+/**
+ * Commits visual tuning settings directly to Sanity Content Lake
+ * Executes explicit client.createOrReplace() mutations for desktopSettings, mobileSettings, unifiedSettings.
+ */
+export async function commitSettingsToSanity(settings) {
+  const client = getSanityClient();
+  if (!client) throw new Error('Sanity client is not initialized');
+
+  const desktopPayload = {
+    _id: 'desktopSettings',
+    _type: 'desktopSettings',
+    desktopPageGutter: Number(settings.desktopPageGutter ?? 48),
+    desktopSectionPadding: Number(settings.desktopSectionPadding ?? 112),
+    desktopCardPadding: Number(settings.desktopCardPadding ?? 34),
+    desktopCardGap: Number(settings.desktopCardGap ?? 24),
+    desktopButtonPaddingV: Number(settings.desktopButtonPaddingV ?? 14),
+    desktopButtonPaddingH: Number(settings.desktopButtonPaddingH ?? 28),
+    desktopHeroTitleSize: Number(settings.desktopHeroTitleSize ?? 11.5),
+    desktopH2Size: Number(settings.desktopH2Size ?? 9.2),
+    desktopBaseFontSize: Number(settings.desktopBaseFontSize ?? 16),
+    headingWeight: String(settings.headingWeight ?? '400'),
+    enableItalicAccents: Boolean(settings.enableItalicAccents),
+    heroEyebrow: settings.heroEyebrow || '',
+    heroTitle: settings.heroTitle || '',
+    heroLine1: settings.heroLine1 || '',
+    heroLine2: settings.heroLine2 || '',
+    heroCtaText: settings.heroCtaText || '',
+    showcaseTitle: settings.showcaseTitle || '',
+    showcaseDescription: settings.showcaseDescription || '',
+    processTitle: settings.processTitle || '',
+    processTrustline: settings.processTrustline || '',
+    processClosingTitle: settings.processClosingTitle || '',
+    processClosingCopy: settings.processClosingCopy || '',
+    servicesTitle: settings.servicesTitle || '',
+    servicesDescription: settings.servicesDescription || '',
+    deliveryTitle: settings.deliveryTitle || 'Delivery & Payments',
+    deliveryDescription: settings.deliveryDescription || 'A straightforward handoff with the important details clear before work begins.',
+    turnaroundBeats: settings.turnaroundBeats || 'Beats — within 24 hours',
+    turnaroundMixing: settings.turnaroundMixing || 'Mixing — 24–48 hours',
+    turnaroundEdits: settings.turnaroundEdits || 'Edits — same day (in most cases)',
+    contactTitle: settings.contactTitle || "Let's Work",
+    contactLead: settings.contactLead || 'Available for collaborations & ongoing projects',
+    contactDmNote: settings.contactDmNote || 'DM for quick response',
+    copyrightText: settings.copyrightText || '© 2026 Eko. All rights reserved.',
+  };
+
+  const mobilePayload = {
+    _id: 'mobileSettings',
+    _type: 'mobileSettings',
+    mobilePageGutter: Number(settings.mobilePageGutter ?? 20),
+    mobileSectionPadding: Number(settings.mobileSectionPadding ?? 64),
+    mobileCardPadding: Number(settings.mobileCardPadding ?? 20),
+    mobileCardGap: Number(settings.mobileCardGap ?? 14),
+    mobileHeroTitleSize: Number(settings.mobileHeroTitleSize ?? 5.0),
+    mobileH2Size: Number(settings.mobileH2Size ?? 4.5),
+    mobileBaseFontSize: Number(settings.mobileBaseFontSize ?? 15),
+  };
+
+  const unifiedPayload = {
+    _id: 'unifiedSettings',
+    _type: 'unifiedSettings',
+    siteBrand: settings.siteBrand || 'EKO',
+    primarySignalColor: settings.primarySignalColor || '#6c63e5',
+    signalBrightColor: settings.signalBrightColor || '#007fff',
+    darkCanvasColor: settings.darkCanvasColor || '#0b0b0e',
+    displayFont: settings.displayFont || 'Dela Gothic One',
+    bodyFont: settings.bodyFont || 'DM Sans',
+    emailAddress: settings.emailAddress || 'hello@eko.com',
+    beatLicensePricing: {
+      mp3Price: Number(settings.mp3Price ?? 49),
+      wavPrice: Number(settings.wavPrice ?? 99),
+      stemsPrice: Number(settings.stemsPrice ?? 199),
+      exclusivePrice: Number(settings.exclusivePrice ?? 599),
+    },
+    servicesPricing: {
+      customProductionPrice: Number(settings.customProductionPrice ?? 350),
+      mixingMasteringPrice: Number(settings.mixingMasteringPrice ?? 150),
+      vocalTuningPrice: Number(settings.vocalTuningPrice ?? 80),
+      consultationHourlyRate: Number(settings.consultationHourlyRate ?? 75),
+    },
+  };
+
+  // Perform concurrent mutations targeting Sanity Content Lake database
+  const [desktopDoc, mobileDoc, unifiedDoc] = await Promise.all([
+    client.createOrReplace(desktopPayload),
+    client.createOrReplace(mobilePayload),
+    client.createOrReplace(unifiedPayload),
+  ]);
+
+  if (!desktopDoc?._id || !mobileDoc?._id || !unifiedDoc?._id) {
+    throw new Error('Sanity API failed to return committed document IDs');
+  }
+
+  return {
+    success: true,
+    documents: {
+      desktop: desktopDoc,
+      mobile: mobileDoc,
+      unified: unifiedDoc,
+    },
+    committedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Patches an individual document property in real-time
+ */
+export async function patchSanityDocument(documentId, patchFields) {
+  const client = getSanityClient();
+  if (!client) throw new Error('Sanity client is not initialized');
+  return await client.patch(documentId).set(patchFields).commit();
+}
+
 // Single GROQ Query fetching all Beats, Audio Arsenal, Desktop Settings, Mobile Settings, and Unified Settings in 1 network request
 export const SINGLE_SANITY_GROQ = `{
   "beats": *[_type in ["beat", "audioArsenal"] && isArchived != true] | order(trackNumber asc, _updatedAt desc) {

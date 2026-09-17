@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useClient } from 'sanity';
 import { ImagesPanel } from './ImagesPanel.jsx';
 import { AudioPanel } from './AudioPanel.jsx';
+import { getSanityClient, commitSettingsToSanity } from '../../src/sanity/client.js';
 
 // Default configuration settings definitions
 const DEFAULT_VALUES = {
@@ -1965,6 +1966,38 @@ export function VisualTuningTool() {
         console.warn('Could not update live text node:', e);
       }
     }
+
+    // Smartly map inspected DOM element updates to the corresponding settings field
+    const sel = (selectedElementSelector || '').toLowerCase();
+    if (sel.includes('hero-title') || sel.includes('hero h1') || sel.includes('#hero-title')) {
+      updateField('heroTitle', newText);
+    } else if (sel.includes('hero-eyebrow') || sel.includes('.hero-eyebrow')) {
+      updateField('heroEyebrow', newText);
+    } else if (sel.includes('hero-copy-line1')) {
+      updateField('heroLine1', newText);
+    } else if (sel.includes('hero-copy-line2')) {
+      updateField('heroLine2', newText);
+    } else if (sel.includes('hero-cta') || sel.includes('.hero .btn')) {
+      updateField('heroCtaText', newText);
+    } else if (sel.includes('#beats-title') || sel.includes('.beats-section h2')) {
+      updateField('showcaseTitle', newText);
+    } else if (sel.includes('.beats-section .section-desc')) {
+      updateField('showcaseDescription', newText);
+    } else if (sel.includes('#process-title') || sel.includes('.process-section h2')) {
+      updateField('processTitle', newText);
+    } else if (sel.includes('#services-title') || sel.includes('.services-section h2')) {
+      updateField('servicesTitle', newText);
+    } else if (sel.includes('#delivery-title') || sel.includes('.delivery-section h2')) {
+      updateField('deliveryTitle', newText);
+    } else if (sel.includes('#contact-title') || sel.includes('.contact-section h2')) {
+      updateField('contactTitle', newText);
+    } else if (sel.includes('.contact-intro-lead')) {
+      updateField('contactLead', newText);
+    } else if (sel.includes('.contact-copyright')) {
+      updateField('copyrightText', newText);
+    } else if (sel.includes('.brand')) {
+      updateField('siteBrand', newText);
+    }
   };
 
   // Update a single style property on the inspected element in real-time
@@ -2086,95 +2119,45 @@ export function VisualTuningTool() {
   const handleAssignSlot = async (trackId, newSlot) => {
     showToast(`Updating track slot to ${newSlot}...`);
     try {
-      await client.patch(trackId).set({ assignedSlot: newSlot }).commit();
-      setTracks((prev) =>
-        prev.map((t) => (t._id === trackId ? { ...t, assignedSlot: newSlot } : t))
-      );
-      showToast('Track slot assignment saved globally');
+      const sanityClient = getSanityClient() || client;
+      const res = await sanityClient.patch(trackId).set({ assignedSlot: newSlot }).commit();
+      if (res?._id) {
+        setTracks((prev) =>
+          prev.map((t) => (t._id === trackId ? { ...t, assignedSlot: newSlot } : t))
+        );
+        showToast('Track slot assignment committed to Sanity');
+      }
     } catch (err) {
       console.error('Track slot update error:', err);
-      showToast('Failed to update track slot');
+      showToast(`Failed to update track slot: ${err.message || 'API error'}`);
     }
   };
 
-  // Save and commit all current settings to Sanity database
+  // Save and commit all current settings to Sanity Content Lake database
   const handleSaveToSanity = async () => {
     setSyncing(true);
     try {
-      await Promise.all([
-        client.createOrReplace({
-          _id: 'desktopSettings',
-          _type: 'desktopSettings',
-          desktopPageGutter: Number(settings.desktopPageGutter),
-          desktopSectionPadding: Number(settings.desktopSectionPadding),
-          desktopCardPadding: Number(settings.desktopCardPadding),
-          desktopCardGap: Number(settings.desktopCardGap),
-          desktopButtonPaddingV: Number(settings.desktopButtonPaddingV),
-          desktopButtonPaddingH: Number(settings.desktopButtonPaddingH),
-          desktopHeroTitleSize: Number(settings.desktopHeroTitleSize),
-          desktopH2Size: Number(settings.desktopH2Size),
-          desktopBaseFontSize: Number(settings.desktopBaseFontSize),
-          headingWeight: String(settings.headingWeight),
-          heroEyebrow: settings.heroEyebrow,
-          heroTitle: settings.heroTitle,
-          heroLine1: settings.heroLine1,
-          heroLine2: settings.heroLine2,
-          heroCtaText: settings.heroCtaText,
-          showcaseTitle: settings.showcaseTitle,
-          showcaseDescription: settings.showcaseDescription,
-          processTitle: settings.processTitle,
-          processTrustline: settings.processTrustline,
-          processClosingTitle: settings.processClosingTitle,
-          processClosingCopy: settings.processClosingCopy,
-          servicesTitle: settings.servicesTitle,
-          servicesDescription: settings.servicesDescription,
-          contactTitle: settings.contactTitle,
-          contactLead: settings.contactLead,
-          contactDmNote: settings.contactDmNote,
-          copyrightText: settings.copyrightText,
-        }),
-        client.createOrReplace({
-          _id: 'mobileSettings',
-          _type: 'mobileSettings',
-          mobilePageGutter: Number(settings.mobilePageGutter),
-          mobileSectionPadding: Number(settings.mobileSectionPadding),
-          mobileCardPadding: Number(settings.mobileCardPadding),
-          mobileCardGap: Number(settings.mobileCardGap),
-          mobileHeroTitleSize: Number(settings.mobileHeroTitleSize),
-          mobileH2Size: Number(settings.mobileH2Size),
-          mobileBaseFontSize: Number(settings.mobileBaseFontSize),
-        }),
-        client.createOrReplace({
-          _id: 'unifiedSettings',
-          _type: 'unifiedSettings',
-          siteBrand: settings.siteBrand,
-          primarySignalColor: settings.primarySignalColor,
-          signalBrightColor: settings.signalBrightColor,
-          darkCanvasColor: settings.darkCanvasColor,
-          displayFont: settings.displayFont,
-          bodyFont: settings.bodyFont,
-          emailAddress: settings.emailAddress,
-          beatLicensePricing: {
-            mp3Price: Number(settings.mp3Price),
-            wavPrice: Number(settings.wavPrice),
-            stemsPrice: Number(settings.stemsPrice),
-            exclusivePrice: Number(settings.exclusivePrice),
-          },
-          servicesPricing: {
-            customProductionPrice: Number(settings.customProductionPrice),
-            mixingMasteringPrice: Number(settings.mixingMasteringPrice),
-            vocalTuningPrice: Number(settings.vocalTuningPrice),
-          },
-        }),
-      ]);
+      // Execute explicit real mutations against Sanity Content Lake with authenticated token
+      const commitResult = await commitSettingsToSanity(settings);
 
-      showToast('All changes committed to Sanity');
-      if (iframeRef.current && iframeRef.current.contentWindow) {
-        iframeRef.current.contentWindow.postMessage({ type: 'SANITY_SAVED' }, '*');
+      // ONLY trigger success notification after confirming HTTP 200 / valid document IDs returned from Sanity API
+      if (commitResult && commitResult.success) {
+        showToast('All changes successfully committed to Sanity Content Lake');
+
+        // Notify live preview iframe
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+          iframeRef.current.contentWindow.postMessage({
+            type: 'SANITY_SAVED',
+            timestamp: Date.now(),
+            settings: settings,
+          }, '*');
+        }
+      } else {
+        throw new Error('Sanity mutation did not return confirmation from server');
       }
     } catch (err) {
-      console.error('Save failed:', err);
-      showToast('Error saving changes to Sanity');
+      console.error('Real Sanity database save error:', err);
+      showToast(`Failed to commit changes to Sanity: ${err.message || 'Database error'}`);
     } finally {
       setSyncing(false);
     }
