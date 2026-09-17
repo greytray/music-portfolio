@@ -10,7 +10,7 @@ export const SANITY_CONFIG = {
   projectId: 'm5gxdv12',
   dataset: 'production',
   apiVersion: '2023-08-01',
-  useCdn: true, // fast cached edge delivery for visitors
+  useCdn: false, // Disables CDN edge caching so saves appear immediately on the website
   token: 'skEsU37ASNeQuPnZHEgJzLC7TTVynHU2kENQjXluJUPIjNQ7j0XqQlJxNbqS4TEb7W5lBsVW7rz905dpGAvZnJWyhKmtLS3TBYNFRsHKaitufWzscMTXYlWnHuFvjErgHlDLbwurotMX8bKG2fOP9tHrcRi479hDsDSCrWpmGsjYVHoHnpMs'
 };
 
@@ -25,7 +25,7 @@ export function getSanityClient() {
   return clientInstance;
 }
 
-// Single GROQ Query fetching all Beats, Desktop Settings, and Mobile Settings in 1 network request
+// Single GROQ Query fetching all Beats, Desktop Settings, Mobile Settings, and Unified Settings in 1 network request
 export const SINGLE_SANITY_GROQ = `{
   "beats": *[_type == "beat"] | order(trackNumber asc, _createdAt desc) {
     _id,
@@ -42,7 +42,8 @@ export const SINGLE_SANITY_GROQ = `{
     "audioUrl": coalesce(audioFile.asset->url, audioUrl)
   },
   "desktop": *[_type == "desktopSettings"][0],
-  "mobile": *[_type == "mobileSettings"][0]
+  "mobile": *[_type == "mobileSettings"][0],
+  "unified": *[_type == "unifiedSettings"][0]
 }`;
 
 // Default Baseline Typography & Layout values (used as graceful defaults before/until CMS updates)
@@ -123,18 +124,9 @@ export function applyFluidDesignVariables(desktop = {}, mobile = {}) {
   root.style.setProperty('--card-gap', fluidFormulaPx(mCardGap, dCardGap));
   root.style.setProperty('--base-font-size', fluidFormulaPx(mFontSize, dFontSize));
 
-  // Only override H2 or Hero size if explicitly customized in Sanity
-  if (desktop.desktopH2Size || mobile.mobileH2Size) {
-    const dH2Size = desktop.desktopH2Size ?? BASELINE_DESIGN.desktop.h2Size;
-    const mH2Size = mobile.mobileH2Size ?? BASELINE_DESIGN.mobile.h2Size;
-    root.style.setProperty('--desktop-h2-size', `${dH2Size}rem`);
-    root.style.setProperty('--mobile-h2-size', `${mH2Size}rem`);
-    root.style.setProperty('--heading-2-size', fluidFormulaRem(mH2Size, dH2Size));
-  } else {
-    root.style.removeProperty('--desktop-h2-size');
-    root.style.removeProperty('--mobile-h2-size');
-    root.style.removeProperty('--heading-2-size');
-  }
+  root.style.removeProperty('--desktop-h2-size');
+  root.style.removeProperty('--mobile-h2-size');
+  root.style.removeProperty('--heading-2-size');
 
   if (desktop.desktopHeroTitleSize || mobile.mobileHeroTitleSize) {
     const dHeroSize = desktop.desktopHeroTitleSize ?? BASELINE_DESIGN.desktop.heroTitleSize;
@@ -148,12 +140,23 @@ export function applyFluidDesignVariables(desktop = {}, mobile = {}) {
     root.style.removeProperty('--hero-title-size');
   }
 
-  // 3. Apply Brand Colors if configured
+  // 3. Apply Brand Colors & Fonts if configured
   if (desktop.primarySignalColor) {
     root.style.setProperty('--signal', desktop.primarySignalColor);
   }
   if (desktop.signalBrightColor) {
     root.style.setProperty('--signal-bright', desktop.signalBrightColor);
+  }
+  if (desktop.darkCanvasColor) {
+    root.style.setProperty('--ink', desktop.darkCanvasColor);
+  }
+  if (desktop.displayFont) {
+    const fontVal = desktop.displayFont === 'Dela Gothic One' ? '"Dela Gothic One", "Dela-Fallback", sans-serif' : desktop.displayFont;
+    root.style.setProperty('--font-display', fontVal);
+  }
+  if (desktop.bodyFont) {
+    const fontVal = desktop.bodyFont === 'DM Sans' ? '"DM Sans", "DMSans-Fallback", sans-serif' : desktop.bodyFont;
+    root.style.setProperty('--font-body', fontVal);
   }
 }
 
@@ -428,13 +431,17 @@ export async function fetchAndApplySanity() {
     cachedSanityData = data;
     window.__SANITY_DATA__ = data;
 
-    const { desktop = {}, mobile = {}, beats = [] } = data || {};
+    const { desktop = {}, mobile = {}, unified = {}, beats = [] } = data || {};
+
+    // Merge unified settings (brand, primary signal color, fonts, pricing, etc.) into desktop & mobile
+    const mergedDesktop = { ...unified, ...desktop };
+    const mergedMobile = { ...unified, ...mobile };
 
     // 1. Fluid CSS Variables
-    applyFluidDesignVariables(desktop, mobile);
+    applyFluidDesignVariables(mergedDesktop, mergedMobile);
 
     // 2. DOM Page Content
-    applyPageContent(desktop, mobile);
+    applyPageContent(mergedDesktop, mergedMobile);
 
     // 3. Beats Showcase
     if (beats && beats.length > 0) {
@@ -484,6 +491,14 @@ export function initFluidResponsiveEngine() {
 // Auto-run on initialization
 if (typeof window !== 'undefined') {
   initFluidResponsiveEngine();
+  
+  // Listen for explicit save confirmation messages only from Sanity Studio
+  window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SANITY_SAVED') {
+      fetchAndApplySanity();
+    }
+  });
+
   // Fetch Sanity on DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => fetchAndApplySanity());

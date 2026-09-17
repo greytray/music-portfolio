@@ -2169,6 +2169,9 @@ export function VisualTuningTool() {
       ]);
 
       showToast('All changes committed to Sanity');
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        iframeRef.current.contentWindow.postMessage({ type: 'SANITY_SAVED' }, '*');
+      }
     } catch (err) {
       console.error('Save failed:', err);
       showToast('Error saving changes to Sanity');
