@@ -25,10 +25,11 @@ export function getSanityClient() {
   return clientInstance;
 }
 
-// Single GROQ Query fetching all Beats, Desktop Settings, Mobile Settings, and Unified Settings in 1 network request
+// Single GROQ Query fetching all Beats, Audio Arsenal, Desktop Settings, Mobile Settings, and Unified Settings in 1 network request
 export const SINGLE_SANITY_GROQ = `{
-  "beats": *[_type == "beat"] | order(trackNumber asc, _createdAt desc) {
+  "beats": *[_type in ["beat", "audioArsenal"] && isArchived != true] | order(trackNumber asc, _updatedAt desc) {
     _id,
+    _type,
     title,
     genre,
     bpm,
@@ -39,11 +40,13 @@ export const SINGLE_SANITY_GROQ = `{
     prices,
     trackNumber,
     isFeaturedInLandingPlayer,
+    assignedSlot,
+    isArchived,
     "audioUrl": coalesce(audioFile.asset->url, audioUrl)
   },
-  "desktop": *[_type == "desktopSettings"][0],
-  "mobile": *[_type == "mobileSettings"][0],
-  "unified": *[_type == "unifiedSettings"][0]
+  "desktop": *[_type == "desktopSettings"] | order(_updatedAt desc)[0],
+  "mobile": *[_type == "mobileSettings"] | order(_updatedAt desc)[0],
+  "unified": *[_type == "unifiedSettings"] | order(_updatedAt desc)[0]
 }`;
 
 // Default Baseline Typography & Layout values (used as graceful defaults before/until CMS updates)
@@ -256,6 +259,31 @@ export function applyPageContent(desktop = {}, mobile = {}) {
   const servicesDesc = document.querySelector('#services .section-heading > p');
   if (servicesDesc && desktop.servicesDescription) {
     servicesDesc.textContent = desktop.servicesDescription;
+  }
+
+  // Dynamic Service Cards Pricing
+  const servicesPricing = desktop.servicesPricing || {};
+  const beatLicensePricing = desktop.beatLicensePricing || {};
+
+  if (servicesPricing.customProductionPrice) {
+    const chip = document.querySelector('#service-card-01 .card-price-chip');
+    if (chip) chip.textContent = `From $${servicesPricing.customProductionPrice}`;
+  }
+  if (servicesPricing.mixingMasteringPrice) {
+    const chip = document.querySelector('#service-card-02 .card-price-chip');
+    if (chip) chip.textContent = `From $${servicesPricing.mixingMasteringPrice}`;
+  }
+  if (servicesPricing.vocalTuningPrice) {
+    const chip = document.querySelector('#service-card-03 .card-price-chip');
+    if (chip) chip.textContent = `From $${servicesPricing.vocalTuningPrice}`;
+  }
+  if (beatLicensePricing.mp3Price) {
+    const chip = document.querySelector('#service-card-04 .card-price-chip');
+    if (chip) chip.textContent = `From $${beatLicensePricing.mp3Price}`;
+  }
+  if (servicesPricing.consultationHourlyRate) {
+    const chip = document.querySelector('#service-card-05 .card-price-chip');
+    if (chip) chip.textContent = `From $${servicesPricing.consultationHourlyRate} / hr`;
   }
 
   // Delivery Section
@@ -488,21 +516,64 @@ export function initFluidResponsiveEngine() {
   }, { passive: true });
 }
 
+let liveSubscription = null;
+
+/**
+ * Attaches the Sanity real-time listener (SSE mutation stream)
+ * Ensures instant update propagation when any document is saved or published in Sanity Studio.
+ */
+export function setupSanityLiveListener() {
+  try {
+    const client = getSanityClient();
+    if (!client || typeof client.listen !== 'function') return;
+
+    if (liveSubscription) {
+      if (typeof liveSubscription.unsubscribe === 'function') {
+        liveSubscription.unsubscribe();
+      }
+      liveSubscription = null;
+    }
+
+    const query = `*[_type in ["beat", "audioArsenal", "desktopSettings", "mobileSettings", "unifiedSettings"]]`;
+    liveSubscription = client.listen(query, {}, {
+      includeResult: false,
+      visibility: 'query',
+      events: ['mutation', 'welcome', 'reconnect']
+    }).subscribe({
+      next: (update) => {
+        if (update.type === 'mutation' || update.transition) {
+          fetchAndApplySanity();
+        }
+      },
+      error: (err) => {
+        console.warn('Sanity live listener reconnecting...', err);
+        setTimeout(() => setupSanityLiveListener(), 6000);
+      }
+    });
+  } catch (err) {
+    console.warn('Could not initialize Sanity client.listen():', err);
+  }
+}
+
 // Auto-run on initialization
 if (typeof window !== 'undefined') {
   initFluidResponsiveEngine();
   
-  // Listen for explicit save confirmation messages only from Sanity Studio
+  // Listen for explicit save confirmation messages from Sanity Studio iframe/parent
   window.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SANITY_SAVED') {
+    if (event.data && (event.data.type === 'SANITY_SAVED' || event.data.type === 'SANITY_DOCUMENT_MUTATION')) {
       fetchAndApplySanity();
     }
   });
 
-  // Fetch Sanity on DOM ready
+  // Attach live listener & fetch initial state on DOM ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => fetchAndApplySanity());
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchAndApplySanity();
+      setupSanityLiveListener();
+    });
   } else {
     fetchAndApplySanity();
+    setupSanityLiveListener();
   }
 }
