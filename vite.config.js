@@ -102,15 +102,100 @@ function audioStreamingPlugin() {
   };
 }
 
+function studioPreviewPlugin() {
+  const handler = (req, res, next) => {
+    const rawUrl = req.url ? req.url.split('?')[0] : '';
+    const query = req.url && req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+    
+    // Ignore internal Vite requests, queries like ?html-proxy, ?import, node_modules, assets, src, and static files
+    if (
+      rawUrl.startsWith('/@') ||
+      rawUrl.startsWith('/node_modules') ||
+      rawUrl.startsWith('/assets') ||
+      rawUrl.startsWith('/src') ||
+      (req.url && (req.url.includes('html-proxy') || req.url.includes('?import'))) ||
+      /\.(js|mjs|jsx|ts|tsx|css|json|woff2?|ttf|svg|png|jpe?g|gif|webp|ico|mp3|wav)$/i.test(rawUrl)
+    ) {
+      return next();
+    }
+
+    // Explicitly serve the frontend website when requested for the split-screen preview or /site
+    if (
+      rawUrl === '/preview-site' ||
+      rawUrl === '/site' ||
+      rawUrl === '/frontend' ||
+      rawUrl.startsWith('/site/') ||
+      (req.url && req.url.includes('preview=website'))
+    ) {
+      req.url = '/index.html' + query;
+      return next();
+    }
+
+    // Direct requests for index.html should be served as index.html
+    if (rawUrl === '/index.html') {
+      return next();
+    }
+
+    // Default root / and studio paths to the Sanity Studio backend
+    if (
+      rawUrl === '/' ||
+      rawUrl === '/studio' ||
+      rawUrl === '/ekonova090' ||
+      rawUrl.startsWith('/studio/') ||
+      rawUrl.startsWith('/ekonova090/') ||
+      rawUrl.startsWith('/structure') ||
+      rawUrl.startsWith('/vision') ||
+      rawUrl.startsWith('/desk') ||
+      rawUrl.startsWith('/intent')
+    ) {
+      req.url = '/ekonova090.html' + query;
+      return next();
+    }
+
+    next();
+  };
+
+  return {
+    name: 'studio-preview-rewrite',
+    configureServer(server) {
+      server.middlewares.use(handler);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(handler);
+    },
+  };
+}
+
 export default defineConfig({
   base: "/",
-  plugins: [copyAssetsPlugin(), audioStreamingPlugin()],
+  plugins: [copyAssetsPlugin(), audioStreamingPlugin(), studioPreviewPlugin()],
+  optimizeDeps: {
+    include: [
+      "sanity",
+      "sanity/structure",
+      "@sanity/vision",
+      "sanity-plugin-media",
+      "react",
+      "react-dom",
+      "styled-components",
+      "lucide-react",
+    ],
+  },
   build: {
     rollupOptions: {
       input: {
         main: path.resolve(process.cwd(), "index.html"),
         ekonova090: path.resolve(process.cwd(), "ekonova090.html"),
         studio: path.resolve(process.cwd(), "studio.html"),
+      },
+      onwarn(warning, defaultHandler) {
+        if (
+          warning.code === "MODULE_LEVEL_DIRECTIVE" ||
+          (warning.message && warning.message.includes('"use client"'))
+        ) {
+          return;
+        }
+        defaultHandler(warning);
       },
     },
   },

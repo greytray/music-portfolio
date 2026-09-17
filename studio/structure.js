@@ -1,46 +1,61 @@
 /**
- * Sanity Studio v3 Categorized Interface Structure
+ * Sanity Studio Game-Like Categorized Interface Structure
  * 
- * Splits the CMS dashboard into the exact 3 required categories:
- * 1. Beats Showcase (Manage audio tracks, titles, genres, prices)
- * 2. Global Desktop Settings (Desktop page content, design controls, social links)
- * 3. Global Mobile Settings (Separate interface for mobile layout variables & compact content)
+ * 1. Beats & Central Audio Arsenal Pool
+ * 2. Unified Settings (Master Brand, Real-Time Pricing Matrix, Global Typography)
+ * 3. Desktop Tuning (Real-Time Sliders, Spacing Morphing, Typography & Text Blocks)
+ * 4. Mobile Tuning (Mobile Sliders, Typography & Compact Content Overrides)
  */
 
 export const structure = (S) =>
   S.list()
     .title('Studio CMS Dashboard')
     .items([
-      // 1. BEATS SHOWCASE
+      // 1. BEATS & SHOWCASE
       S.listItem()
-        .title('Beats Showcase')
+        .title('Beats Showcase & Catalog')
         .id('beatsShowcase')
+        .icon(() => '🎵')
         .child(
           S.documentTypeList('beat')
-            .title('Beats Showcase & Catalog')
+            .title('Beats Catalog & Slots')
             .defaultOrdering([{ field: 'trackNumber', direction: 'asc' }])
         ),
 
       S.divider(),
 
-      // 2. GLOBAL DESKTOP SETTINGS (Dedicated Interface)
+      // 2. UNIFIED SETTINGS (Master Brand, Real-Time Pricing Matrix)
       S.listItem()
-        .title('Global Desktop Settings')
-        .id('desktopSettingsItem')
+        .title('Unified Settings')
+        .id('unifiedSettingsItem')
+        .icon(() => '⚙️')
         .child(
           S.document()
-            .title('Global Desktop Settings')
+            .title('Unified Settings & Real-Time Pricing')
+            .schemaType('unifiedSettings')
+            .documentId('unifiedSettings')
+        ),
+
+      // 3. DESKTOP TUNING (Sliders, Spacing & Typography)
+      S.listItem()
+        .title('Desktop Tuning')
+        .id('desktopSettingsItem')
+        .icon(() => '🖥️')
+        .child(
+          S.document()
+            .title('Desktop Tuning & Layout Controls')
             .schemaType('desktopSettings')
             .documentId('desktopSettings')
         ),
 
-      // 3. GLOBAL MOBILE SETTINGS (SEPARATE INTERFACE)
+      // 4. MOBILE TUNING (Mobile Spacing & Compact Overrides)
       S.listItem()
-        .title('Global Mobile Settings')
+        .title('Mobile Tuning')
         .id('mobileSettingsItem')
+        .icon(() => '📱')
         .child(
           S.document()
-            .title('Global Mobile Settings')
+            .title('Mobile Tuning & Compact Layout')
             .schemaType('mobileSettings')
             .documentId('mobileSettings')
         ),

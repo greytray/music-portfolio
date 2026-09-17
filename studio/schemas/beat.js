@@ -4,6 +4,7 @@ export default defineType({
   name: 'beat',
   title: 'Beat / Audio Track',
   type: 'document',
+  icon: () => '🎵',
   fields: [
     defineField({
       name: 'title',
@@ -21,13 +22,20 @@ export default defineType({
       },
     }),
     defineField({
+      name: 'arsenalRef',
+      title: 'Linked Arsenal Master Track (Optional Pool Sync)',
+      type: 'reference',
+      to: [{ type: 'audioArsenal' }],
+      description: 'Select an existing track from your central Audio Arsenal pool for 1-click sync.',
+    }),
+    defineField({
       name: 'audioFile',
       title: 'Audio File (Upload MP3/WAV)',
       type: 'file',
       options: {
         accept: 'audio/*',
       },
-      description: 'Direct audio upload to Sanity CDN. Can be played instantly on the site.',
+      description: 'Direct audio upload to Sanity CDN cloud storage.',
     }),
     defineField({
       name: 'audioUrl',
@@ -93,9 +101,9 @@ export default defineType({
     }),
     defineField({
       name: 'prices',
-      title: 'License Prices (USD)',
+      title: 'License Prices (USD $)',
       type: 'object',
-      description: 'Configure pricing for all four license tiers in the Beat Store',
+      description: 'Real-time pricing matrix: Changes here update the checkout system directly.',
       fields: [
         defineField({
           name: 'mp3',
@@ -131,7 +139,7 @@ export default defineType({
       name: 'trackNumber',
       title: 'Sort Order / Track #',
       type: 'number',
-      description: 'Used to sort the tracks in the player and beat catalog (e.g. 1, 2, 3...)',
+      description: 'Used to sort tracks in the player and beat catalog (e.g. 1, 2, 3...)',
       initialValue: 1,
     }),
     defineField({
@@ -153,7 +161,7 @@ export default defineType({
       const { title, genre, trackNumber, price } = selection;
       return {
         title: `#${trackNumber || '-'} ${title || 'Untitled Beat'}`,
-        subtitle: `${genre || 'Beat'} · Lease from $${price || 49}`,
+        subtitle: `${genre || 'Beat'} · MP3 $${price || 49}`,
       };
     },
   },

@@ -2,25 +2,129 @@ import { defineType, defineField } from 'sanity';
 
 export default defineType({
   name: 'desktopSettings',
-  title: 'Global Desktop Settings',
+  title: 'Desktop Tuning & Content',
   type: 'document',
+  icon: () => '🖥️',
   groups: [
-    { name: 'content', title: 'Page Content (Text Blocks)', default: true },
-    { name: 'design', title: 'Design Controls (Spacing & Typography)' },
-    { name: 'social', title: 'Social Media Links' },
+    { name: 'tuning', title: 'Layout & Spacing Tuning', default: true },
+    { name: 'typography', title: 'Typography Controls' },
+    { name: 'content', title: 'Page Content (Text Blocks)' },
   ],
   fields: [
     // ==========================================
-    // GROUP 1: PAGE CONTENT (EDITABLE TEXT BLOCKS)
+    // GROUP 1: DESKTOP LAYOUT & SPACING TUNING
     // ==========================================
     defineField({
-      name: 'siteBrand',
-      title: 'Studio Brand Name',
-      type: 'string',
-      group: 'content',
-      initialValue: 'EKO',
-      description: 'Displayed in the header and footer brand marks.',
+      name: 'desktopPageGutter',
+      title: 'Desktop Page Gutter / Horizontal Margin (px)',
+      type: 'number',
+      group: 'tuning',
+      initialValue: 48,
+      description: 'Side margins on widescreen displays (slider: 16px to 120px)',
+      validation: (Rule) => Rule.min(16).max(120),
     }),
+    defineField({
+      name: 'desktopSectionPadding',
+      title: 'Desktop Section Vertical Padding (px)',
+      type: 'number',
+      group: 'tuning',
+      initialValue: 112,
+      description: 'Top and bottom spacing between sections (slider: 40px to 240px)',
+      validation: (Rule) => Rule.min(40).max(240),
+    }),
+    defineField({
+      name: 'desktopCardPadding',
+      title: 'Desktop Card Inner Padding (px)',
+      type: 'number',
+      group: 'tuning',
+      initialValue: 34,
+      description: 'Interior padding inside catalog cards and player panels (16px to 72px)',
+      validation: (Rule) => Rule.min(16).max(72),
+    }),
+    defineField({
+      name: 'desktopCardGap',
+      title: 'Desktop Card Grid Gap (px)',
+      type: 'number',
+      group: 'tuning',
+      initialValue: 24,
+      description: 'Spacing between cards in desktop multi-column grids (8px to 64px)',
+      validation: (Rule) => Rule.min(8).max(64),
+    }),
+    defineField({
+      name: 'desktopButtonPaddingV',
+      title: 'CTA Button Vertical Padding (px)',
+      type: 'number',
+      group: 'tuning',
+      initialValue: 14,
+      validation: (Rule) => Rule.min(8).max(30),
+    }),
+    defineField({
+      name: 'desktopButtonPaddingH',
+      title: 'CTA Button Horizontal Padding (px)',
+      type: 'number',
+      group: 'tuning',
+      initialValue: 28,
+      validation: (Rule) => Rule.min(16).max(60),
+    }),
+
+    // ==========================================
+    // GROUP 2: TYPOGRAPHY CONTROLS
+    // ==========================================
+    defineField({
+      name: 'desktopHeroTitleSize',
+      title: 'Desktop Hero Title Size (rem)',
+      type: 'number',
+      group: 'typography',
+      initialValue: 11.5,
+      description: 'Scale factor for large display H1 header (3.0 to 16.0 rem)',
+      validation: (Rule) => Rule.min(3).max(16),
+    }),
+    defineField({
+      name: 'desktopH2Size',
+      title: 'Desktop Section Heading 2 Size (rem)',
+      type: 'number',
+      group: 'typography',
+      initialValue: 9.2,
+      description: 'Scale factor for large section H2 headings (2.5 to 14.0 rem)',
+      validation: (Rule) => Rule.min(2.5).max(14),
+    }),
+    defineField({
+      name: 'desktopBaseFontSize',
+      title: 'Desktop Base Body Font Size (px)',
+      type: 'number',
+      group: 'typography',
+      initialValue: 16,
+      description: 'Standard baseline body typography size for desktop screens (13px to 22px)',
+      validation: (Rule) => Rule.min(13).max(22),
+    }),
+    defineField({
+      name: 'headingWeight',
+      title: 'Headings Font Weight',
+      type: 'string',
+      group: 'typography',
+      options: {
+        list: [
+          { title: 'Normal (400)', value: '400' },
+          { title: 'Medium (500)', value: '500' },
+          { title: 'Semi-Bold (600)', value: '600' },
+          { title: 'Bold (700)', value: '700' },
+          { title: 'Black / Extra-Bold (900)', value: '900' },
+        ],
+      },
+      initialValue: '900',
+    }),
+    defineField({
+      name: 'enableItalicAccents',
+      title: 'Italicized Subtitles & Highlight Accents',
+      type: 'boolean',
+      group: 'typography',
+      initialValue: false,
+      description: 'Toggles subtle italic styling on section taglines and eyebrow quotes.',
+    }),
+
+    // ==========================================
+    // GROUP 3: PAGE CONTENT (EDITABLE TEXT BLOCKS)
+    // ==========================================
     defineField({
       name: 'heroEyebrow',
       title: 'Hero Section Eyebrow',
@@ -189,144 +293,12 @@ export default defineType({
       group: 'content',
       initialValue: '© 2026 Eko. All rights reserved.',
     }),
-
-    // ==========================================
-    // GROUP 2: DESIGN CONTROLS (SPACING, PADDING, SCALES)
-    // ==========================================
-    defineField({
-      name: 'desktopPageGutter',
-      title: 'Desktop Page Gutter / Horizontal Margin (px)',
-      type: 'number',
-      group: 'design',
-      initialValue: 48,
-      description: 'Side margins on widescreen displays (slider: 20px to 96px)',
-      validation: (Rule) => Rule.min(16).max(120),
-    }),
-    defineField({
-      name: 'desktopSectionPadding',
-      title: 'Desktop Section Vertical Padding (px)',
-      type: 'number',
-      group: 'design',
-      initialValue: 112,
-      description: 'Top and bottom spacing between sections (slider: 60px to 180px)',
-      validation: (Rule) => Rule.min(40).max(240),
-    }),
-    defineField({
-      name: 'desktopHeroTitleSize',
-      title: 'Desktop Hero Title Size (rem)',
-      type: 'number',
-      group: 'design',
-      initialValue: 11.5,
-      description: 'Scale factor for large display H1 header (original baseline: 11.5 rem)',
-      validation: (Rule) => Rule.min(3).max(16),
-    }),
-    defineField({
-      name: 'desktopH2Size',
-      title: 'Desktop Section Heading 2 Size (rem)',
-      type: 'number',
-      group: 'design',
-      initialValue: 9.2,
-      description: 'Scale factor for large section H2 headings like "The Work" & "The Process" (original baseline: 9.2 rem)',
-      validation: (Rule) => Rule.min(2.5).max(14),
-    }),
-    defineField({
-      name: 'desktopCardPadding',
-      title: 'Desktop Card Inner Padding (px)',
-      type: 'number',
-      group: 'design',
-      initialValue: 34,
-      description: 'Interior padding inside catalog cards and player panels (e.g. 24px to 54px)',
-      validation: (Rule) => Rule.min(16).max(72),
-    }),
-    defineField({
-      name: 'desktopCardGap',
-      title: 'Desktop Card Grid Gap (px)',
-      type: 'number',
-      group: 'design',
-      initialValue: 24,
-      description: 'Spacing between cards in desktop multi-column grids (e.g. 16px to 48px)',
-      validation: (Rule) => Rule.min(8).max(64),
-    }),
-    defineField({
-      name: 'desktopBaseFontSize',
-      title: 'Desktop Base Font Size (px)',
-      type: 'number',
-      group: 'design',
-      initialValue: 16,
-      description: 'Standard baseline body typography size for desktop screens (14px to 20px)',
-      validation: (Rule) => Rule.min(13).max(22),
-    }),
-    defineField({
-      name: 'primarySignalColor',
-      title: 'Primary Brand Accent Color (HEX)',
-      type: 'string',
-      group: 'design',
-      initialValue: '#6c63e5',
-      placeholder: '#6c63e5',
-      description: 'Used for primary action buttons, active indicators, and glow highlights',
-    }),
-    defineField({
-      name: 'signalBrightColor',
-      title: 'Signal Bright Hover Color (HEX)',
-      type: 'string',
-      group: 'design',
-      initialValue: '#007fff',
-      placeholder: '#007fff',
-      description: 'Used for interactive focus rings, hover glow, and badge outlines',
-    }),
-
-    // ==========================================
-    // GROUP 3: SOCIAL MEDIA LINKS
-    // ==========================================
-    defineField({
-      name: 'instagramUrl',
-      title: 'Instagram Profile URL',
-      type: 'url',
-      group: 'social',
-      placeholder: 'https://instagram.com/yourhandle',
-    }),
-    defineField({
-      name: 'emailAddress',
-      title: 'Contact Email Address (mailto:)',
-      type: 'string',
-      group: 'social',
-      initialValue: 'hello@eko.com',
-      placeholder: 'hello@eko.com',
-    }),
-    defineField({
-      name: 'signalUrl',
-      title: 'Signal App Link / Phone',
-      type: 'string',
-      group: 'social',
-      placeholder: 'https://signal.me/#p/... or username',
-    }),
-    defineField({
-      name: 'twitterUrl',
-      title: 'X / Twitter Profile URL',
-      type: 'url',
-      group: 'social',
-      placeholder: 'https://x.com/yourhandle',
-    }),
-    defineField({
-      name: 'youtubeUrl',
-      title: 'YouTube Channel URL',
-      type: 'url',
-      group: 'social',
-      placeholder: 'https://youtube.com/@yourchannel',
-    }),
-    defineField({
-      name: 'soundcloudUrl',
-      title: 'SoundCloud / BeatStars / Spotify URL',
-      type: 'url',
-      group: 'social',
-      placeholder: 'https://soundcloud.com/yourhandle',
-    }),
   ],
   preview: {
     prepare() {
       return {
-        title: 'Global Desktop Settings',
-        subtitle: 'Desktop Content, Spacing Controls & Social Links',
+        title: 'Desktop Tuning',
+        subtitle: 'Desktop Spacing Sliders, Typography & Text Blocks',
       };
     },
   },
