@@ -903,6 +903,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
     .hero-copy { margin: 18px auto 30px; color: #111827; font-weight: 500; text-shadow: none; }
     .section { padding-block: 72px; }
     .section-heading { margin-bottom: 40px; }
+    .section-heading h2 { font-size: clamp(3.6rem, 11vw, 5.8rem); line-height: 1.0; margin-top: calc(-1 * clamp(14px, 2.5vw, 28px)); margin-bottom: 0; }
     .services { padding-block: 72px; }
     .process-section, .delivery-section { padding-block: 72px; }
     .service-card { min-height: 340px; }
@@ -916,6 +917,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
     .section { padding-block: 64px; }
     .services { padding-block: 64px; }
     .section-heading { margin-bottom: 36px; }
+    .section-heading h2 { font-size: clamp(3rem, 13vw, 4.5rem); line-height: 1.0; margin-top: calc(-1 * clamp(10px, 2.2vw, 20px)); margin-bottom: 0; }
     .process-section, .delivery-section { padding-block: 64px; }
     .service-card { min-height: 0; }
   }
@@ -960,7 +962,6 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
 
   /* 2. "The Work" */
   #beats-title {
-    font-size: clamp(4.5rem, 9.6vw, 9.2rem) !important;
     color: #ffffff !important;
     text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7), 0 8px 28px rgba(0, 0, 0, 0.45) !important;
   }
@@ -985,7 +986,6 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
 
   /* 5. "The Process" */
   #process-title {
-    font-size: clamp(4.5rem, 9.6vw, 9.2rem) !important;
     color: #ffffff !important;
     text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7), 0 8px 28px rgba(0, 0, 0, 0.45) !important;
   }
@@ -1009,7 +1009,6 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
 
   /* 13. "Studio Services" */
   #services-title {
-    font-size: clamp(4.5rem, 9.6vw, 9.2rem) !important;
     color: #ffffff !important;
     text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7), 0 8px 28px rgba(0, 0, 0, 0.45) !important;
   }
@@ -1028,7 +1027,6 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
 
   /* 20. "Delivery & Payments" */
   #delivery-title {
-    font-size: clamp(4.5rem, 9.6vw, 9.2rem) !important;
     color: #ffffff !important;
     text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7), 0 8px 28px rgba(0, 0, 0, 0.45) !important;
   }
@@ -1962,8 +1960,8 @@ function setPlayingState(isPlaying) {
   });
 }
 function updateNowPlaying(track) {
-  currentTitle.textContent = track.dataset.title || 'Untitled Beat';
-  currentStyle.textContent = track.dataset.style || track.dataset.genre || 'Original production';
+  currentTitle.textContent = track.dataset.title;
+  currentStyle.textContent = track.dataset.title === 'Kensuke' ? 'Soundtrack by Eko for Anime Teaser' : 'Original production';
 }
 async function selectTrack(track, shouldPlay = true) {
   const changed = track !== activeTrack;

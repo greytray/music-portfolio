@@ -10,19 +10,11 @@ export const SANITY_CONFIG = {
   projectId: 'm5gxdv12',
   dataset: 'production',
   apiVersion: '2023-08-01',
-  useCdn: false, // Disables CDN edge caching to force direct live fetching from the Sanity database pool
+  useCdn: true, // fast cached edge delivery for visitors
+  token: 'skEsU37ASNeQuPnZHEgJzLC7TTVynHU2kENQjXluJUPIjNQ7j0XqQlJxNbqS4TEb7W5lBsVW7rz905dpGAvZnJWyhKmtLS3TBYNFRsHKaitufWzscMTXYlWnHuFvjErgHlDLbwurotMX8bKG2fOP9tHrcRi479hDsDSCrWpmGsjYVHoHnpMs'
 };
 
-// Authenticated Editor Configuration with Update & Write Permissions for Studio/Admin Panel Mutations
-export const SANITY_EDITOR_CONFIG = {
-  projectId: 'm5gxdv12',
-  dataset: 'production',
-  apiVersion: '2023-08-01',
-  useCdn: false,
-  token: 'skenQXm87pA1BHNhZ5WnOuzZzwOfZk7whf40scAhIXBYIDhZl2LOkBiczPKawQSW58VHZ6RI1mgd9ceqEG0orSreONc9tpDsIXopQA2No720ztH8oL4K3Ou37T0QAa5C4Qtgnek2MfLeyus6pSkbRKDyz7GdI2LcP60emeatjIgFArXJaVra'
-};
-
-// Initialize Public Read-Only Sanity Client
+// Initialize Sanity Client
 let clientInstance = null;
 export function getSanityClient() {
   if (!clientInstance) {
@@ -33,134 +25,10 @@ export function getSanityClient() {
   return clientInstance;
 }
 
-// Initialize Authenticated Editor Sanity Client with Update Permissions
-let editorClientInstance = null;
-export function getSanityEditorClient() {
-  if (!editorClientInstance) {
-    const factory = (typeof window !== 'undefined' && window.SanityClient?.createClient) || createClient;
-    editorClientInstance = factory(SANITY_EDITOR_CONFIG);
-  }
-  return editorClientInstance;
-}
-
-/**
- * Commits visual tuning settings directly to Sanity Content Lake
- * Executes explicit client.createOrReplace() mutations for desktopSettings, mobileSettings, unifiedSettings using Editor Token.
- */
-export async function commitSettingsToSanity(settings) {
-  const client = getSanityEditorClient();
-  if (!client) throw new Error('Sanity editor client is not initialized');
-
-  const desktopPayload = {
-    _id: 'desktopSettings',
-    _type: 'desktopSettings',
-    desktopPageGutter: Number(settings.desktopPageGutter ?? 48),
-    desktopSectionPadding: Number(settings.desktopSectionPadding ?? 112),
-    desktopCardPadding: Number(settings.desktopCardPadding ?? 34),
-    desktopCardGap: Number(settings.desktopCardGap ?? 24),
-    desktopButtonPaddingV: Number(settings.desktopButtonPaddingV ?? 14),
-    desktopButtonPaddingH: Number(settings.desktopButtonPaddingH ?? 28),
-    desktopHeroTitleSize: Number(settings.desktopHeroTitleSize ?? 11.5),
-    desktopH2Size: Number(settings.desktopH2Size ?? 9.2),
-    desktopBaseFontSize: Number(settings.desktopBaseFontSize ?? 16),
-    headingWeight: String(settings.headingWeight ?? '400'),
-    enableItalicAccents: Boolean(settings.enableItalicAccents),
-    heroEyebrow: settings.heroEyebrow || '',
-    heroTitle: settings.heroTitle || '',
-    heroLine1: settings.heroLine1 || '',
-    heroLine2: settings.heroLine2 || '',
-    heroCtaText: settings.heroCtaText || '',
-    showcaseTitle: settings.showcaseTitle || '',
-    showcaseDescription: settings.showcaseDescription || '',
-    processTitle: settings.processTitle || '',
-    processTrustline: settings.processTrustline || '',
-    processClosingTitle: settings.processClosingTitle || '',
-    processClosingCopy: settings.processClosingCopy || '',
-    servicesTitle: settings.servicesTitle || '',
-    servicesDescription: settings.servicesDescription || '',
-    deliveryTitle: settings.deliveryTitle || 'Delivery & Payments',
-    deliveryDescription: settings.deliveryDescription || 'A straightforward handoff with the important details clear before work begins.',
-    turnaroundBeats: settings.turnaroundBeats || 'Beats — within 24 hours',
-    turnaroundMixing: settings.turnaroundMixing || 'Mixing — 24–48 hours',
-    turnaroundEdits: settings.turnaroundEdits || 'Edits — same day (in most cases)',
-    contactTitle: settings.contactTitle || "Let's Work",
-    contactLead: settings.contactLead || 'Available for collaborations & ongoing projects',
-    contactDmNote: settings.contactDmNote || 'DM for quick response',
-    copyrightText: settings.copyrightText || '© 2026 Eko. All rights reserved.',
-  };
-
-  const mobilePayload = {
-    _id: 'mobileSettings',
-    _type: 'mobileSettings',
-    mobilePageGutter: Number(settings.mobilePageGutter ?? 20),
-    mobileSectionPadding: Number(settings.mobileSectionPadding ?? 64),
-    mobileCardPadding: Number(settings.mobileCardPadding ?? 20),
-    mobileCardGap: Number(settings.mobileCardGap ?? 14),
-    mobileHeroTitleSize: Number(settings.mobileHeroTitleSize ?? 5.0),
-    mobileH2Size: Number(settings.mobileH2Size ?? 4.5),
-    mobileBaseFontSize: Number(settings.mobileBaseFontSize ?? 15),
-  };
-
-  const unifiedPayload = {
-    _id: 'unifiedSettings',
-    _type: 'unifiedSettings',
-    siteBrand: settings.siteBrand || 'EKO',
-    primarySignalColor: settings.primarySignalColor || '#6c63e5',
-    signalBrightColor: settings.signalBrightColor || '#007fff',
-    darkCanvasColor: settings.darkCanvasColor || '#0b0b0e',
-    displayFont: settings.displayFont || 'Dela Gothic One',
-    bodyFont: settings.bodyFont || 'DM Sans',
-    emailAddress: settings.emailAddress || 'hello@eko.com',
-    beatLicensePricing: {
-      mp3Price: Number(settings.mp3Price ?? 49),
-      wavPrice: Number(settings.wavPrice ?? 99),
-      stemsPrice: Number(settings.stemsPrice ?? 199),
-      exclusivePrice: Number(settings.exclusivePrice ?? 599),
-    },
-    servicesPricing: {
-      customProductionPrice: Number(settings.customProductionPrice ?? 350),
-      mixingMasteringPrice: Number(settings.mixingMasteringPrice ?? 150),
-      vocalTuningPrice: Number(settings.vocalTuningPrice ?? 80),
-      consultationHourlyRate: Number(settings.consultationHourlyRate ?? 75),
-    },
-  };
-
-  // Perform concurrent mutations targeting Sanity Content Lake database
-  const [desktopDoc, mobileDoc, unifiedDoc] = await Promise.all([
-    client.createOrReplace(desktopPayload),
-    client.createOrReplace(mobilePayload),
-    client.createOrReplace(unifiedPayload),
-  ]);
-
-  if (!desktopDoc?._id || !mobileDoc?._id || !unifiedDoc?._id) {
-    throw new Error('Sanity API failed to return committed document IDs');
-  }
-
-  return {
-    success: true,
-    documents: {
-      desktop: desktopDoc,
-      mobile: mobileDoc,
-      unified: unifiedDoc,
-    },
-    committedAt: new Date().toISOString(),
-  };
-}
-
-/**
- * Patches an individual document property in real-time using Editor Token
- */
-export async function patchSanityDocument(documentId, patchFields) {
-  const client = getSanityEditorClient();
-  if (!client) throw new Error('Sanity editor client is not initialized');
-  return await client.patch(documentId).set(patchFields).commit();
-}
-
-// Single GROQ Query fetching all Beats, Audio Arsenal, Desktop Settings, Mobile Settings, and Unified Settings in 1 network request
+// Single GROQ Query fetching all Beats, Desktop Settings, and Mobile Settings in 1 network request
 export const SINGLE_SANITY_GROQ = `{
-  "beats": *[_type in ["beat", "audioArsenal"] && isArchived != true] | order(trackNumber asc, _updatedAt desc) {
+  "beats": *[_type == "beat"] | order(trackNumber asc, _createdAt desc) {
     _id,
-    _type,
     title,
     genre,
     bpm,
@@ -171,13 +39,10 @@ export const SINGLE_SANITY_GROQ = `{
     prices,
     trackNumber,
     isFeaturedInLandingPlayer,
-    assignedSlot,
-    isArchived,
     "audioUrl": coalesce(audioFile.asset->url, audioUrl)
   },
-  "desktop": *[_type == "desktopSettings"] | order(_updatedAt desc)[0],
-  "mobile": *[_type == "mobileSettings"] | order(_updatedAt desc)[0],
-  "unified": *[_type == "unifiedSettings"] | order(_updatedAt desc)[0]
+  "desktop": *[_type == "desktopSettings"][0],
+  "mobile": *[_type == "mobileSettings"][0]
 }`;
 
 // Default Baseline Typography & Layout values (used as graceful defaults before/until CMS updates)
@@ -258,9 +123,18 @@ export function applyFluidDesignVariables(desktop = {}, mobile = {}) {
   root.style.setProperty('--card-gap', fluidFormulaPx(mCardGap, dCardGap));
   root.style.setProperty('--base-font-size', fluidFormulaPx(mFontSize, dFontSize));
 
-  root.style.removeProperty('--desktop-h2-size');
-  root.style.removeProperty('--mobile-h2-size');
-  root.style.removeProperty('--heading-2-size');
+  // Only override H2 or Hero size if explicitly customized in Sanity
+  if (desktop.desktopH2Size || mobile.mobileH2Size) {
+    const dH2Size = desktop.desktopH2Size ?? BASELINE_DESIGN.desktop.h2Size;
+    const mH2Size = mobile.mobileH2Size ?? BASELINE_DESIGN.mobile.h2Size;
+    root.style.setProperty('--desktop-h2-size', `${dH2Size}rem`);
+    root.style.setProperty('--mobile-h2-size', `${mH2Size}rem`);
+    root.style.setProperty('--heading-2-size', fluidFormulaRem(mH2Size, dH2Size));
+  } else {
+    root.style.removeProperty('--desktop-h2-size');
+    root.style.removeProperty('--mobile-h2-size');
+    root.style.removeProperty('--heading-2-size');
+  }
 
   if (desktop.desktopHeroTitleSize || mobile.mobileHeroTitleSize) {
     const dHeroSize = desktop.desktopHeroTitleSize ?? BASELINE_DESIGN.desktop.heroTitleSize;
@@ -274,32 +148,12 @@ export function applyFluidDesignVariables(desktop = {}, mobile = {}) {
     root.style.removeProperty('--hero-title-size');
   }
 
-  // 3. Apply Brand Colors & Fonts if configured
+  // 3. Apply Brand Colors if configured
   if (desktop.primarySignalColor) {
     root.style.setProperty('--signal', desktop.primarySignalColor);
   }
   if (desktop.signalBrightColor) {
     root.style.setProperty('--signal-bright', desktop.signalBrightColor);
-  }
-  if (desktop.darkCanvasColor) {
-    root.style.setProperty('--ink', desktop.darkCanvasColor);
-  }
-  if (desktop.displayFont) {
-    const fontVal = desktop.displayFont === 'Dela Gothic One' ? '"Dela Gothic One", "Dela-Fallback", sans-serif' : desktop.displayFont;
-    root.style.setProperty('--font-display', fontVal);
-  }
-  if (desktop.bodyFont) {
-    const fontVal = desktop.bodyFont === 'DM Sans' ? '"DM Sans", "DMSans-Fallback", sans-serif' : desktop.bodyFont;
-    root.style.setProperty('--font-body', fontVal);
-  }
-  if (desktop.headingWeight) {
-    root.style.setProperty('--heading-weight', desktop.headingWeight);
-  }
-  if (desktop.desktopButtonPaddingV != null) {
-    root.style.setProperty('--button-padding-v', `${desktop.desktopButtonPaddingV}px`);
-  }
-  if (desktop.desktopButtonPaddingH != null) {
-    root.style.setProperty('--button-padding-h', `${desktop.desktopButtonPaddingH}px`);
   }
 }
 
@@ -399,31 +253,6 @@ export function applyPageContent(desktop = {}, mobile = {}) {
   const servicesDesc = document.querySelector('#services .section-heading > p');
   if (servicesDesc && desktop.servicesDescription) {
     servicesDesc.textContent = desktop.servicesDescription;
-  }
-
-  // Dynamic Service Cards Pricing
-  const servicesPricing = desktop.servicesPricing || {};
-  const beatLicensePricing = desktop.beatLicensePricing || {};
-
-  if (servicesPricing.customProductionPrice) {
-    const chip = document.querySelector('#service-card-01 .card-price-chip');
-    if (chip) chip.textContent = `From $${servicesPricing.customProductionPrice}`;
-  }
-  if (servicesPricing.mixingMasteringPrice) {
-    const chip = document.querySelector('#service-card-02 .card-price-chip');
-    if (chip) chip.textContent = `From $${servicesPricing.mixingMasteringPrice}`;
-  }
-  if (servicesPricing.vocalTuningPrice) {
-    const chip = document.querySelector('#service-card-03 .card-price-chip');
-    if (chip) chip.textContent = `From $${servicesPricing.vocalTuningPrice}`;
-  }
-  if (beatLicensePricing.mp3Price) {
-    const chip = document.querySelector('#service-card-04 .card-price-chip');
-    if (chip) chip.textContent = `From $${beatLicensePricing.mp3Price}`;
-  }
-  if (servicesPricing.consultationHourlyRate) {
-    const chip = document.querySelector('#service-card-05 .card-price-chip');
-    if (chip) chip.textContent = `From $${servicesPricing.consultationHourlyRate} / hr`;
   }
 
   // Delivery Section
@@ -594,40 +423,26 @@ export function applyBeatsShowcase(beats = []) {
 export async function fetchAndApplySanity() {
   try {
     const client = getSanityClient();
-    // Force direct uncached query to bypass any edge CDN or browser caching
-    const data = await client.fetch(SINGLE_SANITY_GROQ, {}, { cache: 'no-store' });
+    const data = await client.fetch(SINGLE_SANITY_GROQ);
 
     cachedSanityData = data;
     window.__SANITY_DATA__ = data;
 
-    const { desktop = {}, mobile = {}, unified = {}, beats = [] } = data || {};
+    const { desktop = {}, mobile = {}, beats = [] } = data || {};
 
-    // Merge unified settings (brand, primary signal color, fonts, pricing, etc.) into desktop & mobile
-    const mergedDesktop = { ...unified, ...desktop };
-    const mergedMobile = { ...unified, ...mobile };
+    // 1. Fluid CSS Variables
+    applyFluidDesignVariables(desktop, mobile);
 
-    const applyDataToDOM = () => {
-      // 1. Fluid CSS Variables
-      applyFluidDesignVariables(mergedDesktop, mergedMobile);
+    // 2. DOM Page Content
+    applyPageContent(desktop, mobile);
 
-      // 2. DOM Page Content
-      applyPageContent(mergedDesktop, mergedMobile);
-
-      // 3. Beats Showcase
-      if (beats && beats.length > 0) {
-        applyBeatsShowcase(beats);
-      }
-
-      // 4. Dispatch ready event
-      window.dispatchEvent(new CustomEvent('sanity:data-ready', { detail: data }));
-    };
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', applyDataToDOM, { once: true });
+    // 3. Beats Showcase
+    if (beats && beats.length > 0) {
+      applyBeatsShowcase(beats);
     }
-    // Also apply immediately to whatever DOM nodes currently exist
-    applyDataToDOM();
 
+    // 4. Dispatch ready event
+    window.dispatchEvent(new CustomEvent('sanity:data-ready', { detail: data }));
     return data;
   } catch (err) {
     console.warn('Sanity fetch notice (using offline baseline defaults):', err.message || err);
@@ -666,74 +481,13 @@ export function initFluidResponsiveEngine() {
   }, { passive: true });
 }
 
-let liveSubscription = null;
-let listenerRetryCount = 0;
-
-/**
- * Attaches the Sanity real-time listener (SSE mutation stream)
- * Ensures instant update propagation when any document is saved or published in Sanity Studio.
- */
-export function setupSanityLiveListener() {
-  try {
-    const client = getSanityClient();
-    if (!client || typeof client.listen !== 'function') return;
-
-    if (liveSubscription) {
-      if (typeof liveSubscription.unsubscribe === 'function') {
-        try { liveSubscription.unsubscribe(); } catch {}
-      }
-      liveSubscription = null;
-    }
-
-    const query = `*[_type in ["beat", "audioArsenal", "desktopSettings", "mobileSettings", "unifiedSettings"]]`;
-    liveSubscription = client.listen(query, {}, {
-      includeResult: false,
-      visibility: 'query',
-      events: ['mutation', 'welcome', 'reconnect']
-    }).subscribe({
-      next: (update) => {
-        listenerRetryCount = 0;
-        if (update.type === 'mutation' || update.transition) {
-          fetchAndApplySanity();
-        }
-      },
-      error: (err) => {
-        if (listenerRetryCount < 2) {
-          listenerRetryCount++;
-          setTimeout(() => setupSanityLiveListener(), 10000);
-        } else {
-          // If SSE is unavailable or restricted, gracefully rely on postMessage and initial GROQ
-          if (liveSubscription) {
-            try { liveSubscription.unsubscribe(); } catch {}
-            liveSubscription = null;
-          }
-        }
-      }
-    });
-  } catch (err) {
-    // Gracefully ignore if EventSource is not supported
-  }
-}
-
 // Auto-run on initialization
 if (typeof window !== 'undefined') {
   initFluidResponsiveEngine();
-  
-  // Listen for explicit save confirmation messages from Sanity Studio iframe/parent
-  window.addEventListener('message', (event) => {
-    if (event.data && (event.data.type === 'SANITY_SAVED' || event.data.type === 'SANITY_DOCUMENT_MUTATION')) {
-      fetchAndApplySanity();
-    }
-  });
-
-  // Attach live listener & fetch initial state on DOM ready
+  // Fetch Sanity on DOM ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      fetchAndApplySanity();
-      setupSanityLiveListener();
-    });
+    document.addEventListener('DOMContentLoaded', () => fetchAndApplySanity());
   } else {
     fetchAndApplySanity();
-    setupSanityLiveListener();
   }
 }

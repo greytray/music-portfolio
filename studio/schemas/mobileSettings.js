@@ -2,17 +2,15 @@ import { defineType, defineField } from 'sanity';
 
 export default defineType({
   name: 'mobileSettings',
-  title: 'Mobile Tuning & Compact Layout',
+  title: 'Global Mobile Settings',
   type: 'document',
-  icon: () => '📱',
   groups: [
-    { name: 'layout', title: 'Mobile Layout & Spacing Tuning', default: true },
-    { name: 'typography', title: 'Mobile Typography' },
-    { name: 'content', title: 'Mobile Overrides & Compact Toggles' },
+    { name: 'layout', title: 'Mobile Layout & Design Controls', default: true },
+    { name: 'content', title: 'Mobile-Specific Content & Overrides' },
   ],
   fields: [
     // ========================================================
-    // GROUP 1: MOBILE LAYOUT & SPACING TUNING
+    // GROUP 1: MOBILE LAYOUT & DESIGN (VARIABLE CONTROLS)
     // ========================================================
     defineField({
       name: 'mobilePageGutter',
@@ -20,7 +18,7 @@ export default defineType({
       type: 'number',
       group: 'layout',
       initialValue: 20,
-      description: 'Side edge margin on phones and compact screens (10px to 40px)',
+      description: 'Side edge margin on phones and compact screens (e.g. 14px to 28px)',
       validation: (Rule) => Rule.min(10).max(40),
     }),
     defineField({
@@ -29,8 +27,26 @@ export default defineType({
       type: 'number',
       group: 'layout',
       initialValue: 64,
-      description: 'Vertical spacing between sections on compact viewports (32px to 120px)',
+      description: 'Vertical spacing between sections on compact viewports (e.g. 40px to 96px)',
       validation: (Rule) => Rule.min(32).max(120),
+    }),
+    defineField({
+      name: 'mobileHeroTitleSize',
+      title: 'Mobile Hero Title Size (rem)',
+      type: 'number',
+      group: 'layout',
+      initialValue: 5.0,
+      description: 'Headline H1 scale factor on smartphones (original baseline: 5.0 rem)',
+      validation: (Rule) => Rule.min(2.0).max(7.0),
+    }),
+    defineField({
+      name: 'mobileH2Size',
+      title: 'Mobile Section Heading 2 Size (rem)',
+      type: 'number',
+      group: 'layout',
+      initialValue: 4.5,
+      description: 'Section H2 scale factor on smartphones (original baseline: 4.5 rem)',
+      validation: (Rule) => Rule.min(1.8).max(6.0),
     }),
     defineField({
       name: 'mobileCardPadding',
@@ -38,7 +54,7 @@ export default defineType({
       type: 'number',
       group: 'layout',
       initialValue: 20,
-      description: 'Internal padding inside cards on small screens (10px to 36px)',
+      description: 'Internal padding inside cards on small screens (e.g. 14px to 28px)',
       validation: (Rule) => Rule.min(10).max(36),
     }),
     defineField({
@@ -47,43 +63,21 @@ export default defineType({
       type: 'number',
       group: 'layout',
       initialValue: 14,
-      description: 'Gap between stacked cards in mobile view (6px to 32px)',
+      description: 'Gap between stacked cards in mobile view (e.g. 10px to 24px)',
       validation: (Rule) => Rule.min(6).max(32),
-    }),
-
-    // ========================================================
-    // GROUP 2: MOBILE TYPOGRAPHY
-    // ========================================================
-    defineField({
-      name: 'mobileHeroTitleSize',
-      title: 'Mobile Hero Title Size (rem)',
-      type: 'number',
-      group: 'typography',
-      initialValue: 5.0,
-      description: 'Headline H1 scale factor on smartphones (2.0 to 7.0 rem)',
-      validation: (Rule) => Rule.min(2.0).max(7.0),
-    }),
-    defineField({
-      name: 'mobileH2Size',
-      title: 'Mobile Section Heading 2 Size (rem)',
-      type: 'number',
-      group: 'typography',
-      initialValue: 4.5,
-      description: 'Section H2 scale factor on smartphones (1.8 to 6.0 rem)',
-      validation: (Rule) => Rule.min(1.8).max(6.0),
     }),
     defineField({
       name: 'mobileBaseFontSize',
       title: 'Mobile Base Body Font Size (px)',
       type: 'number',
-      group: 'typography',
+      group: 'layout',
       initialValue: 15,
-      description: 'Base text size on compact devices (13px to 18px)',
+      description: 'Base text size on compact devices for high legibility (14px to 17px)',
       validation: (Rule) => Rule.min(13).max(18),
     }),
 
     // ========================================================
-    // GROUP 3: MOBILE OVERRIDES & COMPACT TOGGLES
+    // GROUP 2: MOBILE-SPECIFIC CONTENT (TOGGLES & SHORT TEXTS)
     // ========================================================
     defineField({
       name: 'useMobileShortHero',
@@ -91,7 +85,7 @@ export default defineType({
       type: 'boolean',
       group: 'content',
       initialValue: false,
-      description: 'Toggle on to replace desktop hero text with concise wording on small screens.',
+      description: 'Toggle on to replace desktop hero text with concise wording for small screens.',
     }),
     defineField({
       name: 'mobileShortHeroTitle',
@@ -150,14 +144,14 @@ export default defineType({
       type: 'boolean',
       group: 'content',
       initialValue: true,
-      description: 'Ensures process cards stack cleanly without horizontal overflow.',
+      description: 'Ensures process cards stack cleanly without horizontal scroll.',
     }),
   ],
   preview: {
     prepare() {
       return {
-        title: 'Mobile Tuning',
-        subtitle: 'Mobile Sliders, Typography & Compact Content Overrides',
+        title: 'Global Mobile Settings',
+        subtitle: 'Mobile Spacing, Typography & Compact Content Overrides',
       };
     },
   },

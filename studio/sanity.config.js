@@ -1,18 +1,17 @@
 import { defineConfig } from 'sanity';
 import { structureTool } from 'sanity/structure';
-import { media } from 'sanity-plugin-media';
+import { visionTool } from '@sanity/vision';
 import { schemaTypes } from './schemas/index.js';
 import { structure } from './structure.js';
-import { visualTunerPlugin } from './plugins/customTools.jsx';
 
 function getDynamicBasePath() {
-  if (typeof window === 'undefined') return '/';
+  if (typeof window === 'undefined') return '/ekonova090';
   const path = window.location.pathname || '';
   if (path.includes('studio.html')) return '/studio.html';
-  if (path.includes('/studio')) return '/studio';
+  if (path.includes('studio')) return '/studio';
   if (path.includes('ekonova090.html')) return '/ekonova090.html';
-  if (path.includes('/ekonova090')) return '/ekonova090';
-  return '/';
+  if (path.includes('ekonova090')) return '/ekonova090';
+  return '/ekonova090';
 }
 
 export default defineConfig({
@@ -27,8 +26,7 @@ export default defineConfig({
     structureTool({
       structure,
     }),
-    visualTunerPlugin(),
-    media(),
+    visionTool(),
   ],
 
   schema: {
