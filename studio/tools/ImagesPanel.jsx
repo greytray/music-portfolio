@@ -40,6 +40,12 @@ export function ImagesPanel({
   const quickFileInputRef = useRef(null);
   const [quickTargetId, setQuickTargetId] = useState(null);
 
+  const getSafeSrc = (src) => {
+    if (!src) return '';
+    if (src.startsWith('./assets/')) return src.substring(1);
+    return src;
+  };
+
   // Group images by section category
   const categories = [
     { id: 'all', title: 'All Images' },
@@ -301,7 +307,7 @@ export function ImagesPanel({
                       justifyContent: 'center',
                     }}>
                       <img
-                        src={targetImg.src}
+                        src={getSafeSrc(targetImg.src)}
                         alt={targetImg.alt || targetImg.title}
                         style={{
                           width: '100%',
@@ -430,7 +436,7 @@ export function ImagesPanel({
             justifyContent: 'center',
           }}>
             <img
-              src={selectedImage.src}
+              src={getSafeSrc(selectedImage.src)}
               alt={selectedImage.alt || selectedImage.title}
               style={{
                 maxWidth: '100%',
@@ -795,7 +801,7 @@ export function ImagesPanel({
                   }}
                 >
                   <img
-                    src={img.src}
+                    src={getSafeSrc(img.src)}
                     alt={img.alt || img.title}
                     style={{
                       width: '100%',

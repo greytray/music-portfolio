@@ -112,6 +112,12 @@ export function AudioPanel({
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
+  const getSafeAudioUrl = (url) => {
+    if (!url) return '';
+    if (url.startsWith('./assets/')) return url.substring(1);
+    return url;
+  };
+
   // In-Sidebar Audio Audition
   const togglePlayAudio = (item) => {
     if (item.isRemoved) {
@@ -128,7 +134,7 @@ export function AudioPanel({
     } else {
       // Play new
       if (audioPlayerRef.current) {
-        audioPlayerRef.current.src = item.audioUrl;
+        audioPlayerRef.current.src = getSafeAudioUrl(item.audioUrl);
         audioPlayerRef.current.currentTime = 0;
         setCurrentTime(0);
         setPlaybackProgress(0);

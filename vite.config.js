@@ -26,10 +26,14 @@ function audioStreamingPlugin() {
   const handler = (req, res, next) => {
     try {
       const rawUrl = req.url ? req.url.split('?')[0] : '';
-      if (rawUrl.startsWith('/assets/audio/') && rawUrl.endsWith('.mp3')) {
+      if (rawUrl.includes('/assets/audio/') && rawUrl.endsWith('.mp3')) {
+        let cleanPath = rawUrl;
+        if (cleanPath.includes('/assets/audio/')) {
+          cleanPath = cleanPath.substring(cleanPath.indexOf('/assets/audio/'));
+        }
         let decodedPath;
         try {
-          decodedPath = decodeURIComponent(rawUrl);
+          decodedPath = decodeURIComponent(cleanPath);
         } catch {
           return next();
         }
@@ -132,6 +136,12 @@ function studioPreviewPlugin() {
     try {
       const rawUrl = req.url ? req.url.split('?')[0] : '';
       const query = req.url && req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+
+      // Normalize any nested asset requests
+      if (rawUrl.includes('/assets/')) {
+        req.url = rawUrl.substring(rawUrl.indexOf('/assets/')) + query;
+        return next();
+      }
       
       // Ignore internal Vite requests, queries like ?html-proxy, ?import, node_modules, assets, src, and static files
       if (
@@ -145,7 +155,7 @@ function studioPreviewPlugin() {
         return next();
       }
 
-      // Explicitly serve the frontend website when requested for the split-screen preview or /site
+      // Explicitly serve the frontend website for live preview iframe or site preview
       if (
         rawUrl === '/preview-site' ||
         rawUrl === '/site' ||
@@ -157,14 +167,14 @@ function studioPreviewPlugin() {
         return next();
       }
 
-      // Direct requests for index.html should be served as index.html
-      if (rawUrl === '/index.html') {
+      // Root path / and direct index.html serve the frontend website
+      if (rawUrl === '/' || rawUrl === '/index.html') {
+        req.url = '/index.html' + query;
         return next();
       }
 
-      // Default root / and studio paths to the Sanity Studio backend
+      // Sanity Studio backend routes
       if (
-        rawUrl === '/' ||
         rawUrl === '/studio' ||
         rawUrl === '/ekonova090' ||
         rawUrl.startsWith('/studio/') ||
