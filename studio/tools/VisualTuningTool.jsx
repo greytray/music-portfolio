@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useClient } from 'sanity';
 import { ImagesPanel } from './ImagesPanel.jsx';
 import { AudioPanel } from './AudioPanel.jsx';
-import { getSanityClient, commitSettingsToSanity } from '../../src/sanity/client.js';
+import { getSanityClient, getSanityEditorClient, commitSettingsToSanity, patchSanityDocument } from '../../src/sanity/client.js';
 
 // Default configuration settings definitions
 const DEFAULT_VALUES = {
@@ -1272,11 +1272,12 @@ export function VisualTuningTool() {
     let isMounted = true;
     const fetchAllData = async () => {
       try {
+        const sanityClient = getSanityEditorClient() || client;
         const [desktopDoc, mobileDoc, unifiedDoc, trackList] = await Promise.all([
-          client.fetch(`*[_type == "desktopSettings"][0]`).catch(() => null),
-          client.fetch(`*[_type == "mobileSettings"][0]`).catch(() => null),
-          client.fetch(`*[_type == "unifiedSettings"][0]`).catch(() => null),
-          client.fetch(`*[_type == "audioArsenal"] | order(_createdAt desc)`).catch(() => []),
+          sanityClient.fetch(`*[_type == "desktopSettings"][0]`).catch(() => null),
+          sanityClient.fetch(`*[_type == "mobileSettings"][0]`).catch(() => null),
+          sanityClient.fetch(`*[_type == "unifiedSettings"][0]`).catch(() => null),
+          sanityClient.fetch(`*[_type == "audioArsenal"] | order(_createdAt desc)`).catch(() => []),
         ]);
 
         if (!isMounted) return;
@@ -2119,8 +2120,7 @@ export function VisualTuningTool() {
   const handleAssignSlot = async (trackId, newSlot) => {
     showToast(`Updating track slot to ${newSlot}...`);
     try {
-      const sanityClient = getSanityClient() || client;
-      const res = await sanityClient.patch(trackId).set({ assignedSlot: newSlot }).commit();
+      const res = await patchSanityDocument(trackId, { assignedSlot: newSlot });
       if (res?._id) {
         setTracks((prev) =>
           prev.map((t) => (t._id === trackId ? { ...t, assignedSlot: newSlot } : t))

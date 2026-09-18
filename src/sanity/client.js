@@ -10,11 +10,19 @@ export const SANITY_CONFIG = {
   projectId: 'm5gxdv12',
   dataset: 'production',
   apiVersion: '2023-08-01',
-  useCdn: false, // Disables CDN edge caching so saves appear immediately on the website
-  token: 'skEsU37ASNeQuPnZHEgJzLC7TTVynHU2kENQjXluJUPIjNQ7j0XqQlJxNbqS4TEb7W5lBsVW7rz905dpGAvZnJWyhKmtLS3TBYNFRsHKaitufWzscMTXYlWnHuFvjErgHlDLbwurotMX8bKG2fOP9tHrcRi479hDsDSCrWpmGsjYVHoHnpMs'
+  useCdn: false, // Disables CDN edge caching so queries reflect immediate updates
 };
 
-// Initialize Sanity Client
+// Authenticated Editor Configuration with Update & Write Permissions for Studio/Admin Panel Mutations
+export const SANITY_EDITOR_CONFIG = {
+  projectId: 'm5gxdv12',
+  dataset: 'production',
+  apiVersion: '2023-08-01',
+  useCdn: false,
+  token: 'skenQXm87pA1BHNhZ5WnOuzZzwOfZk7whf40scAhIXBYIDhZl2LOkBiczPKawQSW58VHZ6RI1mgd9ceqEG0orSreONc9tpDsIXopQA2No720ztH8oL4K3Ou37T0QAa5C4Qtgnek2MfLeyus6pSkbRKDyz7GdI2LcP60emeatjIgFArXJaVra'
+};
+
+// Initialize Public Read-Only Sanity Client
 let clientInstance = null;
 export function getSanityClient() {
   if (!clientInstance) {
@@ -25,13 +33,23 @@ export function getSanityClient() {
   return clientInstance;
 }
 
+// Initialize Authenticated Editor Sanity Client with Update Permissions
+let editorClientInstance = null;
+export function getSanityEditorClient() {
+  if (!editorClientInstance) {
+    const factory = (typeof window !== 'undefined' && window.SanityClient?.createClient) || createClient;
+    editorClientInstance = factory(SANITY_EDITOR_CONFIG);
+  }
+  return editorClientInstance;
+}
+
 /**
  * Commits visual tuning settings directly to Sanity Content Lake
- * Executes explicit client.createOrReplace() mutations for desktopSettings, mobileSettings, unifiedSettings.
+ * Executes explicit client.createOrReplace() mutations for desktopSettings, mobileSettings, unifiedSettings using Editor Token.
  */
 export async function commitSettingsToSanity(settings) {
-  const client = getSanityClient();
-  if (!client) throw new Error('Sanity client is not initialized');
+  const client = getSanityEditorClient();
+  if (!client) throw new Error('Sanity editor client is not initialized');
 
   const desktopPayload = {
     _id: 'desktopSettings',
@@ -130,11 +148,11 @@ export async function commitSettingsToSanity(settings) {
 }
 
 /**
- * Patches an individual document property in real-time
+ * Patches an individual document property in real-time using Editor Token
  */
 export async function patchSanityDocument(documentId, patchFields) {
-  const client = getSanityClient();
-  if (!client) throw new Error('Sanity client is not initialized');
+  const client = getSanityEditorClient();
+  if (!client) throw new Error('Sanity editor client is not initialized');
   return await client.patch(documentId).set(patchFields).commit();
 }
 
@@ -630,6 +648,7 @@ export function initFluidResponsiveEngine() {
 }
 
 let liveSubscription = null;
+let listenerRetryCount = 0;
 
 /**
  * Attaches the Sanity real-time listener (SSE mutation stream)
@@ -642,7 +661,7 @@ export function setupSanityLiveListener() {
 
     if (liveSubscription) {
       if (typeof liveSubscription.unsubscribe === 'function') {
-        liveSubscription.unsubscribe();
+        try { liveSubscription.unsubscribe(); } catch {}
       }
       liveSubscription = null;
     }
@@ -654,17 +673,26 @@ export function setupSanityLiveListener() {
       events: ['mutation', 'welcome', 'reconnect']
     }).subscribe({
       next: (update) => {
+        listenerRetryCount = 0;
         if (update.type === 'mutation' || update.transition) {
           fetchAndApplySanity();
         }
       },
       error: (err) => {
-        console.warn('Sanity live listener reconnecting...', err);
-        setTimeout(() => setupSanityLiveListener(), 6000);
+        if (listenerRetryCount < 2) {
+          listenerRetryCount++;
+          setTimeout(() => setupSanityLiveListener(), 10000);
+        } else {
+          // If SSE is unavailable or restricted, gracefully rely on postMessage and initial GROQ
+          if (liveSubscription) {
+            try { liveSubscription.unsubscribe(); } catch {}
+            liveSubscription = null;
+          }
+        }
       }
     });
   } catch (err) {
-    console.warn('Could not initialize Sanity client.listen():', err);
+    // Gracefully ignore if EventSource is not supported
   }
 }
 
