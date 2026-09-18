@@ -81,9 +81,18 @@ export function createBuyBeatsView({ navigateTo }) {
   ];
 
   // Dynamically load beats managed via Sanity CMS Beats Showcase if available
-  const BEATS = (Array.isArray(window.__SANITY_BEATS__) && window.__SANITY_BEATS__.length > 0)
-    ? window.__SANITY_BEATS__
-    : DEFAULT_BEATS;
+  let BEATS = (Array.isArray(window.__SANITY_BEATS__) && window.__SANITY_BEATS__.length > 0)
+    ? [...window.__SANITY_BEATS__]
+    : [...DEFAULT_BEATS];
+
+  // Listen for live Sanity updates
+  const handleBeatsUpdated = (e) => {
+    if (e.detail && Array.isArray(e.detail.beats) && e.detail.beats.length > 0) {
+      BEATS = [...e.detail.beats];
+      renderBeats();
+    }
+  };
+  window.addEventListener('sanity:beats-updated', handleBeatsUpdated);
 
   let activeGenre = 'all';
   let searchQuery = '';
@@ -580,6 +589,7 @@ export function createBuyBeatsView({ navigateTo }) {
 
   // Cleanup hook if container is removed
   container.pausePlayback = () => {
+    window.removeEventListener('sanity:beats-updated', handleBeatsUpdated);
     if (!storeAudio.paused) {
       storeAudio.pause();
     }

@@ -10,7 +10,7 @@ export const SANITY_CONFIG = {
   projectId: 'm5gxdv12',
   dataset: 'production',
   apiVersion: '2023-08-01',
-  useCdn: false, // Disables CDN edge caching so queries reflect immediate updates
+  useCdn: false, // Disables CDN edge caching to force direct live fetching from the Sanity database pool
 };
 
 // Authenticated Editor Configuration with Update & Write Permissions for Studio/Admin Panel Mutations
@@ -291,6 +291,15 @@ export function applyFluidDesignVariables(desktop = {}, mobile = {}) {
   if (desktop.bodyFont) {
     const fontVal = desktop.bodyFont === 'DM Sans' ? '"DM Sans", "DMSans-Fallback", sans-serif' : desktop.bodyFont;
     root.style.setProperty('--font-body', fontVal);
+  }
+  if (desktop.headingWeight) {
+    root.style.setProperty('--heading-weight', desktop.headingWeight);
+  }
+  if (desktop.desktopButtonPaddingV != null) {
+    root.style.setProperty('--button-padding-v', `${desktop.desktopButtonPaddingV}px`);
+  }
+  if (desktop.desktopButtonPaddingH != null) {
+    root.style.setProperty('--button-padding-h', `${desktop.desktopButtonPaddingH}px`);
   }
 }
 
@@ -585,7 +594,8 @@ export function applyBeatsShowcase(beats = []) {
 export async function fetchAndApplySanity() {
   try {
     const client = getSanityClient();
-    const data = await client.fetch(SINGLE_SANITY_GROQ);
+    // Force direct uncached query to bypass any edge CDN or browser caching
+    const data = await client.fetch(SINGLE_SANITY_GROQ, {}, { cache: 'no-store' });
 
     cachedSanityData = data;
     window.__SANITY_DATA__ = data;
@@ -596,19 +606,28 @@ export async function fetchAndApplySanity() {
     const mergedDesktop = { ...unified, ...desktop };
     const mergedMobile = { ...unified, ...mobile };
 
-    // 1. Fluid CSS Variables
-    applyFluidDesignVariables(mergedDesktop, mergedMobile);
+    const applyDataToDOM = () => {
+      // 1. Fluid CSS Variables
+      applyFluidDesignVariables(mergedDesktop, mergedMobile);
 
-    // 2. DOM Page Content
-    applyPageContent(mergedDesktop, mergedMobile);
+      // 2. DOM Page Content
+      applyPageContent(mergedDesktop, mergedMobile);
 
-    // 3. Beats Showcase
-    if (beats && beats.length > 0) {
-      applyBeatsShowcase(beats);
+      // 3. Beats Showcase
+      if (beats && beats.length > 0) {
+        applyBeatsShowcase(beats);
+      }
+
+      // 4. Dispatch ready event
+      window.dispatchEvent(new CustomEvent('sanity:data-ready', { detail: data }));
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', applyDataToDOM, { once: true });
     }
+    // Also apply immediately to whatever DOM nodes currently exist
+    applyDataToDOM();
 
-    // 4. Dispatch ready event
-    window.dispatchEvent(new CustomEvent('sanity:data-ready', { detail: data }));
     return data;
   } catch (err) {
     console.warn('Sanity fetch notice (using offline baseline defaults):', err.message || err);
