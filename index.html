@@ -1959,7 +1959,7 @@ function updateNowPlaying(track) {
   currentTitle.textContent = track.dataset.title;
   currentStyle.textContent = track.dataset.title === 'Kensuke' ? 'Soundtrack by Eko for Anime Teaser' : 'Original production';
 }
-async function selectTrack(track, shouldPlay = true) {
+function selectTrack(track, shouldPlay = true) {
   const changed = track !== activeTrack;
   if (changed) {
     activeTrack.classList.remove('active');
@@ -1979,32 +1979,65 @@ async function selectTrack(track, shouldPlay = true) {
     updateNowPlaying(activeTrack);
 
     const src = activeTrack.dataset.src;
-    audio.src = src;
+    if (audio.src !== src) {
+      audio.src = src;
+    }
   }
   if (shouldPlay) {
     if (!changed && !audio.paused) {
       audio.pause();
     } else {
-      ensureAudioGraph()
-        .then(() => audio.play())
-        .catch(() => setPlayingState(false));
+      ensureAudioGraph();
+      audio.play().catch(() => setPlayingState(false));
     }
   }
 }
 
-mainPlay.addEventListener('click', async () => {
+mainPlay.addEventListener('click', () => {
   if (audio.paused) {
-    await ensureAudioGraph();
+    ensureAudioGraph();
     if (typeof triggerPlayTrackAnim === 'function') triggerPlayTrackAnim();
     audio.play().catch(() => setPlayingState(false));
   } else {
     audio.pause();
   }
 });
-tracks.forEach((track) => track.addEventListener('click', () => {
-  if (typeof triggerPlayTrackAnim === 'function') triggerPlayTrackAnim();
-  selectTrack(track);
-}));
+
+tracks.forEach((track) => {
+  // Pre-warm audio on hover or touch before click for instant response
+  const warmThisTrack = () => {
+    const s = track.dataset.src;
+    if (s && 'fetch' in window) {
+      fetch(s, { priority: 'low', mode: 'cors' }).catch(() => {});
+    }
+  };
+  track.addEventListener('pointerenter', warmThisTrack, { passive: true, once: true });
+  track.addEventListener('touchstart', warmThisTrack, { passive: true, once: true });
+
+  track.addEventListener('click', () => {
+    if (typeof triggerPlayTrackAnim === 'function') triggerPlayTrackAnim();
+    selectTrack(track);
+  });
+});
+
+// Idle warming of showcase audio assets after initial render settles (zero impact on initial load)
+if (typeof window !== 'undefined') {
+  window.addEventListener('load', () => {
+    const warmIdleTracks = () => {
+      tracks.forEach((t) => {
+        const s = t.dataset.src;
+        if (s && 'fetch' in window) {
+          fetch(s, { priority: 'low', mode: 'cors' }).catch(() => {});
+        }
+      });
+    };
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(warmIdleTracks, { timeout: 6000 });
+    } else {
+      setTimeout(warmIdleTracks, 2500);
+    }
+  }, { once: true });
+}
 
 function applySeekTarget(targetTime) {
   if (audio.readyState >= 1) {

@@ -39,10 +39,10 @@ export async function onRequest(context) {
   let decodedPath = decodeURIComponent(rawFile).replace(/^\.?\/+/, '').replace(/^assets\//, '');
   const fileName = decodedPath.split('/').pop();
 
-  // Candidate paths to check in the repository structure
+  // Candidate paths to check in the repository structure (prioritize showcase/ first)
   const candidatePaths = [
-    decodedPath,
     `showcase/${fileName}`,
+    decodedPath,
     `audio/${fileName}`,
     fileName,
   ];

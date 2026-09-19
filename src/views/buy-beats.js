@@ -1,5 +1,5 @@
 import { cartStore } from '../store/cartStore.js';
-import { getMediaUrl } from '../utils/media.js';
+import { getMediaUrl, preloadMedia, warmMediaOnIdle } from '../utils/media.js';
 
 export function createBuyBeatsView({ navigateTo }) {
   const container = document.createElement('div');
@@ -94,32 +94,8 @@ export function createBuyBeatsView({ navigateTo }) {
   storeAudio.crossOrigin = 'anonymous';
   storeAudio.preload = 'auto';
 
-  const audioBlobCache = window.__AUDIO_BLOB_CACHE__ = window.__AUDIO_BLOB_CACHE__ || new Map();
-  const audioBlobPromises = window.__AUDIO_BLOB_PROMISES__ = window.__AUDIO_BLOB_PROMISES__ || new Map();
-
-  function ensureTrackBlob(src) {
-    if (!src) return Promise.resolve(null);
-    if (audioBlobCache.has(src)) return Promise.resolve(audioBlobCache.get(src));
-    if (audioBlobPromises.has(src)) return audioBlobPromises.get(src);
-
-    const promise = fetch(src)
-      .then((res) => {
-        if (!res.ok) throw new Error('Fetch failed');
-        return res.blob();
-      })
-      .then((blob) => {
-        const blobUrl = URL.createObjectURL(blob);
-        audioBlobCache.set(src, blobUrl);
-        return blobUrl;
-      })
-      .catch((err) => {
-        console.warn('Store blob fetch failed for', src, err);
-        return src;
-      });
-
-    audioBlobPromises.set(src, promise);
-    return promise;
-  }
+  // Schedule idle background prefetch of beat previews
+  warmMediaOnIdle(BEATS.map(b => b.src), 1800);
 
   container.innerHTML = `
     <div class="view-hero">
@@ -317,6 +293,14 @@ export function createBuyBeatsView({ navigateTo }) {
       const licenseSelect = card.querySelector(`#lic-sel-${beat.id}`);
       const priceDisplay = card.querySelector(`#price-display-${beat.id}`);
 
+      // Warm audio on hover / touch for instant zero-delay click-to-play
+      card.addEventListener('pointerenter', () => {
+        preloadMedia(beat.src);
+      }, { passive: true, once: true });
+      card.addEventListener('touchstart', () => {
+        preloadMedia(beat.src);
+      }, { passive: true, once: true });
+
       licenseSelect.addEventListener('change', () => {
         const tier = licenseSelect.value;
         const price = beat.prices[tier];
@@ -360,10 +344,10 @@ export function createBuyBeatsView({ navigateTo }) {
     });
   }
 
-  async function togglePlayBeat(beat) {
+  function togglePlayBeat(beat) {
     if (currentPlayingBeat && currentPlayingBeat.id === beat.id) {
       if (storeAudio.paused) {
-        storeAudio.play();
+        storeAudio.play().catch(() => {});
       } else {
         storeAudio.pause();
       }
@@ -373,13 +357,9 @@ export function createBuyBeatsView({ navigateTo }) {
       storeNowTitle.textContent = beat.title;
       storeNowMeta.textContent = `${beat.bpm} BPM · Key of ${beat.key} · ${beat.genre}`;
 
-      let blobUrl = audioBlobCache.get(beat.src);
-      if (!blobUrl && audioBlobPromises.has(beat.src)) {
-        blobUrl = await audioBlobPromises.get(beat.src);
-      } else if (!blobUrl) {
-        blobUrl = await ensureTrackBlob(beat.src);
+      if (storeAudio.src !== beat.src) {
+        storeAudio.src = beat.src;
       }
-      storeAudio.src = blobUrl || beat.src;
       storeAudio.play().catch(() => {});
     }
     renderBeats();

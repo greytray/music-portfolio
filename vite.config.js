@@ -18,6 +18,9 @@ function copyAssetsPlugin() {
   };
 }
 
+const mediaMemoryBuffers = new Map();
+const resolvedPathCache = new Map();
+
 function mediaProxyPlugin() {
   const handler = async (req, res, next) => {
     const rawUrl = req.url || '';
@@ -33,89 +36,24 @@ function mediaProxyPlugin() {
     if (filePath) {
       const decodedRelPath = decodeURIComponent(filePath).replace(/^\.?\/+/, '').replace(/^assets\//, '');
       const fileName = decodedRelPath.split('/').pop();
+      const ext = path.extname(fileName).toLowerCase();
 
-      const candidatePaths = [
-        decodedRelPath,
-        `showcase/${fileName}`,
-        `audio/${fileName}`,
-        fileName,
-      ];
-      const uniqueCandidates = [...new Set(candidatePaths.filter(Boolean))];
+      const mimeTypes = {
+        '.mp3': 'audio/mpeg',
+        '.wav': 'audio/wav',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp',
+      };
+      const contentType = mimeTypes[ext] || 'application/octet-stream';
 
-      // Check if Hugging Face upstream should be queried
-      const hfToken = process.env.HF_ACCESS_TOKEN;
-      const hfBaseUrl = process.env.HF_DATASET_URL || 'https://huggingface.co/datasets/greyhugging/RawStorage/resolve/main';
-
-      if (hfToken) {
-        try {
-          let upstreamRes = null;
-          for (const candidate of uniqueCandidates) {
-            const encodedCandidatePath = candidate.split('/').map(encodeURIComponent).join('/');
-            const upstreamUrl = `${hfBaseUrl.replace(/\/+$/, '')}/${encodedCandidatePath}`;
-            const forwardHeaders = {};
-            forwardHeaders['Authorization'] = `Bearer ${hfToken}`;
-            if (req.headers.range) forwardHeaders['Range'] = req.headers.range;
-            if (req.headers['if-none-match']) forwardHeaders['If-None-Match'] = req.headers['if-none-match'];
-
-            const r = await fetch(upstreamUrl, {
-              headers: forwardHeaders,
-              redirect: 'follow',
-            });
-
-            if (r.ok || r.status === 206 || r.status === 304) {
-              upstreamRes = r;
-              break;
-            }
-          }
-
-          if (upstreamRes && (upstreamRes.ok || upstreamRes.status === 206 || upstreamRes.status === 304)) {
-            res.statusCode = upstreamRes.status;
-            upstreamRes.headers.forEach((value, key) => {
-              res.setHeader(key, value);
-            });
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-            res.setHeader('Access-Control-Allow-Headers', 'Range, Authorization, Content-Type, If-None-Match');
-            res.setHeader('Accept-Ranges', 'bytes');
-
-            if (upstreamRes.body) {
-              const reader = upstreamRes.body.getReader();
-              const pump = async () => {
-                const { done, value } = await reader.read();
-                if (done) {
-                  res.end();
-                  return;
-                }
-                res.write(Buffer.from(value));
-                await pump();
-              };
-              await pump();
-              return;
-            }
-          }
-        } catch (e) {
-          console.warn('[Media Proxy] Upstream fetch error, falling back to local if available:', e.message);
-        }
-      }
-
-      // Local file fallback
-      const localFilePath = path.resolve(process.cwd(), 'assets', decodedRelPath.startsWith('audio/') ? decodedRelPath : `audio/${fileName}`);
-      if (fs.existsSync(localFilePath)) {
-        const stat = fs.statSync(localFilePath);
-        const total = stat.size;
+      // Helper to serve a Buffer with range support in 0ms
+      const serveBuffer = (buf, etagValue) => {
+        const total = buf.length;
         const range = req.headers.range;
-        const etag = `"${stat.mtimeMs.toString(16)}-${stat.size.toString(16)}"`;
-        const ext = path.extname(localFilePath).toLowerCase();
-        const mimeTypes = {
-          '.mp3': 'audio/mpeg',
-          '.wav': 'audio/wav',
-          '.jpg': 'image/jpeg',
-          '.jpeg': 'image/jpeg',
-          '.png': 'image/png',
-          '.gif': 'image/gif',
-          '.webp': 'image/webp',
-        };
-        const contentType = mimeTypes[ext] || 'application/octet-stream';
+        const etag = etagValue || `"${total.toString(16)}-${fileName}"`;
 
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
@@ -127,6 +65,11 @@ function mediaProxyPlugin() {
 
         if (req.headers['if-none-match'] === etag) {
           res.statusCode = 304;
+          return res.end();
+        }
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204;
           return res.end();
         }
 
@@ -144,35 +87,96 @@ function mediaProxyPlugin() {
             return res.end();
           }
 
-          const chunkSize = end - start + 1;
+          const chunk = buf.subarray(start, end + 1);
           res.statusCode = 206;
           res.setHeader('Content-Range', `bytes ${start}-${end}/${total}`);
-          res.setHeader('Content-Length', chunkSize);
+          res.setHeader('Content-Length', chunk.length);
 
           if (req.method === 'HEAD') {
             return res.end();
           }
-
-          const stream = fs.createReadStream(localFilePath, { start, end });
-          stream.on('error', () => {
-            if (!res.headersSent) res.statusCode = 500;
-            res.end();
-          });
-          stream.pipe(res);
+          return res.end(chunk);
         } else {
           res.statusCode = 200;
           res.setHeader('Content-Length', total);
           if (req.method === 'HEAD') {
             return res.end();
           }
-          const stream = fs.createReadStream(localFilePath);
-          stream.on('error', () => {
-            if (!res.headersSent) res.statusCode = 500;
-            res.end();
-          });
-          stream.pipe(res);
+          return res.end(buf);
         }
-        return;
+      };
+
+      // 1. Check in-memory RAM cache first (Instant 0ms response)
+      const cacheKey = fileName.toLowerCase();
+      if (mediaMemoryBuffers.has(cacheKey)) {
+        const cached = mediaMemoryBuffers.get(cacheKey);
+        return serveBuffer(cached.buffer, cached.etag);
+      }
+
+      // 2. Check local disk files next
+      const localCandidate = path.resolve(process.cwd(), 'assets', decodedRelPath.startsWith('audio/') ? decodedRelPath : `audio/${fileName}`);
+      if (fs.existsSync(localCandidate)) {
+        try {
+          const buf = fs.readFileSync(localCandidate);
+          const stat = fs.statSync(localCandidate);
+          const etag = `"${stat.mtimeMs.toString(16)}-${stat.size.toString(16)}"`;
+          mediaMemoryBuffers.set(cacheKey, { buffer: buf, etag });
+          return serveBuffer(buf, etag);
+        } catch (err) {
+          console.warn('[Media Proxy] Local read failed, falling back to upstream:', err.message);
+        }
+      }
+
+      // 3. Query Hugging Face with prioritized showcase/ path
+      const hfToken = process.env.HF_ACCESS_TOKEN;
+      const hfBaseUrl = process.env.HF_DATASET_URL || 'https://huggingface.co/datasets/greyhugging/RawStorage/resolve/main';
+
+      if (hfToken) {
+        try {
+          const memorizedPath = resolvedPathCache.get(cacheKey);
+          const candidatePaths = memorizedPath
+            ? [memorizedPath]
+            : [
+                `showcase/${fileName}`,
+                decodedRelPath,
+                `audio/${fileName}`,
+                fileName,
+              ];
+          const uniqueCandidates = [...new Set(candidatePaths.filter(Boolean))];
+
+          let upstreamRes = null;
+          let matchedPath = null;
+
+          for (const candidate of uniqueCandidates) {
+            const encodedCandidatePath = candidate.split('/').map(encodeURIComponent).join('/');
+            const upstreamUrl = `${hfBaseUrl.replace(/\/+$/, '')}/${encodedCandidatePath}`;
+            const forwardHeaders = {
+              'Authorization': `Bearer ${hfToken}`,
+            };
+
+            const r = await fetch(upstreamUrl, {
+              headers: forwardHeaders,
+              redirect: 'follow',
+            });
+
+            if (r.ok || r.status === 206 || r.status === 304) {
+              upstreamRes = r;
+              matchedPath = candidate;
+              resolvedPathCache.set(cacheKey, candidate);
+              break;
+            }
+          }
+
+          if (upstreamRes && (upstreamRes.ok || upstreamRes.status === 206 || upstreamRes.status === 304)) {
+            const arrayBuf = await upstreamRes.arrayBuffer();
+            const buf = Buffer.from(arrayBuf);
+            const etag = upstreamRes.headers.get('etag') || `"${buf.length.toString(16)}-${fileName}"`;
+            mediaMemoryBuffers.set(cacheKey, { buffer: buf, etag });
+            return serveBuffer(buf, etag);
+          }
+        } catch (e) {
+          console.warn('[Media Proxy] Upstream fetch error:', e.message);
+        }
       }
     }
     next();

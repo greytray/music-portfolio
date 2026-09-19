@@ -9,7 +9,7 @@
 
 import { fastSmoothScrollTo } from '../utils/scroll.js';
 import { pauseMainLandingAudio } from '../main.js';
-import { getMediaUrl } from '../utils/media.js';
+import { getMediaUrl, preloadMedia, warmMediaOnIdle } from '../utils/media.js';
 
 let catalogAudioInstance = null;
 let currentPlayingButton = null;
@@ -189,9 +189,18 @@ function initCatalogAudio(section) {
   }
 
   playButtons.forEach(btn => {
+    const audioSrc = btn.getAttribute('data-audio');
+    if (audioSrc) {
+      btn.addEventListener('pointerenter', () => {
+        preloadMedia(audioSrc);
+      }, { passive: true, once: true });
+      btn.addEventListener('touchstart', () => {
+        preloadMedia(audioSrc);
+      }, { passive: true, once: true });
+    }
+
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const audioSrc = btn.getAttribute('data-audio');
       if (!audioSrc) return;
 
       const isSameButton = currentPlayingButton === btn;
