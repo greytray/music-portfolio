@@ -1,5 +1,4 @@
 import { cartStore } from '../store/cartStore.js';
-import { ordersStore } from '../store/ordersStore.js';
 
 export function createSessionsView({ navigateTo }) {
   const container = document.createElement('div');
