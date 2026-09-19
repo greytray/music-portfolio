@@ -19,10 +19,10 @@ export async function onRequest(context) {
 
   const url = new URL(request.url);
 
-  // Read target file path from query parameter (?file=audio/song.mp3) or subpath
-  let filePath = url.searchParams.get('file') || url.pathname.replace(/^\/api\/media\/?/, '');
+  // Read target file path from query parameter (?file=showcase/song.mp3) or subpath
+  let rawFile = url.searchParams.get('file') || url.pathname.replace(/^\/api\/media\/?/, '');
 
-  if (!filePath) {
+  if (!rawFile) {
     return new Response(
       JSON.stringify({ error: 'Missing file parameter (?file=path/to/asset.mp3)' }),
       {
@@ -35,8 +35,19 @@ export async function onRequest(context) {
     );
   }
 
-  // Normalize path: remove leading slashes and redundant 'assets/' prefixes
-  filePath = filePath.replace(/^\.?\/+/, '').replace(/^assets\//, '');
+  // Normalize path: decode first to handle already encoded characters, then strip redundant prefixes
+  let decodedPath = decodeURIComponent(rawFile).replace(/^\.?\/+/, '').replace(/^assets\//, '');
+  const fileName = decodedPath.split('/').pop();
+
+  // Candidate paths to check in the repository structure
+  const candidatePaths = [
+    decodedPath,
+    `showcase/${fileName}`,
+    `audio/${fileName}`,
+    fileName,
+  ];
+  // Deduplicate candidate paths
+  const uniqueCandidates = [...new Set(candidatePaths.filter(Boolean))];
 
   // Configurable asset storage: reads from env variable or defaults to Hugging Face dataset URL
   const baseUrl = (env && env.HF_DATASET_URL)
@@ -45,8 +56,6 @@ export async function onRequest(context) {
 
   // Secure server-side access token from environment (Cloudflare Pages Dashboard secret)
   const token = (env && env.HF_ACCESS_TOKEN) || (typeof process !== 'undefined' && process.env && process.env.HF_ACCESS_TOKEN) || '';
-
-  const targetUrl = `${baseUrl}/${filePath}`;
 
   // Forward Range, If-None-Match, and Authorization headers upstream
   const forwardHeaders = new Headers();
@@ -65,20 +74,38 @@ export async function onRequest(context) {
   }
 
   try {
-    const upstreamResponse = await fetch(targetUrl, {
-      method: request.method,
-      headers: forwardHeaders,
-      redirect: 'follow',
-    });
+    let upstreamResponse = null;
+    let successfulCandidate = null;
 
-    if (!upstreamResponse.ok && upstreamResponse.status !== 304 && upstreamResponse.status !== 206) {
+    for (const candidate of uniqueCandidates) {
+      const encodedCandidatePath = candidate.split('/').map(encodeURIComponent).join('/');
+      const targetUrl = `${baseUrl}/${encodedCandidatePath}`;
+
+      const res = await fetch(targetUrl, {
+        method: request.method,
+        headers: forwardHeaders,
+        redirect: 'follow',
+      });
+
+      if (res.ok || res.status === 206 || res.status === 304) {
+        upstreamResponse = res;
+        successfulCandidate = candidate;
+        break;
+      } else if (res.status !== 404 && !upstreamResponse) {
+        upstreamResponse = res;
+      }
+    }
+
+    if (!upstreamResponse || (!upstreamResponse.ok && upstreamResponse.status !== 304 && upstreamResponse.status !== 206)) {
+      const status = upstreamResponse ? upstreamResponse.status : 404;
       return new Response(
         JSON.stringify({
-          error: `Upstream storage error: ${upstreamResponse.status} ${upstreamResponse.statusText}`,
-          target: filePath,
+          error: `Upstream storage error: ${status}`,
+          requested: decodedPath,
+          candidatesTested: uniqueCandidates,
         }),
         {
-          status: upstreamResponse.status,
+          status,
           headers: {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
@@ -116,3 +143,4 @@ export async function onRequest(context) {
     );
   }
 }
+

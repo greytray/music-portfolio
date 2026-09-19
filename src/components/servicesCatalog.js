@@ -162,6 +162,7 @@ function initCatalogAudio(section) {
 
   if (!catalogAudioInstance) {
     catalogAudioInstance = new Audio();
+    catalogAudioInstance.crossOrigin = 'anonymous';
     catalogAudioInstance.preload = 'none';
 
     catalogAudioInstance.addEventListener('ended', () => {

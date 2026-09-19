@@ -91,6 +91,7 @@ export function createBuyBeatsView({ navigateTo }) {
   let searchQuery = '';
   let currentPlayingBeat = null;
   const storeAudio = new Audio();
+  storeAudio.crossOrigin = 'anonymous';
   storeAudio.preload = 'auto';
 
   const audioBlobCache = window.__AUDIO_BLOB_CACHE__ = window.__AUDIO_BLOB_CACHE__ || new Map();

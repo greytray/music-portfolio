@@ -32,7 +32,15 @@ function mediaProxyPlugin() {
 
     if (filePath) {
       const decodedRelPath = decodeURIComponent(filePath).replace(/^\.?\/+/, '').replace(/^assets\//, '');
-      const localFilePath = path.resolve(process.cwd(), 'assets', decodedRelPath);
+      const fileName = decodedRelPath.split('/').pop();
+
+      const candidatePaths = [
+        decodedRelPath,
+        `showcase/${fileName}`,
+        `audio/${fileName}`,
+        fileName,
+      ];
+      const uniqueCandidates = [...new Set(candidatePaths.filter(Boolean))];
 
       // Check if Hugging Face upstream should be queried
       const hfToken = process.env.HF_ACCESS_TOKEN;
@@ -40,37 +48,50 @@ function mediaProxyPlugin() {
 
       if (hfToken) {
         try {
-          const upstreamUrl = `${hfBaseUrl.replace(/\/+$/, '')}/${decodedRelPath}`;
-          const forwardHeaders = {};
-          forwardHeaders['Authorization'] = `Bearer ${hfToken}`;
-          if (req.headers.range) forwardHeaders['Range'] = req.headers.range;
-          if (req.headers['if-none-match']) forwardHeaders['If-None-Match'] = req.headers['if-none-match'];
+          let upstreamRes = null;
+          for (const candidate of uniqueCandidates) {
+            const encodedCandidatePath = candidate.split('/').map(encodeURIComponent).join('/');
+            const upstreamUrl = `${hfBaseUrl.replace(/\/+$/, '')}/${encodedCandidatePath}`;
+            const forwardHeaders = {};
+            forwardHeaders['Authorization'] = `Bearer ${hfToken}`;
+            if (req.headers.range) forwardHeaders['Range'] = req.headers.range;
+            if (req.headers['if-none-match']) forwardHeaders['If-None-Match'] = req.headers['if-none-match'];
 
-          const upstreamRes = await fetch(upstreamUrl, {
-            headers: forwardHeaders,
-            redirect: 'follow',
-          });
+            const r = await fetch(upstreamUrl, {
+              headers: forwardHeaders,
+              redirect: 'follow',
+            });
 
-          res.statusCode = upstreamRes.status;
-          upstreamRes.headers.forEach((value, key) => {
-            res.setHeader(key, value);
-          });
-          res.setHeader('Access-Control-Allow-Origin', '*');
-          res.setHeader('Accept-Ranges', 'bytes');
+            if (r.ok || r.status === 206 || r.status === 304) {
+              upstreamRes = r;
+              break;
+            }
+          }
 
-          if (upstreamRes.body) {
-            const reader = upstreamRes.body.getReader();
-            const pump = async () => {
-              const { done, value } = await reader.read();
-              if (done) {
-                res.end();
-                return;
-              }
-              res.write(Buffer.from(value));
+          if (upstreamRes && (upstreamRes.ok || upstreamRes.status === 206 || upstreamRes.status === 304)) {
+            res.statusCode = upstreamRes.status;
+            upstreamRes.headers.forEach((value, key) => {
+              res.setHeader(key, value);
+            });
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+            res.setHeader('Access-Control-Allow-Headers', 'Range, Authorization, Content-Type, If-None-Match');
+            res.setHeader('Accept-Ranges', 'bytes');
+
+            if (upstreamRes.body) {
+              const reader = upstreamRes.body.getReader();
+              const pump = async () => {
+                const { done, value } = await reader.read();
+                if (done) {
+                  res.end();
+                  return;
+                }
+                res.write(Buffer.from(value));
+                await pump();
+              };
               await pump();
-            };
-            await pump();
-            return;
+              return;
+            }
           }
         } catch (e) {
           console.warn('[Media Proxy] Upstream fetch error, falling back to local if available:', e.message);
@@ -78,6 +99,7 @@ function mediaProxyPlugin() {
       }
 
       // Local file fallback
+      const localFilePath = path.resolve(process.cwd(), 'assets', decodedRelPath.startsWith('audio/') ? decodedRelPath : `audio/${fileName}`);
       if (fs.existsSync(localFilePath)) {
         const stat = fs.statSync(localFilePath);
         const total = stat.size;
@@ -96,6 +118,8 @@ function mediaProxyPlugin() {
         const contentType = mimeTypes[ext] || 'application/octet-stream';
 
         res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Range, Authorization, Content-Type, If-None-Match');
         res.setHeader('Accept-Ranges', 'bytes');
         res.setHeader('Content-Type', contentType);
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
