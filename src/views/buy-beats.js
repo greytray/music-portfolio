@@ -1,4 +1,5 @@
 import { cartStore } from '../store/cartStore.js';
+import { getMediaUrl } from '../utils/media.js';
 
 export function createBuyBeatsView({ navigateTo }) {
   const container = document.createElement('div');
@@ -13,7 +14,8 @@ export function createBuyBeatsView({ navigateTo }) {
       bpm: 110,
       key: 'C Maj',
       duration: '0:44',
-      src: './assets/audio/feeling mello.mp3',
+      src: getMediaUrl('audio/feeling mello.mp3'),
+      audio_file: 'audio/feeling mello.mp3',
       tags: ['Smooth', 'Guitar', 'Warm Drums', 'Relaxed'],
       description: 'Lush Rhodes chords, organic rimshots, and a laid-back melodic groove built for reflective verses.',
       prices: { mp3: 49, wav: 99, stems: 199, exclusive: 599 }
@@ -25,7 +27,8 @@ export function createBuyBeatsView({ navigateTo }) {
       bpm: 132,
       key: 'G Min',
       duration: '0:38',
-      src: './assets/audio/broken jar mastered.mp3',
+      src: getMediaUrl('audio/broken jar mastered.mp3'),
+      audio_file: 'audio/broken jar mastered.mp3',
       tags: ['Heavy 808', 'Dark Bells', 'Punchy', 'Hard'],
       description: 'Menacing dark piano arpeggios layered over distorted slide 808s and razor-sharp hi-hat rolls.',
       prices: { mp3: 49, wav: 99, stems: 199, exclusive: 599 }
@@ -37,7 +40,8 @@ export function createBuyBeatsView({ navigateTo }) {
       bpm: 124,
       key: 'A Min',
       duration: '1:14',
-      src: './assets/audio/Kpop beat.mp3',
+      src: getMediaUrl('audio/Kpop beat.mp3'),
+      audio_file: 'audio/Kpop beat.mp3',
       tags: ['Upbeat', 'Synth Brass', 'Energetic', 'Anthemic'],
       description: 'High-energy hook-driven beat with punchy four-on-the-floor groove and vibrant melodic brass.',
       prices: { mp3: 49, wav: 99, stems: 199, exclusive: 599 }
@@ -49,7 +53,8 @@ export function createBuyBeatsView({ navigateTo }) {
       bpm: 95,
       key: 'D Min',
       duration: '0:45',
-      src: './assets/audio/Kensuke.mp3',
+      src: getMediaUrl('audio/Kensuke.mp3'),
+      audio_file: 'audio/Kensuke.mp3',
       tags: ['Dramatic', 'East Asian Flute', 'Taiko Drums', 'Atmospheric'],
       description: 'Original soundtrack composition with ethereal flute melodies, heavy cinematic percussion, and ambient pads.',
       prices: { mp3: 49, wav: 99, stems: 199, exclusive: 599 }
@@ -61,7 +66,8 @@ export function createBuyBeatsView({ navigateTo }) {
       bpm: 128,
       key: 'E Maj',
       duration: '0:14',
-      src: './assets/audio/K-Pop post fx.mp3',
+      src: getMediaUrl('audio/K-Pop post fx.mp3'),
+      audio_file: 'audio/K-Pop post fx.mp3',
       tags: ['Vocal Chops', 'Future Pop', 'Bright', 'Dance'],
       description: 'Crisp future-bass drop synth chords with pitch-shifted vocal chops and pumping sidechain compression.',
       prices: { mp3: 49, wav: 99, stems: 199, exclusive: 599 }
@@ -73,7 +79,8 @@ export function createBuyBeatsView({ navigateTo }) {
       bpm: 140,
       key: 'F# Min',
       duration: '0:53',
-      src: './assets/audio/Aiobahn maybe last mix.mp3',
+      src: getMediaUrl('audio/Aiobahn maybe last mix.mp3'),
+      audio_file: 'audio/Aiobahn maybe last mix.mp3',
       tags: ['Speedy', 'Melodic Bass', 'Euphoric', 'Club'],
       description: 'Fast-paced melodic electronic track combining Japanese club energy with soaring lead synths.',
       prices: { mp3: 49, wav: 99, stems: 199, exclusive: 599 }

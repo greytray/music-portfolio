@@ -1,5 +1,6 @@
 import { cartStore } from '../store/cartStore.js';
 import { ordersStore } from '../store/ordersStore.js';
+import { getMediaUrl } from '../utils/media.js';
 
 export function createCartView({ navigateTo }) {
   const container = document.createElement('div');
@@ -280,7 +281,7 @@ export function createCartView({ navigateTo }) {
       paymentMethod: payMethod,
       status: 'Delivered',
       currentStage: 5,
-      downloadUrl: items[0].beatId ? './assets/audio/broken jar mastered.mp3' : null,
+      downloadUrl: items[0].beatId ? getMediaUrl('audio/broken jar mastered.mp3') : null,
       downloadName: `${items[0].title.replace(/\s+/g, '_')}_Master.mp3`,
       notes: `Payment completed via ${payMethod}. Stems & license agreement issued to ${buyerEmail}.`
     });
