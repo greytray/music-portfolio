@@ -5,6 +5,7 @@ import { mountIridescence } from './components/Iridescence.js';
 import { initAllCardTilts } from './utils/tilt.js';
 import { initLiquidGlassButtons } from './utils/liquidButton.js';
 import { initServicesCatalog } from './components/servicesCatalog.js';
+import { initPublishedDesignSchema } from './utils/schemaApplier.js';
 
 // Dynamic modules registry for on-demand lazy loading
 const VIEW_LOADERS = {
@@ -310,20 +311,24 @@ try {
   // Ignore in environments where localStorage is restricted
 }
 
-// Auto-run initialization when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    initHiddenPageArchitecture();
-    initSectionIridescence();
-    initAllCardTilts();
-    initLiquidGlassButtons();
-    initServicesCatalog();
-  });
-} else {
+// Direct redirect to backend editor interface if /admin is hit on static hosts without rewrite support
+if (window.location.pathname.replace(/\/+$/, '') === '/admin' && !window.location.search.includes('admin_preview=1')) {
+  window.location.replace('/admin.html');
+}
+
+// Auto-run storefront initialization when DOM is ready
+function startApp() {
+  initPublishedDesignSchema();
   initHiddenPageArchitecture();
   initSectionIridescence();
   initAllCardTilts();
   initLiquidGlassButtons();
   initServicesCatalog();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startApp);
+} else {
+  startApp();
 }
 

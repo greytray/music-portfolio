@@ -17,6 +17,94 @@ export async function onRequest(context) {
     });
   }
 
+  // Handle POST upload requests
+  if (request.method === 'POST') {
+    try {
+      const contentType = request.headers.get('content-type') || '';
+      let fileName = '';
+      let fileBuffer = null;
+
+      if (contentType.includes('application/json')) {
+        const body = await request.json();
+        fileName = body.fileName || `asset_${Date.now()}`;
+        const base64Data = (body.fileData || '').replace(/^data:[^;]+;base64,/, '');
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        fileBuffer = bytes;
+      } else {
+        const url = new URL(request.url);
+        fileName = url.searchParams.get('fileName') || request.headers.get('x-file-name') || `asset_${Date.now()}`;
+        fileBuffer = new Uint8Array(await request.arrayBuffer());
+      }
+
+      if (!fileBuffer || fileBuffer.length === 0) {
+        return new Response(JSON.stringify({ error: 'Empty file payload' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+
+      const token = (env && env.HF_ACCESS_TOKEN) || (typeof process !== 'undefined' && process.env && process.env.HF_ACCESS_TOKEN) || '';
+      const hfRepo = 'greyhugging/RawStorage';
+      const cleanFileName = fileName.replace(/[^a-zA-Z0-9._\- ]/g, '_');
+      const remotePath = `showcase/${cleanFileName}`;
+
+      if (token) {
+        // Base64 encode file for HF Commit API
+        let binary = '';
+        for (let i = 0; i < fileBuffer.byteLength; i++) {
+          binary += String.fromCharCode(fileBuffer[i]);
+        }
+        const b64 = btoa(binary);
+
+        const hfCommitUrl = `https://huggingface.co/api/datasets/${hfRepo}/commit/main`;
+        const commitRes = await fetch(hfCommitUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            summary: `Upload ${cleanFileName} via Eko Design Mode`,
+            operations: [
+              {
+                key: 'file',
+                value: b64,
+                encoding: 'base64',
+                path: remotePath
+              }
+            ]
+          })
+        });
+
+        if (!commitRes.ok) {
+          const errText = await commitRes.text();
+          console.warn('HF commit error:', commitRes.status, errText);
+        }
+      }
+
+      const proxyUrl = `/api/media?file=${encodeURIComponent(cleanFileName)}`;
+      return new Response(JSON.stringify({
+        success: true,
+        fileName: cleanFileName,
+        url: proxyUrl,
+        path: remotePath,
+        hfConfigured: Boolean(token)
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    } catch (postErr) {
+      return new Response(JSON.stringify({ error: postErr.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+  }
+
   const url = new URL(request.url);
 
   // Read target file path from query parameter (?file=showcase/song.mp3) or subpath
