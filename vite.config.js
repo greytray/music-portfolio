@@ -15,6 +15,16 @@ function copyAssetsPlugin() {
         }
         fs.cpSync(srcDir, destDir, { recursive: true, force: true });
       }
+
+      // Ensure dist/admin/index.html exists as an exact compiled copy matching Cloudflare clean routing
+      const distAdminHtml = path.resolve(process.cwd(), "dist/admin.html");
+      const distAdminDir = path.resolve(process.cwd(), "dist/admin");
+      if (fs.existsSync(distAdminHtml)) {
+        if (!fs.existsSync(distAdminDir)) {
+          fs.mkdirSync(distAdminDir, { recursive: true });
+        }
+        fs.copyFileSync(distAdminHtml, path.join(distAdminDir, "index.html"));
+      }
     },
   };
 }
@@ -460,7 +470,7 @@ function mediaProxyPlugin() {
 }
 
 export default defineConfig({
-  base: "./",
+  base: "/",
   plugins: [copyAssetsPlugin(), adminDesignModePlugin(), mediaProxyPlugin()],
   build: {
     rollupOptions: {

@@ -311,11 +311,6 @@ try {
   // Ignore in environments where localStorage is restricted
 }
 
-// Direct redirect to backend editor interface if /admin is hit on static hosts without rewrite support
-if (window.location.pathname.replace(/\/+$/, '') === '/admin' && !window.location.search.includes('admin_preview=1')) {
-  window.location.replace('/admin.html');
-}
-
 // Auto-run storefront initialization when DOM is ready
 function startApp() {
   initPublishedDesignSchema();
