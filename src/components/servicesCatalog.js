@@ -9,7 +9,7 @@
 
 import { fastSmoothScrollTo } from '../utils/scroll.js';
 import { pauseMainLandingAudio } from '../main.js';
-import { getMediaUrl, preloadMedia, warmMediaOnIdle } from '../utils/media.js';
+import { getMediaUrl, getInstantMediaUrl, preloadMedia, warmMediaOnIdle } from '../utils/media.js';
 
 let catalogAudioInstance = null;
 let currentPlayingButton = null;
@@ -213,7 +213,7 @@ function initCatalogAudio(section) {
         pauseMainLandingAudio();
         stopCurrentAudio();
 
-        catalogAudioInstance.src = getMediaUrl(audioSrc);
+        catalogAudioInstance.src = getInstantMediaUrl(audioSrc);
         catalogAudioInstance.play().then(() => {
           btn.classList.add('is-playing');
           const track = btn.closest('.catalog-audio-track');

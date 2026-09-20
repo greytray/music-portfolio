@@ -1792,8 +1792,37 @@ async function ensureAudioGraph() {
   if (reduceMotion.matches || !desktopPlayer.matches) return;
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   if (!AudioContext) return;
-  try { if (!audioContext) { audioContext = new AudioContext(); analyser = audioContext.createAnalyser(); analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.16; sourceNode = audioContext.createMediaElementSource(audio); sourceNode.connect(analyser); analyser.connect(audioContext.destination); frequencyData = new Uint8Array(analyser.frequencyBinCount); } if (audioContext.state === 'suspended') await audioContext.resume(); } catch { trackVisualizer.classList.add('is-static'); }
+  try {
+    if (!audioContext) {
+      audioContext = new AudioContext();
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.16;
+      sourceNode = audioContext.createMediaElementSource(audio);
+      sourceNode.connect(analyser);
+      analyser.connect(audioContext.destination);
+      frequencyData = new Uint8Array(analyser.frequencyBinCount);
+    }
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+  } catch {
+    trackVisualizer.classList.add('is-static');
+  }
 }
+
+// Proactively unlock audio context on first interaction anywhere on page (zero latency when play is clicked)
+const unlockAudioHardware = () => {
+  ensureAudioGraph();
+  window.removeEventListener('pointerdown', unlockAudioHardware, { capture: true });
+  window.removeEventListener('touchstart', unlockAudioHardware, { capture: true });
+  window.removeEventListener('keydown', unlockAudioHardware, { capture: true });
+  window.removeEventListener('wheel', unlockAudioHardware, { capture: true });
+};
+window.addEventListener('pointerdown', unlockAudioHardware, { capture: true, passive: true });
+window.addEventListener('touchstart', unlockAudioHardware, { capture: true, passive: true });
+window.addEventListener('keydown', unlockAudioHardware, { capture: true, passive: true });
+window.addEventListener('wheel', unlockAudioHardware, { capture: true, passive: true });
 function startVisualizer() { if (!visualizerFrame && !reduceMotion.matches) visualizerFrame = requestAnimationFrame(renderVisualizer); }
 function stopVisualizer() { if (visualizerFrame) cancelAnimationFrame(visualizerFrame); visualizerFrame = undefined; bandLevels.fill(0); kickEnvelope = 0; previousKickEnergy = 0; [...trackVisualizer.children].forEach((bar) => { bar.style.setProperty('--level', '0'); bar.style.setProperty('--active', '0'); }); }
 
@@ -1978,9 +2007,13 @@ function selectTrack(track, shouldPlay = true) {
     pendingSeekTarget = null;
     updateNowPlaying(activeTrack);
 
-    const src = activeTrack.dataset.src;
-    if (audio.src !== src) {
-      audio.src = src;
+    const rawSrc = activeTrack.dataset.src;
+    const effectiveSrc = (typeof window.__getInstantMediaUrl === 'function')
+      ? window.__getInstantMediaUrl(rawSrc)
+      : rawSrc;
+
+    if (audio.src !== effectiveSrc) {
+      audio.src = effectiveSrc;
     }
   }
   if (shouldPlay) {
@@ -2004,10 +2037,13 @@ mainPlay.addEventListener('click', () => {
 });
 
 tracks.forEach((track) => {
-  // Pre-warm audio on hover or touch before click for instant response
+  // Pre-warm audio into RAM on hover or touch before click for instant zero-delay playback
   const warmThisTrack = () => {
     const s = track.dataset.src;
-    if (s && 'fetch' in window) {
+    if (!s) return;
+    if (typeof window.__preloadMedia === 'function') {
+      window.__preloadMedia(s);
+    } else if ('fetch' in window) {
       fetch(s, { priority: 'low', mode: 'cors' }).catch(() => {});
     }
   };
@@ -2024,17 +2060,29 @@ tracks.forEach((track) => {
 if (typeof window !== 'undefined') {
   window.addEventListener('load', () => {
     const warmIdleTracks = () => {
+      // Warm active first track into in-memory blob immediately so play is 0ms
+      const activeSrc = activeTrack.dataset.src;
+      if (typeof window.__fetchAndCacheBlob === 'function') {
+        window.__fetchAndCacheBlob(activeSrc).then((blobUrl) => {
+          if (blobUrl && audio.paused && !audio.currentTime && audio.src !== blobUrl) {
+            audio.src = blobUrl;
+            audio.load();
+          }
+        }).catch(() => {});
+      }
       tracks.forEach((t) => {
         const s = t.dataset.src;
-        if (s && 'fetch' in window) {
+        if (typeof window.__preloadMedia === 'function') {
+          window.__preloadMedia(s);
+        } else if (s && 'fetch' in window) {
           fetch(s, { priority: 'low', mode: 'cors' }).catch(() => {});
         }
       });
     };
     if ('requestIdleCallback' in window) {
-      window.requestIdleCallback(warmIdleTracks, { timeout: 6000 });
+      window.requestIdleCallback(warmIdleTracks, { timeout: 4000 });
     } else {
-      setTimeout(warmIdleTracks, 2500);
+      setTimeout(warmIdleTracks, 1500);
     }
   }, { once: true });
 }

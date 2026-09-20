@@ -1,5 +1,5 @@
 import { cartStore } from '../store/cartStore.js';
-import { getMediaUrl, preloadMedia, warmMediaOnIdle } from '../utils/media.js';
+import { getMediaUrl, getInstantMediaUrl, preloadMedia, warmMediaOnIdle } from '../utils/media.js';
 
 export function createBuyBeatsView({ navigateTo }) {
   const container = document.createElement('div');
@@ -357,8 +357,9 @@ export function createBuyBeatsView({ navigateTo }) {
       storeNowTitle.textContent = beat.title;
       storeNowMeta.textContent = `${beat.bpm} BPM · Key of ${beat.key} · ${beat.genre}`;
 
-      if (storeAudio.src !== beat.src) {
-        storeAudio.src = beat.src;
+      const targetSrc = getInstantMediaUrl(beat.src);
+      if (storeAudio.src !== targetSrc) {
+        storeAudio.src = targetSrc;
       }
       storeAudio.play().catch(() => {});
     }
