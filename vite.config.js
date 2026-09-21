@@ -272,22 +272,23 @@ function adminDesignModePlugin() {
         const cleanFileName = path.basename(fileName).replace(/[^a-zA-Z0-9._\- ]/g, '_');
         const ext = path.extname(cleanFileName).toLowerCase();
         const isAudio = ['.mp3', '.wav', '.aac', '.flac', '.ogg', '.m4a'].includes(ext);
-        const subFolder = isAudio ? 'audio' : 'images';
 
-        // 1. Write to local assets directory
-        const destFolder = path.resolve(process.cwd(), 'assets', subFolder);
-        if (!fs.existsSync(destFolder)) {
-          fs.mkdirSync(destFolder, { recursive: true });
+        // For non-audio assets (like layout images), optionally write locally if needed, but NEVER for audio
+        if (!isAudio) {
+          const destFolder = path.resolve(process.cwd(), 'assets', 'images');
+          if (!fs.existsSync(destFolder)) {
+            fs.mkdirSync(destFolder, { recursive: true });
+          }
+          const localFilePath = path.join(destFolder, cleanFileName);
+          fs.writeFileSync(localFilePath, fileBuffer);
         }
-        const localFilePath = path.join(destFolder, cleanFileName);
-        fs.writeFileSync(localFilePath, fileBuffer);
 
-        // 2. Put in RAM cache for instant 0ms streaming playback
+        // 1. Put in RAM cache for instant 0ms streaming playback
         const cacheKey = cleanFileName.toLowerCase();
         const etag = `"${fileBuffer.length.toString(16)}-${Date.now().toString(16)}"`;
         mediaMemoryBuffers.set(cacheKey, { buffer: fileBuffer, etag });
 
-        // 3. Upload upstream to Hugging Face RawStorage if token is configured
+        // 2. Upload upstream directly to Hugging Face RawStorage dataset
         const hfToken = process.env.HF_ACCESS_TOKEN;
         const hfRepo = 'greyhugging/RawStorage';
         const remoteRelPath = `showcase/${cleanFileName}`;
@@ -510,70 +511,61 @@ function mediaProxyPlugin() {
         return serveBuffer(cached.buffer, cached.etag);
       }
 
-      // 2. Check local disk files next
-      const localCandidate = path.resolve(process.cwd(), 'assets', decodedRelPath.startsWith('audio/') ? decodedRelPath : `audio/${fileName}`);
-      if (fs.existsSync(localCandidate)) {
-        try {
-          const buf = fs.readFileSync(localCandidate);
-          const stat = fs.statSync(localCandidate);
-          const etag = `"${stat.mtimeMs.toString(16)}-${stat.size.toString(16)}"`;
-          mediaMemoryBuffers.set(cacheKey, { buffer: buf, etag });
-          return serveBuffer(buf, etag);
-        } catch (err) {
-          console.warn('[Media Proxy] Local read failed, falling back to upstream:', err.message);
-        }
-      }
-
-      // 3. Query Hugging Face with prioritized showcase/ path
-      const hfToken = process.env.HF_ACCESS_TOKEN;
+      // 2. Query Hugging Face RawStorage directly (prioritizing showcase/ path)
+      const hfToken = process.env.HF_ACCESS_TOKEN || '';
       const hfBaseUrl = process.env.HF_DATASET_URL || 'https://huggingface.co/datasets/greyhugging/RawStorage/resolve/main';
 
-      if (hfToken) {
-        try {
-          const memorizedPath = resolvedPathCache.get(cacheKey);
-          const candidatePaths = memorizedPath
-            ? [memorizedPath]
-            : [
-                `showcase/${fileName}`,
-                decodedRelPath,
-                `audio/${fileName}`,
-                fileName,
-              ];
-          const uniqueCandidates = [...new Set(candidatePaths.filter(Boolean))];
+      try {
+        const memorizedPath = resolvedPathCache.get(cacheKey);
+        const candidatePaths = memorizedPath
+          ? [memorizedPath]
+          : [
+              `showcase/${fileName}`,
+              decodedRelPath,
+              `audio/${fileName}`,
+              fileName,
+            ];
+        const uniqueCandidates = [...new Set(candidatePaths.filter(Boolean))];
 
-          let upstreamRes = null;
-          let matchedPath = null;
+        let upstreamRes = null;
+        let matchedPath = null;
 
-          for (const candidate of uniqueCandidates) {
-            const encodedCandidatePath = candidate.split('/').map(encodeURIComponent).join('/');
-            const upstreamUrl = `${hfBaseUrl.replace(/\/+$/, '')}/${encodedCandidatePath}`;
-            const forwardHeaders = {
-              'Authorization': `Bearer ${hfToken}`,
-            };
-
-            const r = await fetch(upstreamUrl, {
-              headers: forwardHeaders,
-              redirect: 'follow',
-            });
-
-            if (r.ok || r.status === 206 || r.status === 304) {
-              upstreamRes = r;
-              matchedPath = candidate;
-              resolvedPathCache.set(cacheKey, candidate);
-              break;
-            }
+        for (const candidate of uniqueCandidates) {
+          const encodedCandidatePath = candidate.split('/').map(encodeURIComponent).join('/');
+          const upstreamUrl = `${hfBaseUrl.replace(/\/+$/, '')}/${encodedCandidatePath}`;
+          const forwardHeaders = {};
+          if (hfToken) {
+            forwardHeaders['Authorization'] = `Bearer ${hfToken}`;
+          }
+          if (req.headers.range) {
+            forwardHeaders['Range'] = req.headers.range;
+          }
+          if (req.headers['if-none-match']) {
+            forwardHeaders['If-None-Match'] = req.headers['if-none-match'];
           }
 
-          if (upstreamRes && (upstreamRes.ok || upstreamRes.status === 206 || upstreamRes.status === 304)) {
-            const arrayBuf = await upstreamRes.arrayBuffer();
-            const buf = Buffer.from(arrayBuf);
-            const etag = upstreamRes.headers.get('etag') || `"${buf.length.toString(16)}-${fileName}"`;
-            mediaMemoryBuffers.set(cacheKey, { buffer: buf, etag });
-            return serveBuffer(buf, etag);
+          const r = await fetch(upstreamUrl, {
+            headers: forwardHeaders,
+            redirect: 'follow',
+          });
+
+          if (r.ok || r.status === 206 || r.status === 304) {
+            upstreamRes = r;
+            matchedPath = candidate;
+            resolvedPathCache.set(cacheKey, candidate);
+            break;
           }
-        } catch (e) {
-          console.warn('[Media Proxy] Upstream fetch error:', e.message);
         }
+
+        if (upstreamRes && (upstreamRes.ok || upstreamRes.status === 206 || upstreamRes.status === 304)) {
+          const arrayBuf = await upstreamRes.arrayBuffer();
+          const buf = Buffer.from(arrayBuf);
+          const etag = upstreamRes.headers.get('etag') || `"${buf.length.toString(16)}-${fileName}"`;
+          mediaMemoryBuffers.set(cacheKey, { buffer: buf, etag });
+          return serveBuffer(buf, etag);
+        }
+      } catch (e) {
+        console.warn('[Media Proxy] Hugging Face upstream fetch error:', e.message);
       }
     }
     next();
