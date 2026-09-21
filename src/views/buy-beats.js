@@ -344,8 +344,6 @@ export function createBuyBeatsView({ navigateTo }) {
     });
   }
 
-  let currentLoadedBeatSrc = null;
-
   function togglePlayBeat(beat) {
     if (currentPlayingBeat && currentPlayingBeat.id === beat.id) {
       if (storeAudio.paused) {
@@ -360,8 +358,7 @@ export function createBuyBeatsView({ navigateTo }) {
       storeNowMeta.textContent = `${beat.bpm} BPM · Key of ${beat.key} · ${beat.genre}`;
 
       const targetSrc = getInstantMediaUrl(beat.src);
-      if (currentLoadedBeatSrc !== beat.src) {
-        currentLoadedBeatSrc = beat.src;
+      if (storeAudio.src !== targetSrc) {
         storeAudio.src = targetSrc;
       }
       storeAudio.play().catch(() => {});
@@ -403,6 +400,17 @@ export function createBuyBeatsView({ navigateTo }) {
     const pct = (dur > 0) ? (targetTime / dur) * 100 : 0;
     storeSeek.value = pct;
     updateStoreSeekFill(pct);
+
+    const cached = currentPlayingBeat ? audioBlobCache.get(currentPlayingBeat.src) : null;
+    if (cached && storeAudio.src !== cached) {
+      const wasPlaying = !storeAudio.paused;
+      storeAudio.src = cached;
+      storeAudio.currentTime = targetTime;
+      if (wasPlaying) {
+        storeAudio.play().catch(() => {});
+      }
+      return;
+    }
 
     if (storeAudio.readyState >= 1) {
       try {

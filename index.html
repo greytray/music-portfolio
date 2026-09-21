@@ -1764,18 +1764,9 @@ if (typeof IntersectionObserver !== 'undefined') {
   }
 }
 
-// Keep strict track of the currently loaded audio source to avoid resetting decoder state
-let currentLoadedTrackSrc = null;
-
-if (activeTrack) {
-  const initialRaw = activeTrack.dataset.src;
-  currentLoadedTrackSrc = initialRaw;
-  const instantSrc = (typeof window.__getInstantMediaUrl === 'function')
-    ? window.__getInstantMediaUrl(initialRaw)
-    : initialRaw;
-  if (!audio.getAttribute('src')) {
-    audio.src = instantSrc;
-  }
+// Do not reset audio.src if already present to preserve initial buffering
+if (!audio.getAttribute('src')) {
+  audio.src = activeTrack.dataset.src;
 }
 
 function renderVisualizer() {
@@ -1797,8 +1788,7 @@ function renderVisualizer() {
   kickEnvelope = kickTarget > kickEnvelope ? kickTarget : kickEnvelope * .48;
   bars.forEach((bar, index) => { const distance = Math.abs(index - (bars.length - 1) / 2) / (bars.length / 2); const silhouette = .28 + Math.pow(1 - distance, .7) * .72; const target = kickEnvelope * silhouette; bandLevels[index] = target > bandLevels[index] ? target : bandLevels[index] * .46; const level = bandLevels[index] < .025 ? 0 : bandLevels[index]; bar.style.setProperty('--level', level.toFixed(3)); bar.style.setProperty('--active', level > 0 ? '1' : '0'); });
 }
-
-function ensureAudioGraph() {
+async function ensureAudioGraph() {
   if (reduceMotion.matches || !desktopPlayer.matches) return;
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   if (!AudioContext) return;
@@ -1814,7 +1804,7 @@ function ensureAudioGraph() {
       frequencyData = new Uint8Array(analyser.frequencyBinCount);
     }
     if (audioContext.state === 'suspended') {
-      audioContext.resume().catch(() => {});
+      await audioContext.resume();
     }
   } catch {
     trackVisualizer.classList.add('is-static');
@@ -2022,8 +2012,7 @@ function selectTrack(track, shouldPlay = true) {
       ? window.__getInstantMediaUrl(rawSrc)
       : rawSrc;
 
-    if (currentLoadedTrackSrc !== rawSrc) {
-      currentLoadedTrackSrc = rawSrc;
+    if (audio.src !== effectiveSrc) {
       audio.src = effectiveSrc;
     }
   }
@@ -2053,9 +2042,9 @@ tracks.forEach((track) => {
     const s = track.dataset.src;
     if (!s) return;
     if (typeof window.__preloadMedia === 'function') {
-      window.__preloadMedia(s, true);
+      window.__preloadMedia(s);
     } else if ('fetch' in window) {
-      fetch(s, { priority: 'high', mode: 'cors' }).catch(() => {});
+      fetch(s, { priority: 'low', mode: 'cors' }).catch(() => {});
     }
   };
   track.addEventListener('pointerenter', warmThisTrack, { passive: true, once: true });
@@ -2071,31 +2060,33 @@ tracks.forEach((track) => {
 if (typeof window !== 'undefined') {
   const warmShowcaseTracks = () => {
     // Warm active first track into in-memory blob immediately so play is 0ms
-    const activeSrc = activeTrack ? activeTrack.dataset.src : null;
-    if (activeSrc && typeof window.__fetchAndCacheBlob === 'function') {
+    const activeSrc = activeTrack.dataset.src;
+    if (typeof window.__fetchAndCacheBlob === 'function') {
       window.__fetchAndCacheBlob(activeSrc, true).then((blobUrl) => {
-        if (blobUrl && audio.paused && !audio.currentTime && currentLoadedTrackSrc === activeSrc) {
+        if (blobUrl && audio.paused && !audio.currentTime && audio.src !== blobUrl) {
           audio.src = blobUrl;
+          audio.load();
         }
       }).catch(() => {});
     }
     tracks.forEach((t, idx) => {
       const s = t.dataset.src;
       if (typeof window.__preloadMedia === 'function') {
-        setTimeout(() => window.__preloadMedia(s, idx < 2), idx * 40);
+        setTimeout(() => window.__preloadMedia(s, idx === 0), idx * 100);
       } else if (s && 'fetch' in window) {
-        setTimeout(() => fetch(s, { mode: 'cors' }).catch(() => {}), idx * 40);
+        setTimeout(() => fetch(s, { mode: 'cors' }).catch(() => {}), idx * 100);
       }
     });
   };
 
-  // Listen for blob ready event to seamlessly upgrade audio.src to RAM blob URL if not yet playing
+  // Listen for blob ready event to seamlessly upgrade audio.src to RAM blob URL
   window.addEventListener('media-blob-ready', (e) => {
     const detail = e.detail;
     if (!detail) return;
-    if (activeTrack && (activeTrack.dataset.src === detail.url || activeTrack.dataset.src === detail.raw)) {
+    if (activeTrack && (activeTrack.dataset.src === detail.url || activeTrack.dataset.src === detail.cleanKey)) {
       if (audio.paused && !audio.currentTime && audio.src !== detail.blobUrl) {
         audio.src = detail.blobUrl;
+        audio.load();
       }
     }
   });
