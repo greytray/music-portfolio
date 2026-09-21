@@ -2056,35 +2056,46 @@ tracks.forEach((track) => {
   });
 });
 
-// Idle warming of showcase audio assets after initial render settles (zero impact on initial load)
+// Proactive warming of showcase audio assets for zero-latency instant play
 if (typeof window !== 'undefined') {
-  window.addEventListener('load', () => {
-    const warmIdleTracks = () => {
-      // Warm active first track into in-memory blob immediately so play is 0ms
-      const activeSrc = activeTrack.dataset.src;
-      if (typeof window.__fetchAndCacheBlob === 'function') {
-        window.__fetchAndCacheBlob(activeSrc).then((blobUrl) => {
-          if (blobUrl && audio.paused && !audio.currentTime && audio.src !== blobUrl) {
-            audio.src = blobUrl;
-            audio.load();
-          }
-        }).catch(() => {});
-      }
-      tracks.forEach((t) => {
-        const s = t.dataset.src;
-        if (typeof window.__preloadMedia === 'function') {
-          window.__preloadMedia(s);
-        } else if (s && 'fetch' in window) {
-          fetch(s, { priority: 'low', mode: 'cors' }).catch(() => {});
+  const warmShowcaseTracks = () => {
+    // Warm active first track into in-memory blob immediately so play is 0ms
+    const activeSrc = activeTrack.dataset.src;
+    if (typeof window.__fetchAndCacheBlob === 'function') {
+      window.__fetchAndCacheBlob(activeSrc, true).then((blobUrl) => {
+        if (blobUrl && audio.paused && !audio.currentTime && audio.src !== blobUrl) {
+          audio.src = blobUrl;
+          audio.load();
         }
-      });
-    };
-    if ('requestIdleCallback' in window) {
-      window.requestIdleCallback(warmIdleTracks, { timeout: 4000 });
-    } else {
-      setTimeout(warmIdleTracks, 1500);
+      }).catch(() => {});
     }
-  }, { once: true });
+    tracks.forEach((t, idx) => {
+      const s = t.dataset.src;
+      if (typeof window.__preloadMedia === 'function') {
+        setTimeout(() => window.__preloadMedia(s, idx === 0), idx * 100);
+      } else if (s && 'fetch' in window) {
+        setTimeout(() => fetch(s, { mode: 'cors' }).catch(() => {}), idx * 100);
+      }
+    });
+  };
+
+  // Listen for blob ready event to seamlessly upgrade audio.src to RAM blob URL
+  window.addEventListener('media-blob-ready', (e) => {
+    const detail = e.detail;
+    if (!detail) return;
+    if (activeTrack && (activeTrack.dataset.src === detail.url || activeTrack.dataset.src === detail.cleanKey)) {
+      if (audio.paused && !audio.currentTime && audio.src !== detail.blobUrl) {
+        audio.src = detail.blobUrl;
+        audio.load();
+      }
+    }
+  });
+
+  if (document.readyState === 'complete') {
+    warmShowcaseTracks();
+  } else {
+    window.addEventListener('load', warmShowcaseTracks, { once: true });
+  }
 }
 
 function applySeekTarget(targetTime) {

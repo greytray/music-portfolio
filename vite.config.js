@@ -511,7 +511,7 @@ function mediaProxyPlugin() {
         return serveBuffer(cached.buffer, cached.etag);
       }
 
-      // 2. Query Hugging Face RawStorage directly (prioritizing showcase/ path)
+      // 2. Query Hugging Face RawStorage directly (concurrent candidate probing)
       const hfToken = process.env.HF_ACCESS_TOKEN || '';
       const hfBaseUrl = process.env.HF_DATASET_URL || 'https://huggingface.co/datasets/greyhugging/RawStorage/resolve/main';
 
@@ -520,17 +520,14 @@ function mediaProxyPlugin() {
         const candidatePaths = memorizedPath
           ? [memorizedPath]
           : [
-              `showcase/${fileName}`,
               decodedRelPath,
               `audio/${fileName}`,
+              `showcase/${fileName}`,
               fileName,
             ];
         const uniqueCandidates = [...new Set(candidatePaths.filter(Boolean))];
 
-        let upstreamRes = null;
-        let matchedPath = null;
-
-        for (const candidate of uniqueCandidates) {
+        const fetchPromises = uniqueCandidates.map(async (candidate) => {
           const encodedCandidatePath = candidate.split('/').map(encodeURIComponent).join('/');
           const upstreamUrl = `${hfBaseUrl.replace(/\/+$/, '')}/${encodedCandidatePath}`;
           const forwardHeaders = {};
@@ -550,14 +547,21 @@ function mediaProxyPlugin() {
           });
 
           if (r.ok || r.status === 206 || r.status === 304) {
-            upstreamRes = r;
-            matchedPath = candidate;
-            resolvedPathCache.set(cacheKey, candidate);
-            break;
+            return { r, candidate };
           }
+          throw new Error(`Candidate ${candidate} returned ${r.status}`);
+        });
+
+        let winner;
+        try {
+          winner = await Promise.any(fetchPromises);
+        } catch {
+          winner = null;
         }
 
-        if (upstreamRes && (upstreamRes.ok || upstreamRes.status === 206 || upstreamRes.status === 304)) {
+        if (winner && winner.r) {
+          const upstreamRes = winner.r;
+          resolvedPathCache.set(cacheKey, winner.candidate);
           const arrayBuf = await upstreamRes.arrayBuffer();
           const buf = Buffer.from(arrayBuf);
           const etag = upstreamRes.headers.get('etag') || `"${buf.length.toString(16)}-${fileName}"`;
@@ -570,6 +574,46 @@ function mediaProxyPlugin() {
     }
     next();
   };
+
+  // Proactive background pre-warming of showcase tracks on dev server boot
+  const prewarmServerMemory = async () => {
+    const TRACKS_TO_WARM = [
+      'Aiobahn maybe last mix.mp3',
+      'Kensuke.mp3',
+      'broken jar mastered.mp3',
+      'feeling mello.mp3',
+      'Kpop beat.mp3',
+      'K-Pop post fx.mp3'
+    ];
+    const hfToken = process.env.HF_ACCESS_TOKEN || '';
+    const hfBaseUrl = process.env.HF_DATASET_URL || 'https://huggingface.co/datasets/greyhugging/RawStorage/resolve/main';
+
+    for (const track of TRACKS_TO_WARM) {
+      const cacheKey = track.toLowerCase();
+      if (mediaMemoryBuffers.has(cacheKey)) continue;
+
+      const candidates = [`audio/${track}`, `showcase/${track}`, track];
+      for (const candidate of candidates) {
+        try {
+          const encoded = candidate.split('/').map(encodeURIComponent).join('/');
+          const url = `${hfBaseUrl.replace(/\/+$/, '')}/${encoded}`;
+          const headers = hfToken ? { Authorization: `Bearer ${hfToken}` } : {};
+          const res = await fetch(url, { headers, redirect: 'follow' });
+          if (res.ok) {
+            const buf = Buffer.from(await res.arrayBuffer());
+            const etag = res.headers.get('etag') || `"${buf.length.toString(16)}-${track}"`;
+            mediaMemoryBuffers.set(cacheKey, { buffer: buf, etag });
+            resolvedPathCache.set(cacheKey, candidate);
+            break;
+          }
+        } catch {
+          // Ignore background pre-warm error
+        }
+      }
+    }
+  };
+
+  setTimeout(prewarmServerMemory, 500);
 
   return {
     name: 'media-proxy-middleware',

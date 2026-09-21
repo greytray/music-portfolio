@@ -560,6 +560,13 @@ export function createBuyBeatsView({ navigateTo }) {
     renderBeats();
   });
 
+  // Pre-warm all beat previews into in-memory Blob cache for instant 0ms playback on click
+  BEATS.forEach((beat, i) => {
+    setTimeout(() => {
+      preloadMedia(beat.src, i === 0);
+    }, i * 80);
+  });
+
   renderBeats();
 
   // Cleanup hook if container is removed

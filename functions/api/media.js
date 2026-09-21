@@ -127,11 +127,12 @@ export async function onRequest(context) {
   let decodedPath = decodeURIComponent(rawFile).replace(/^\.?\/+/, '').replace(/^assets\//, '');
   const fileName = decodedPath.split('/').pop();
 
-  // Candidate paths to check in the repository structure (prioritize showcase/ first)
+  // Candidate paths to check in Hugging Face repository structure
+  // Check exact requested path first, then common namespaces
   const candidatePaths = [
-    `showcase/${fileName}`,
     decodedPath,
     `audio/${fileName}`,
+    `showcase/${fileName}`,
     fileName,
   ];
   // Deduplicate candidate paths
@@ -162,10 +163,8 @@ export async function onRequest(context) {
   }
 
   try {
-    let upstreamResponse = null;
-    let successfulCandidate = null;
-
-    for (const candidate of uniqueCandidates) {
+    // Probe candidates concurrently for ultra-low latency (< 100ms)
+    const fetchPromises = uniqueCandidates.map(async (candidate) => {
       const encodedCandidatePath = candidate.split('/').map(encodeURIComponent).join('/');
       const targetUrl = `${baseUrl}/${encodedCandidatePath}`;
 
@@ -176,19 +175,26 @@ export async function onRequest(context) {
       });
 
       if (res.ok || res.status === 206 || res.status === 304) {
-        upstreamResponse = res;
-        successfulCandidate = candidate;
-        break;
-      } else if (res.status !== 404 && !upstreamResponse) {
-        upstreamResponse = res;
+        return { res, candidate };
       }
+      throw new Error(`Candidate ${candidate} returned ${res.status}`);
+    });
+
+    let winner;
+    try {
+      winner = await Promise.any(fetchPromises);
+    } catch {
+      // Fallback: try sequential if all parallel failed with non-200
+      winner = null;
     }
+
+    const upstreamResponse = winner ? winner.res : null;
 
     if (!upstreamResponse || (!upstreamResponse.ok && upstreamResponse.status !== 304 && upstreamResponse.status !== 206)) {
       const status = upstreamResponse ? upstreamResponse.status : 404;
       return new Response(
         JSON.stringify({
-          error: `Upstream storage error: ${status}`,
+          error: `Upstream audio not found: ${status}`,
           requested: decodedPath,
           candidatesTested: uniqueCandidates,
         }),
@@ -210,7 +216,7 @@ export async function onRequest(context) {
     responseHeaders.set('Accept-Ranges', 'bytes');
 
     if (!responseHeaders.has('Cache-Control')) {
-      responseHeaders.set('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+      responseHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
     }
 
     return new Response(upstreamResponse.body, {
