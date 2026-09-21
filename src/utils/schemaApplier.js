@@ -6,8 +6,13 @@
 
 const STORAGE_KEY = 'eko_published_design_schema';
 
+function camelToKebab(str) {
+  return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+}
+
 /**
  * Applies visual overrides from a schema object onto the current DOM.
+ * Supports universal styles and device-specific breakpoints (desktop, tablet, mobile).
  * @param {Object} schema
  * @param {Document} [doc=document]
  */
@@ -15,42 +20,34 @@ export function applyDesignSchema(schema, doc = document) {
   if (!schema || !schema.elements) return;
 
   const elements = schema.elements;
+  const universalCssRules = [];
+  const desktopCssRules = [];
+  const tabletCssRules = [];
+  const mobileCssRules = [];
+
   Object.keys(elements).forEach(key => {
     const item = elements[key];
     const selector = item.selector || (key.startsWith('#') || key.startsWith('.') ? key : `#${key}`);
     const el = doc.querySelector(selector);
-    if (!el) return;
 
     // 1. Text override
-    if (typeof item.text === 'string' && item.text.trim() !== '') {
-      // If it contains child elements, update first text node or textContent
+    if (el && typeof item.text === 'string' && item.text.trim() !== '') {
       if (el.children.length === 0) {
         el.textContent = item.text;
       } else {
-        // Find main text or update innerHTML safely if provided
         el.innerHTML = item.html || item.text;
       }
     }
 
-    // 2. Style overrides
-    if (item.styles && typeof item.styles === 'object') {
-      Object.keys(item.styles).forEach(prop => {
-        const val = item.styles[prop];
-        if (val !== undefined && val !== null && val !== '') {
-          el.style[prop] = val;
-        }
-      });
-    }
-
-    // 3. Data attributes
-    if (item.dataAttributes && typeof item.dataAttributes === 'object') {
+    // 2. Data attributes
+    if (el && item.dataAttributes && typeof item.dataAttributes === 'object') {
       Object.keys(item.dataAttributes).forEach(attr => {
         el.dataset[attr] = item.dataAttributes[attr];
       });
     }
 
-    // 4. Media overrides (Audio / Image)
-    if (item.media && item.media.src) {
+    // 3. Media overrides (Audio / Image)
+    if (el && item.media && item.media.src) {
       if (el.tagName === 'IMG') {
         el.src = item.media.src;
       } else if (el.tagName === 'AUDIO' || el.tagName === 'SOURCE') {
@@ -61,7 +58,6 @@ export function applyDesignSchema(schema, doc = document) {
       } else if (item.media.type === 'image') {
         el.style.backgroundImage = `url("${item.media.src}")`;
       } else if (item.media.type === 'audio') {
-        // Find child audio or player
         const audioEl = el.querySelector('audio') || doc.querySelector('#audio');
         if (audioEl) {
           audioEl.src = item.media.src;
@@ -69,7 +65,72 @@ export function applyDesignSchema(schema, doc = document) {
         }
       }
     }
+
+    // 4. Universal styles
+    if (item.styles && typeof item.styles === 'object') {
+      const declarations = Object.entries(item.styles)
+        .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+        .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
+        .join(' ');
+      if (declarations) {
+        universalCssRules.push(`${selector} { ${declarations} }`);
+      }
+    }
+
+    // 5. Device breakpoint overrides
+    if (item.breakpoints) {
+      if (item.breakpoints.desktop && typeof item.breakpoints.desktop === 'object') {
+        const dDec = Object.entries(item.breakpoints.desktop)
+          .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+          .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
+          .join(' ');
+        if (dDec) desktopCssRules.push(`${selector} { ${dDec} }`);
+      }
+
+      if (item.breakpoints.tablet && typeof item.breakpoints.tablet === 'object') {
+        const tDec = Object.entries(item.breakpoints.tablet)
+          .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+          .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
+          .join(' ');
+        if (tDec) tabletCssRules.push(`${selector} { ${tDec} }`);
+      }
+
+      if (item.breakpoints.mobile && typeof item.breakpoints.mobile === 'object') {
+        const mDec = Object.entries(item.breakpoints.mobile)
+          .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+          .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
+          .join(' ');
+        if (mDec) mobileCssRules.push(`${selector} { ${mDec} }`);
+      }
+    }
   });
+
+  // Inject or update stylesheet
+  let styleTag = doc.getElementById('eko-design-schema-styles');
+  if (!styleTag) {
+    styleTag = doc.createElement('style');
+    styleTag.id = 'eko-design-schema-styles';
+    if (doc.head) {
+      doc.head.appendChild(styleTag);
+    } else if (doc.body) {
+      doc.body.appendChild(styleTag);
+    }
+  }
+
+  let finalCss = universalCssRules.join('\n');
+  if (desktopCssRules.length > 0) {
+    finalCss += `\n@media (min-width: 1024px) {\n  ${desktopCssRules.join('\n  ')}\n}`;
+  }
+  if (tabletCssRules.length > 0) {
+    finalCss += `\n@media (min-width: 768px) and (max-width: 1023px) {\n  ${tabletCssRules.join('\n  ')}\n}`;
+  }
+  if (mobileCssRules.length > 0) {
+    finalCss += `\n@media (max-width: 767px) {\n  ${mobileCssRules.join('\n  ')}\n}`;
+  }
+
+  if (styleTag) {
+    styleTag.textContent = finalCss;
+  }
 }
 
 /**

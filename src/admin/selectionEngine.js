@@ -11,11 +11,11 @@ export class SelectionEngine {
    * @param {Function} options.onSelect - Callback when element is selected (element, metadata)
    * @param {Function} options.onDeselect - Callback when element is deselected
    */
-  constructor(iframe, { onSelect, onDeselect }) {
+  constructor(iframe, { onSelect, onDeselect, mode = 'interactive' } = {}) {
     this.iframe = iframe;
     this.onSelect = onSelect;
     this.onDeselect = onDeselect;
-    this.mode = 'select'; // 'select' | 'interactive'
+    this.mode = mode; // 'interactive' (Normal) | 'select' (Inspect)
     this.selectedElement = null;
     this.hoveredElement = null;
 
@@ -172,7 +172,10 @@ export class SelectionEngine {
   }
 
   _renderBox(boxEl, badgeEl, targetEl, isSelected) {
-    if (!boxEl || !targetEl || !targetEl.getBoundingClientRect) return;
+    if (!boxEl || !targetEl || !targetEl.getBoundingClientRect || this.mode !== 'select') {
+      if (boxEl) boxEl.style.display = 'none';
+      return;
+    }
 
     const rect = targetEl.getBoundingClientRect();
     if (rect.width === 0 && rect.height === 0) {
@@ -180,14 +183,20 @@ export class SelectionEngine {
       return;
     }
 
-    const scrollX = this.win.scrollX || this.doc.documentElement.scrollLeft;
-    const scrollY = this.win.scrollY || this.doc.documentElement.scrollTop;
+    // Hide box completely if target is scrolled out of the viewport window
+    const viewportHeight = this.win.innerHeight || (this.doc && this.doc.documentElement && this.doc.documentElement.clientHeight) || 1000;
+    const viewportWidth = this.win.innerWidth || (this.doc && this.doc.documentElement && this.doc.documentElement.clientWidth) || 1000;
+    if (rect.bottom < 0 || rect.top > viewportHeight || rect.right < 0 || rect.left > viewportWidth) {
+      boxEl.style.display = 'none';
+      return;
+    }
 
+    // Since overlayRoot is position: fixed, rect coordinates are directly used
     boxEl.style.display = 'block';
     boxEl.style.width = `${Math.round(rect.width)}px`;
     boxEl.style.height = `${Math.round(rect.height)}px`;
-    boxEl.style.left = `${Math.round(rect.left + scrollX)}px`;
-    boxEl.style.top = `${Math.round(rect.top + scrollY)}px`;
+    boxEl.style.left = `${Math.round(rect.left)}px`;
+    boxEl.style.top = `${Math.round(rect.top)}px`;
 
     const tag = targetEl.tagName.toLowerCase();
     const id = targetEl.id ? `#${targetEl.id}` : '';
@@ -204,6 +213,12 @@ export class SelectionEngine {
 
     if (badgeEl) {
       badgeEl.innerHTML = `<span>${labelText}</span>${isSelected ? `<span class="dimensions">${dimText}</span>` : ''}`;
+      // Flip badge inside if close to top edge of viewport
+      if (rect.top < 28) {
+        badgeEl.style.top = '2px';
+      } else {
+        badgeEl.style.top = '-26px';
+      }
     }
   }
 

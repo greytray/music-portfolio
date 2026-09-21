@@ -46,27 +46,52 @@ export class ExportSystem {
   }
 
   /**
-   * Records or updates a visual change on an element
+   * Records or updates a visual change on an element.
+   * If breakpoint is 'universal', saves to universal styles (applies to all devices).
+   * If breakpoint is 'desktop', 'tablet', or 'mobile', saves strictly to that device mode.
    */
-  recordChange(selector, changeData) {
+  recordChange(selector, changeData, breakpoint = 'universal') {
     if (!selector) return;
 
     const existing = this.changesMap.get(selector) || {
       selector,
       styles: {},
+      breakpoints: {
+        desktop: {},
+        tablet: {},
+        mobile: {}
+      },
       dataAttributes: {}
     };
+
+    if (!existing.breakpoints) {
+      existing.breakpoints = {
+        desktop: {},
+        tablet: {},
+        mobile: {}
+      };
+    }
 
     if (changeData.text !== undefined) {
       existing.text = changeData.text;
     }
 
     if (changeData.styleKey && changeData.val !== undefined) {
-      existing.styles[changeData.styleKey] = changeData.val;
+      if (breakpoint === 'universal') {
+        existing.styles[changeData.styleKey] = changeData.val;
+      } else {
+        if (!existing.breakpoints[breakpoint]) existing.breakpoints[breakpoint] = {};
+        existing.breakpoints[breakpoint][changeData.styleKey] = changeData.val;
+      }
     }
 
     if (changeData.styles) {
-      existing.styles = { ...existing.styles, ...changeData.styles };
+      if (breakpoint === 'universal') {
+        existing.styles = { ...existing.styles, ...changeData.styles };
+      } else {
+        if (!existing.breakpoints[breakpoint]) existing.breakpoints[breakpoint] = {};
+        existing.breakpoints[breakpoint] = { ...existing.breakpoints[breakpoint], ...changeData.styles };
+      }
     }
 
     if (changeData.dataAttr) {
@@ -83,6 +108,57 @@ export class ExportSystem {
 
     this.changesMap.set(selector, existing);
     this.hasUnpublishedChanges = true;
+  }
+
+  /**
+   * Remove a specific style or attribute override from an element
+   */
+  removeChange(selector, type, key, breakpoint = 'universal') {
+    if (!selector) return;
+    const existing = this.changesMap.get(selector);
+    if (!existing) return;
+
+    if (type === 'text') {
+      delete existing.text;
+    } else if (type === 'style') {
+      if (breakpoint === 'universal' && existing.styles) {
+        delete existing.styles[key];
+      } else if (existing.breakpoints && existing.breakpoints[breakpoint]) {
+        delete existing.breakpoints[breakpoint][key];
+      }
+    } else if (type === 'dataAttr' && existing.dataAttributes) {
+      delete existing.dataAttributes[key];
+    } else if (type === 'media') {
+      delete existing.media;
+    }
+
+    // Clean up empty objects
+    const hasStyles = existing.styles && Object.keys(existing.styles).length > 0;
+    const hasBp = existing.breakpoints && Object.values(existing.breakpoints).some(bp => Object.keys(bp || {}).length > 0);
+    const hasAttrs = existing.dataAttributes && Object.keys(existing.dataAttributes).length > 0;
+    const hasText = existing.text !== undefined;
+    const hasMedia = existing.media !== undefined;
+
+    if (!hasStyles && !hasBp && !hasAttrs && !hasText && !hasMedia) {
+      this.changesMap.delete(selector);
+    } else {
+      this.changesMap.set(selector, existing);
+    }
+    this.hasUnpublishedChanges = this.changesMap.size > 0;
+  }
+
+  /**
+   * Reset all changes on a single element
+   */
+  resetElement(selector) {
+    if (!selector) return;
+    this.changesMap.delete(selector);
+    this.hasUnpublishedChanges = this.changesMap.size > 0;
+  }
+
+  getElementData(selector) {
+    if (!selector) return null;
+    return this.changesMap.get(selector) || null;
   }
 
   getChangesCount() {
