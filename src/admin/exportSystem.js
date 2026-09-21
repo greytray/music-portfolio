@@ -116,12 +116,18 @@ export class ExportSystem {
       console.warn('LocalStorage error:', err);
     }
 
-    // 2. Server API publish
+    // 2. Server API publish with multi-vector session authentication
+    const token = sessionStorage.getItem('eko_admin_token') || localStorage.getItem('eko_admin_token');
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const res = await fetch('/api/admin/publish', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({ schema })
     });
 

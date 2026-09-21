@@ -1,5 +1,7 @@
 // Cloudflare Pages Function: /api/admin/publish
-// Handles schema publish operations on Cloudflare Pages
+// Handles schema publish operations on Cloudflare Pages (protected by session token)
+
+import { verifySessionToken, extractToken } from '../../_auth.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -16,6 +18,22 @@ export async function onRequest(context) {
   }
 
   if (request.method === 'POST') {
+    // Authenticate: Ensure valid admin session exists (cookie, header, or query)
+    const token = extractToken(request, new URL(request.url));
+    const session = await verifySessionToken(token, env);
+
+    if (!session) {
+      return new Response(JSON.stringify({
+        error: '401 Unauthorized: Valid administrative session required.'
+      }), {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+
     try {
       const body = await request.json();
       if (!body || !body.schema) {

@@ -2,9 +2,7 @@
   "name": "Eko — Producer & Audio Engineer",
   "description": "Eko — premium music production, custom beats, mixing, mastering, audio editing, and production lessons.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"],
-  "designModeSchema": {
-    "version": "1.0.0",
-    "elements": {}
-  }
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

@@ -2,6 +2,15 @@ import { defineConfig } from "vite";
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
+import {
+  createSessionToken,
+  verifySessionToken,
+  verifyAdminPassword,
+  extractToken,
+  buildSessionCookie,
+  buildClearCookie,
+} from "./functions/_auth.js";
+import { FAKE_CHROME_ERROR_HTML } from "./functions/_fakeErrorHtml.js";
 
 function copyAssetsPlugin() {
   return {
@@ -56,9 +65,22 @@ function readRequestBody(req) {
 }
 
 function adminDesignModePlugin() {
-  const handler = async (req, res, next) => {
+  const makeHandler = (server) => async (req, res, next) => {
     const rawUrl = req.url || '';
     const parsedUrl = new URL(rawUrl, 'http://localhost:3000');
+
+    // Cookie extraction helper
+    const getReqCookie = (cookieName) => {
+      const cookieHeader = req.headers['cookie'] || '';
+      const parts = cookieHeader.split(';');
+      for (let p of parts) {
+        p = p.trim();
+        if (p.startsWith(cookieName + '=')) {
+          return decodeURIComponent(p.substring(cookieName.length + 1));
+        }
+      }
+      return null;
+    };
 
     // CORS & Options handling for API
     if (parsedUrl.pathname.startsWith('/api/')) {
@@ -69,6 +91,58 @@ function adminDesignModePlugin() {
       if (req.method === 'OPTIONS') {
         res.statusCode = 204;
         return res.end();
+      }
+    }
+
+    // 0. POST/GET /api/auth - Administrative Login, verification, and logout
+    if (parsedUrl.pathname === '/api/auth') {
+      if (req.method === 'POST') {
+        try {
+          const { json } = await readRequestBody(req);
+          const password = String((json && json.password) || '').trim();
+          const isValidPassword = await verifyAdminPassword(password, process.env);
+
+          if (!isValidPassword) {
+            res.statusCode = 401;
+            res.setHeader('Content-Type', 'application/json');
+            return res.end(JSON.stringify({
+              success: false,
+              error: 'Invalid administrative authorization password'
+            }));
+          }
+
+          const token = await createSessionToken(process.env);
+          const isHttps = req.headers['x-forwarded-proto'] === 'https' || !!req.connection?.encrypted;
+          res.statusCode = 200;
+          res.setHeader('Set-Cookie', buildSessionCookie(token, isHttps));
+          res.setHeader('Content-Type', 'application/json');
+          return res.end(JSON.stringify({
+            success: true,
+            token: token,
+            message: 'Administrative authorization verified'
+          }));
+        } catch (err) {
+          res.statusCode = 500;
+          res.setHeader('Content-Type', 'application/json');
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      }
+
+      if (req.method === 'GET') {
+        if (parsedUrl.searchParams.get('action') === 'logout') {
+          res.setHeader('Set-Cookie', buildClearCookie());
+          res.setHeader('Content-Type', 'application/json');
+          return res.end(JSON.stringify({ success: true, message: 'Logged out' }));
+        }
+        const token = extractToken(req, parsedUrl);
+        const session = await verifySessionToken(token, process.env);
+        if (session) {
+          res.setHeader('Content-Type', 'application/json');
+          return res.end(JSON.stringify({ authenticated: true, exp: session.exp }));
+        }
+        res.statusCode = 401;
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ authenticated: false }));
       }
     }
 
@@ -95,8 +169,17 @@ function adminDesignModePlugin() {
       return res.end(JSON.stringify({ success: false, schema: null }));
     }
 
-    // 2. POST /api/admin/publish - Securely commit serialized schema to metadata.json & git
+    // 2. POST /api/admin/publish - Securely commit serialized schema to metadata.json & git (Protected)
     if (parsedUrl.pathname === '/api/admin/publish' && req.method === 'POST') {
+      const token = extractToken(req, parsedUrl);
+      const session = await verifySessionToken(token, process.env);
+      if (!session) {
+        res.statusCode = 401;
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({
+          error: '401 Unauthorized: Valid administrative session required.'
+        }));
+      }
       try {
         const { json } = await readRequestBody(req);
         if (!json || !json.schema) {
@@ -272,14 +355,38 @@ function adminDesignModePlugin() {
       }
     }
 
-    // 4. Fallback for /admin route - serve admin.html directly
+    // 4. Fallback for /admin route - Admin Guard Middleware (Session check)
     if (parsedUrl.pathname === '/admin' || parsedUrl.pathname === '/admin/' || parsedUrl.pathname === '/admin.html') {
-      const adminPath = path.resolve(process.cwd(), 'admin.html');
-      const publicAdminPath = path.resolve(process.cwd(), 'public', 'admin.html');
-      const targetPath = fs.existsSync(adminPath) ? adminPath : (fs.existsSync(publicAdminPath) ? publicAdminPath : path.resolve(process.cwd(), 'index.html'));
-      if (fs.existsSync(targetPath)) {
+      const token = extractToken(req, parsedUrl);
+      const session = await verifySessionToken(token, process.env);
+
+      if (session) {
+        // If authorized via query param or header, persist session cookie in response
+        if (token && !getReqCookie('eko_session')) {
+          const isHttps = req.headers['x-forwarded-proto'] === 'https' || !!req.connection?.encrypted;
+          res.setHeader('Set-Cookie', buildSessionCookie(token, isHttps));
+        }
+
+        // Authenticated: Serve real visual editor codebase with full Vite module transformation
+        const adminPath = path.resolve(process.cwd(), 'admin.html');
+        const targetPath = fs.existsSync(adminPath) ? adminPath : path.resolve(process.cwd(), 'index.html');
+        if (fs.existsSync(targetPath)) {
+          let html = fs.readFileSync(targetPath, 'utf8');
+          if (server && typeof server.transformIndexHtml === 'function') {
+            try {
+              html = await server.transformIndexHtml(req.url, html);
+            } catch (transformErr) {
+              console.warn('[Vite Admin] Transform HTML warning:', transformErr.message);
+            }
+          }
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          return res.end(html);
+        }
+      } else {
+        // Unauthenticated: Intercept and return ONLY the static fake Chrome error page
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.end(fs.readFileSync(targetPath, 'utf8'));
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        return res.end(FAKE_CHROME_ERROR_HTML);
       }
     }
 
@@ -289,10 +396,10 @@ function adminDesignModePlugin() {
   return {
     name: 'admin-design-mode-plugin',
     configureServer(server) {
-      server.middlewares.use(handler);
+      server.middlewares.use(makeHandler(server));
     },
     configurePreviewServer(server) {
-      server.middlewares.use(handler);
+      server.middlewares.use(makeHandler(server));
     },
   };
 }
