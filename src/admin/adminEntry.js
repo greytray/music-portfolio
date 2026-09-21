@@ -3,20 +3,25 @@ import { initPublishedDesignSchema } from '../utils/schemaApplier.js';
 
 let isEditorInitialized = false;
 
-// Extract token from URL query string if passed during authentication redirect
+// Tab-scoped administrative session management:
+// Retains ?auth=<token> so soft refreshes (F5, Ctrl+R, reload button) preserve authentication natively
 try {
   const currentUrl = new URL(window.location.href);
-  const token = currentUrl.searchParams.get('auth') || currentUrl.searchParams.get('token');
-  if (token) {
-    sessionStorage.setItem('eko_admin_token', token);
-    localStorage.setItem('eko_admin_token', token);
-    document.cookie = 'eko_session=' + encodeURIComponent(token) + '; path=/; max-age=86400; SameSite=Lax';
+  const queryToken = currentUrl.searchParams.get('auth') || currentUrl.searchParams.get('token');
+  const storedToken = sessionStorage.getItem('eko_admin_token');
 
-    // Scrub query parameter from browser address bar immediately so token does not linger in history
-    currentUrl.searchParams.delete('auth');
-    currentUrl.searchParams.delete('token');
-    const cleanUrl = currentUrl.pathname + (currentUrl.search ? currentUrl.search : '') + currentUrl.hash;
-    window.history.replaceState({}, document.title, cleanUrl);
+  const activeToken = queryToken || storedToken;
+
+  if (activeToken) {
+    sessionStorage.setItem('eko_admin_token', activeToken);
+    // Ensure URL query param ?auth=<token> is present so browser reloads retain session
+    if (!currentUrl.searchParams.get('auth')) {
+      currentUrl.searchParams.set('auth', activeToken);
+      window.history.replaceState({}, document.title, currentUrl.pathname + '?' + currentUrl.searchParams.toString() + currentUrl.hash);
+    }
+  } else {
+    // If no active token in this tab session, return to gate
+    window.location.href = '/admin';
   }
 } catch (_) {}
 

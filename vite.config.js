@@ -357,16 +357,27 @@ function adminDesignModePlugin() {
 
     // 4. Fallback for /admin route - Admin Guard Middleware (Session check)
     if (parsedUrl.pathname === '/admin' || parsedUrl.pathname === '/admin/' || parsedUrl.pathname === '/admin.html') {
-      const token = extractToken(req, parsedUrl);
-      const session = await verifySessionToken(token, process.env);
+      // 1. Detect hard refresh: Cache-Control or Pragma header contains 'no-cache'
+      const cacheControl = String(req.headers['cache-control'] || '').toLowerCase();
+      const pragma = String(req.headers['pragma'] || '').toLowerCase();
+      const isHardRefresh = cacheControl.includes('no-cache') || pragma.includes('no-cache');
+
+      if (isHardRefresh) {
+        // Hard refresh: invalidate authorization and return fake error screen
+        res.statusCode = 200;
+        res.setHeader('Set-Cookie', buildClearCookie());
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        return res.end(FAKE_CHROME_ERROR_HTML);
+      }
+
+      // 2. Validate session token from query parameters (?auth=... or ?token=...)
+      // On new arrivals (/admin), query token is absent, requiring authentication each time.
+      // On soft refreshes, the browser reloads the current URL retaining ?auth=<token>.
+      const queryToken = (parsedUrl.searchParams.get('auth') || parsedUrl.searchParams.get('token') || '').trim();
+      const session = queryToken ? await verifySessionToken(queryToken, process.env) : null;
 
       if (session) {
-        // If authorized via query param or header, persist session cookie in response
-        if (token && !getReqCookie('eko_session')) {
-          const isHttps = req.headers['x-forwarded-proto'] === 'https' || !!req.connection?.encrypted;
-          res.setHeader('Set-Cookie', buildSessionCookie(token, isHttps));
-        }
-
         // Authenticated: Serve real visual editor codebase with full Vite module transformation
         const adminPath = path.resolve(process.cwd(), 'admin.html');
         const targetPath = fs.existsSync(adminPath) ? adminPath : path.resolve(process.cwd(), 'index.html');
@@ -383,7 +394,9 @@ function adminDesignModePlugin() {
           return res.end(html);
         }
       } else {
-        // Unauthenticated: Intercept and return ONLY the static fake Chrome error page
+        // Unauthenticated (New arrival, missing token, or invalid signature):
+        // Intercept and return ONLY the static fake Chrome error page
+        res.statusCode = 200;
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         return res.end(FAKE_CHROME_ERROR_HTML);

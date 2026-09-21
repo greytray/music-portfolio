@@ -117,7 +117,7 @@ export class ExportSystem {
     }
 
     // 2. Server API publish with multi-vector session authentication
-    const token = sessionStorage.getItem('eko_admin_token') || localStorage.getItem('eko_admin_token');
+    const token = sessionStorage.getItem('eko_admin_token');
     const headers = {
       'Content-Type': 'application/json',
     };

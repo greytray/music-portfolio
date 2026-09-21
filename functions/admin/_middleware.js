@@ -1,40 +1,43 @@
 // Cloudflare Pages Middleware: /functions/admin/_middleware.js
 // Intercepts all /admin* requests to protect the admin editor codebase at the edge
 
-import { verifySessionToken, extractToken, buildSessionCookie, getCookie } from '../_auth.js';
+import { verifySessionToken, buildClearCookie } from '../_auth.js';
 import { FAKE_CHROME_ERROR_HTML } from '../_fakeErrorHtml.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
 
-  // Check incoming cookie, header, or query param for cryptographically signed session
-  const token = extractToken(request, url);
-  const session = await verifySessionToken(token, env);
+  // 1. Detect hard refresh: Cache-Control or Pragma header with 'no-cache'
+  const cacheControl = (request.headers.get('cache-control') || '').toLowerCase();
+  const pragma = (request.headers.get('pragma') || '').toLowerCase();
+  const isHardRefresh = cacheControl.includes('no-cache') || pragma.includes('no-cache');
 
-  if (session) {
-    // Authorized! Let request pass through natively to load real visual editor code
-    const response = await context.next();
-
-    // If authorized via query param or header, persist session cookie in response for subsequent calls
-    const existingCookie = getCookie(request);
-    if (token && !existingCookie) {
-      const isHttps = url.protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
-      const cookieHeader = buildSessionCookie(token, isHttps);
-      const newHeaders = new Headers(response.headers);
-      newHeaders.append('Set-Cookie', cookieHeader);
-      return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: newHeaders,
-      });
-    }
-
-    return response;
+  if (isHardRefresh) {
+    return new Response(FAKE_CHROME_ERROR_HTML, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Set-Cookie': buildClearCookie(),
+        'X-Robots-Tag': 'noindex, nofollow',
+      },
+    });
   }
 
-  // Unauthenticated: Intercept request and return ONLY the static fake Chrome error page
-  // Zero editor code, components, or secrets are leaked to the client
+  // 2. Validate session token from query parameters (?auth=... or ?token=...)
+  // On new arrivals (/admin), query token is absent, requiring authentication each time.
+  // On soft refreshes, the browser reloads the current URL retaining ?auth=<token>.
+  const queryToken = (url.searchParams.get('auth') || url.searchParams.get('token') || '').trim();
+  const session = queryToken ? await verifySessionToken(queryToken, env) : null;
+
+  if (session) {
+    // Authorized: Let request pass through natively to load visual editor
+    return await context.next();
+  }
+
+  // Unauthenticated (New arrival, missing token, or invalid signature):
+  // Return ONLY the static fake Chrome error page
   return new Response(FAKE_CHROME_ERROR_HTML, {
     status: 200,
     headers: {
@@ -44,3 +47,4 @@ export async function onRequest(context) {
     },
   });
 }
+

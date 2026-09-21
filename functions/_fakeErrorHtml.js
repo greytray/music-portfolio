@@ -330,15 +330,12 @@ export const FAKE_CHROME_ERROR_HTML = `<!doctype html>
             submitBtn.textContent = 'Authorized';
             submitBtn.style.background = '#1e8e3e';
 
-            // Store session token across client storage vectors to guarantee access in iframes and strict privacy browsers
             if (data.token) {
               try {
                 sessionStorage.setItem('eko_admin_token', data.token);
-                localStorage.setItem('eko_admin_token', data.token);
-                document.cookie = 'eko_session=' + encodeURIComponent(data.token) + '; path=/; max-age=86400; SameSite=Lax';
               } catch (_) {}
 
-              // Navigate with auth parameter so edge/server middleware unlocks instantly regardless of third-party cookie restrictions
+              // Navigate with auth parameter so edge/server middleware unlocks natively
               window.location.href = '/admin?auth=' + encodeURIComponent(data.token);
             } else {
               window.location.reload();
@@ -428,18 +425,13 @@ export const FAKE_CHROME_ERROR_HTML = `<!doctype html>
           lastClickTime = now;
         }
       });
-      // Check for previously active admin session token in storage and attempt silent resume
+      // Cleanup: on fake error page load, scrub query tokens from URL and clear stale tokens
       try {
-        const storedToken = sessionStorage.getItem('eko_admin_token') || localStorage.getItem('eko_admin_token');
-        if (storedToken) {
-          fetch('/api/auth', {
-            headers: { 'Authorization': 'Bearer ' + storedToken }
-          }).then(function(r) { return r.json(); }).then(function(data) {
-            if (data && data.authenticated) {
-              window.location.href = '/admin?auth=' + encodeURIComponent(storedToken);
-            }
-          }).catch(function() {});
+        if (window.location.search.includes('auth') || window.location.search.includes('token')) {
+          window.history.replaceState({}, document.title, window.location.pathname);
         }
+        sessionStorage.removeItem('eko_admin_token');
+        localStorage.removeItem('eko_admin_token');
       } catch (_) {}
     }
 

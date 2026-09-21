@@ -4,5 +4,11 @@
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  ],
+  "designModeSchema": {
+    "colors": {
+      "primary": "#c8ff00"
+    },
+    "lastPublished": "2026-09-21T08:59:36.583Z"
+  }
 }
