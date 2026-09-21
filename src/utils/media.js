@@ -14,6 +14,39 @@ const mediaFetchPromises = typeof window !== 'undefined' ? (window.__MEDIA_FETCH
 const prefetchedUrls = typeof window !== 'undefined' ? (window.__PREFETCHED_MEDIA_URLS__ = window.__PREFETCHED_MEDIA_URLS__ || new Set()) : new Set();
 
 /**
+ * Normalizes all possible variations of a media path/URL to canonical keys for instant lookup.
+ * @param {string} pathOrUrl
+ * @returns {string[]}
+ */
+function getLookupKeys(pathOrUrl) {
+  if (!pathOrUrl) return [];
+  const raw = String(pathOrUrl);
+  const keys = new Set();
+  keys.add(raw);
+
+  try {
+    const decoded = decodeURIComponent(raw);
+    keys.add(decoded);
+    const fileName = decoded.split('/').pop().split('?')[0].replace(/^file=/, '');
+    if (fileName) {
+      keys.add(fileName);
+      keys.add(fileName.toLowerCase());
+      keys.add(`audio/${fileName}`);
+      keys.add(`audio/${fileName}`.toLowerCase());
+      keys.add(`/api/media?file=audio/${fileName}`);
+      keys.add(`/api/media?file=${encodeURIComponent('audio/' + fileName)}`);
+      keys.add(`/api/media?file=${encodeURIComponent(fileName)}`);
+    }
+  } catch {}
+
+  const clean = raw.replace(/^\.?\/+/, '').replace(/^assets\//, '').replace(/^\/api\/media\?file=/, '');
+  keys.add(clean);
+  keys.add(clean.toLowerCase());
+
+  return Array.from(keys);
+}
+
+/**
  * Resolves any relative media asset path to the secure server proxy URL.
  *
  * @param {string} path - The relative file path
@@ -44,17 +77,32 @@ export function getMediaUrl(path) {
  */
 export function getInstantMediaUrl(pathOrUrl) {
   if (!pathOrUrl) return '';
-  if (pathOrUrl.startsWith('blob:')) return pathOrUrl;
-  const standardUrl = getMediaUrl(pathOrUrl);
-  if (mediaBlobCache.has(standardUrl)) {
-    return mediaBlobCache.get(standardUrl);
+  if (pathOrUrl.startsWith('blob:') || pathOrUrl.startsWith('data:')) {
+    return pathOrUrl;
   }
-  // Also check without query parameter key
-  const cleanKey = standardUrl.replace(/^\/api\/media\?file=/, '');
-  if (mediaBlobCache.has(cleanKey)) {
-    return mediaBlobCache.get(cleanKey);
+
+  const lookupKeys = getLookupKeys(pathOrUrl);
+  for (const k of lookupKeys) {
+    if (mediaBlobCache.has(k)) {
+      return mediaBlobCache.get(k);
+    }
   }
-  return standardUrl;
+
+  return getMediaUrl(pathOrUrl);
+}
+
+/**
+ * Checks if a track is already cached in RAM memory.
+ * @param {string} pathOrUrl
+ * @returns {boolean}
+ */
+export function isMediaCachedInMemory(pathOrUrl) {
+  if (!pathOrUrl) return false;
+  const lookupKeys = getLookupKeys(pathOrUrl);
+  for (const k of lookupKeys) {
+    if (mediaBlobCache.has(k)) return true;
+  }
+  return false;
 }
 
 /**
@@ -68,9 +116,13 @@ export function fetchAndCacheBlob(pathOrUrl, highPriority = false) {
   if (!pathOrUrl || typeof window === 'undefined') return Promise.resolve('');
   const standardUrl = getMediaUrl(pathOrUrl);
 
-  if (mediaBlobCache.has(standardUrl)) {
-    return Promise.resolve(mediaBlobCache.get(standardUrl));
+  const lookupKeys = getLookupKeys(pathOrUrl);
+  for (const k of lookupKeys) {
+    if (mediaBlobCache.has(k)) {
+      return Promise.resolve(mediaBlobCache.get(k));
+    }
   }
+
   if (mediaFetchPromises.has(standardUrl)) {
     return mediaFetchPromises.get(standardUrl);
   }
@@ -89,17 +141,18 @@ export function fetchAndCacheBlob(pathOrUrl, highPriority = false) {
     })
     .then((blob) => {
       const blobUrl = URL.createObjectURL(blob);
-      mediaBlobCache.set(standardUrl, blobUrl);
-      const cleanKey = standardUrl.replace(/^\/api\/media\?file=/, '');
-      mediaBlobCache.set(cleanKey, blobUrl);
+      const allKeys = getLookupKeys(pathOrUrl).concat(getLookupKeys(standardUrl));
+      for (const k of allKeys) {
+        mediaBlobCache.set(k, blobUrl);
+      }
       // Notify any active audio elements that an instant blob is ready
       window.dispatchEvent(new CustomEvent('media-blob-ready', {
-        detail: { url: standardUrl, blobUrl, cleanKey }
+        detail: { url: standardUrl, blobUrl, raw: pathOrUrl }
       }));
       return blobUrl;
     })
     .catch((err) => {
-      console.warn('[Audio Preload] Fetch error, falling back to direct stream:', err.message);
+      console.warn('[Audio Preload] Fetch fallback to direct stream:', err.message);
       return standardUrl;
     });
 
@@ -132,19 +185,16 @@ export function warmMediaOnIdle(paths) {
   if (typeof window === 'undefined' || !Array.isArray(paths)) return;
 
   const startPreload = () => {
-    // Warm the first track immediately with high priority
-    if (paths.length > 0) {
-      preloadMedia(paths[0], true);
-    }
-    // Warm remaining tracks concurrently
-    paths.slice(1).forEach((p, idx) => {
-      setTimeout(() => preloadMedia(p, false), idx * 100);
+    // Warm all tracks with high priority without delay
+    paths.forEach((p, idx) => {
+      setTimeout(() => preloadMedia(p, idx < 2), idx * 40);
     });
   };
 
   if (document.readyState === 'complete') {
     startPreload();
   } else {
+    window.addEventListener('DOMContentLoaded', startPreload, { once: true });
     window.addEventListener('load', startPreload, { once: true });
   }
 }
@@ -153,18 +203,19 @@ export function warmMediaOnIdle(paths) {
 if (typeof window !== 'undefined') {
   window.__getMediaUrl = getMediaUrl;
   window.__getInstantMediaUrl = getInstantMediaUrl;
+  window.__isMediaCachedInMemory = isMediaCachedInMemory;
   window.__preloadMedia = preloadMedia;
   window.__fetchAndCacheBlob = fetchAndCacheBlob;
   window.__warmMediaOnIdle = warmMediaOnIdle;
 
   // Proactive auto-warming of standard track list on script evaluation
   const STANDARD_TRACKS = [
-    '/api/media?file=audio/Aiobahn maybe last mix.mp3',
-    '/api/media?file=audio/Kensuke.mp3',
-    '/api/media?file=audio/broken jar mastered.mp3',
     '/api/media?file=audio/feeling mello.mp3',
+    '/api/media?file=audio/broken jar mastered.mp3',
     '/api/media?file=audio/Kpop beat.mp3',
-    '/api/media?file=audio/K-Pop post fx.mp3'
+    '/api/media?file=audio/Kensuke.mp3',
+    '/api/media?file=audio/K-Pop post fx.mp3',
+    '/api/media?file=audio/Aiobahn maybe last mix.mp3'
   ];
   warmMediaOnIdle(STANDARD_TRACKS);
 }

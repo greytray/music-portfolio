@@ -163,7 +163,7 @@ function initCatalogAudio(section) {
   if (!catalogAudioInstance) {
     catalogAudioInstance = new Audio();
     catalogAudioInstance.crossOrigin = 'anonymous';
-    catalogAudioInstance.preload = 'none';
+    catalogAudioInstance.preload = 'auto';
 
     catalogAudioInstance.addEventListener('ended', () => {
       stopCurrentAudio();
@@ -173,6 +173,8 @@ function initCatalogAudio(section) {
       stopCurrentAudio();
     });
   }
+
+  let currentCatalogAudioSrc = null;
 
   function stopCurrentAudio() {
     if (currentPlayingButton) {
@@ -191,11 +193,14 @@ function initCatalogAudio(section) {
   playButtons.forEach(btn => {
     const audioSrc = btn.getAttribute('data-audio');
     if (audioSrc) {
+      // Proactively warm each sample preview into in-memory RAM
+      preloadMedia(audioSrc, true);
+
       btn.addEventListener('pointerenter', () => {
-        preloadMedia(audioSrc);
+        preloadMedia(audioSrc, true);
       }, { passive: true, once: true });
       btn.addEventListener('touchstart', () => {
-        preloadMedia(audioSrc);
+        preloadMedia(audioSrc, true);
       }, { passive: true, once: true });
     }
 
@@ -213,15 +218,20 @@ function initCatalogAudio(section) {
         pauseMainLandingAudio();
         stopCurrentAudio();
 
-        catalogAudioInstance.src = getInstantMediaUrl(audioSrc);
-        catalogAudioInstance.play().then(() => {
-          btn.classList.add('is-playing');
-          const track = btn.closest('.catalog-audio-track');
-          if (track) track.classList.add('is-playing');
-          const card = btn.closest('.services-catalog-card');
-          if (card) card.classList.add('is-playing');
-          currentPlayingButton = btn;
-        }).catch(err => {
+        const instantSrc = getInstantMediaUrl(audioSrc);
+        if (currentCatalogAudioSrc !== instantSrc) {
+          currentCatalogAudioSrc = instantSrc;
+          catalogAudioInstance.src = instantSrc;
+        }
+
+        btn.classList.add('is-playing');
+        const track = btn.closest('.catalog-audio-track');
+        if (track) track.classList.add('is-playing');
+        const card = btn.closest('.services-catalog-card');
+        if (card) card.classList.add('is-playing');
+        currentPlayingButton = btn;
+
+        catalogAudioInstance.play().catch(err => {
           console.warn('Catalog audio preview error:', err);
           stopCurrentAudio();
         });
