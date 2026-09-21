@@ -103,6 +103,7 @@ function adminDesignModePlugin() {
           const isValidPassword = await verifyAdminPassword(password, process.env);
 
           if (!isValidPassword) {
+            await new Promise((resolve) => setTimeout(resolve, 400));
             res.statusCode = 401;
             res.setHeader('Content-Type', 'application/json');
             return res.end(JSON.stringify({

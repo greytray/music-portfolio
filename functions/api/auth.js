@@ -42,6 +42,8 @@ export async function onRequest(context) {
       const isValidPassword = await verifyAdminPassword(password, env);
 
       if (!isValidPassword) {
+        // Throttling delay to thwart automated high-speed brute force attacks
+        await new Promise((resolve) => setTimeout(resolve, 400));
         return new Response(JSON.stringify({
           success: false,
           error: 'Invalid administrative authorization password'
