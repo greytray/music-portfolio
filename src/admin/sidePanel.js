@@ -8,6 +8,8 @@
  * and dynamic data attributes.
  */
 
+import { getFriendlyName } from './selectionEngine.js';
+
 export class SidePanel {
   /**
    * @param {HTMLElement} container
@@ -408,9 +410,10 @@ export class SidePanel {
     const footerEl = this.container.querySelector('#admin-panel-footer');
 
     if (titleEl) {
+      const friendlyName = getFriendlyName(element);
       titleEl.innerHTML = `
-        <strong>${metadata.tagName.toLowerCase()}${metadata.id ? `#${metadata.id}` : ''}</strong>
-        <span>${metadata.selector}</span>
+        <strong>${friendlyName}</strong>
+        <span>Selected Component</span>
       `;
     }
 

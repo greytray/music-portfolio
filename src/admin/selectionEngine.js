@@ -4,6 +4,80 @@
  * bounding-box overlays, computed style extraction, and live binding.
  */
 
+export function getFriendlyName(targetEl) {
+  if (!targetEl || !targetEl.tagName) return 'Element';
+
+  const id = (targetEl.id || '').toLowerCase();
+  const tag = targetEl.tagName.toLowerCase();
+  const classes = Array.from(targetEl.classList || []).map(c => c.toLowerCase());
+
+  // 1. Specific IDs and major Sections
+  if (id === 'contact' || classes.includes('contact')) return 'Contact Section';
+  if (id === 'showcase' || classes.includes('showcase') || classes.includes('player-shell')) return 'Showcase Section';
+  if (id === 'services' || classes.includes('services')) return 'Services Section';
+  if (id === 'process' || classes.includes('process-section')) return 'Process Section';
+  if (id === 'delivery' || classes.includes('delivery-section')) return 'Delivery Section';
+  if (id === 'hero' || classes.includes('hero')) return 'Hero Banner';
+
+  // 2. Notable Components
+  if (id === 'hero-title') return 'Hero Title';
+  if (classes.includes('site-header') || tag === 'header') return 'Header Navigation';
+  if (tag === 'nav') return 'Navigation Bar';
+  if (tag === 'footer' || classes.includes('contact-copyright')) return 'Page Footer';
+  if (classes.includes('brand')) return 'Logo Brand';
+  if (classes.includes('cover-art')) return 'Album Cover Art';
+  if (classes.includes('now-playing')) return 'Music Player';
+  if (classes.includes('track') || classes.includes('beat-card')) return 'Audio Track Card';
+  if (classes.includes('service-card')) return 'Service Card';
+  if (classes.includes('main-play')) return 'Play Button';
+
+  // 3. Tag & Role based Friendly Names
+  if (tag === 'h1') return 'Main Heading';
+  if (tag === 'h2') return 'Section Title';
+  if (tag === 'h3') return 'Subsection Title';
+  if (['h4', 'h5', 'h6'].includes(tag)) return 'Heading';
+
+  if (tag === 'p') {
+    if (classes.includes('eyebrow')) return 'Section Subtitle';
+    return 'Text Paragraph';
+  }
+
+  if (tag === 'button' || classes.includes('button') || classes.includes('cta-button') || classes.includes('nav-btn')) {
+    const txt = (targetEl.textContent || '').trim();
+    if (txt && txt.length > 0 && txt.length < 24) return `${txt} Button`;
+    return 'Button';
+  }
+
+  if (tag === 'a') {
+    const txt = (targetEl.textContent || '').trim();
+    if (txt && txt.length > 0 && txt.length < 24) return `${txt} Link`;
+    return 'Link';
+  }
+
+  if (tag === 'img') {
+    const alt = targetEl.getAttribute('alt');
+    if (alt && alt.length > 0 && alt.length < 24) return `${alt} Image`;
+    return 'Image';
+  }
+
+  if (tag === 'audio') return 'Audio Player';
+  if (['input', 'textarea', 'select'].includes(tag)) return 'Form Field';
+  if (tag === 'label') return 'Form Label';
+  if (tag === 'form') return 'Form';
+  if (tag === 'section') return 'Page Section';
+
+  // 4. Containers
+  if (['div', 'span', 'article', 'aside'].includes(tag)) {
+    const textSnippet = (targetEl.innerText || targetEl.textContent || '').trim();
+    if (textSnippet && textSnippet.length > 0 && textSnippet.length <= 20) {
+      return `"${textSnippet}"`;
+    }
+    return 'Content Container';
+  }
+
+  return 'Element';
+}
+
 export class SelectionEngine {
   /**
    * @param {HTMLIFrameElement} iframe
@@ -198,21 +272,11 @@ export class SelectionEngine {
     boxEl.style.left = `${Math.round(rect.left)}px`;
     boxEl.style.top = `${Math.round(rect.top)}px`;
 
-    const tag = targetEl.tagName.toLowerCase();
-    const id = targetEl.id ? `#${targetEl.id}` : '';
-    let classNames = '';
-    if (targetEl.classList && targetEl.classList.length > 0) {
-      const filtered = Array.from(targetEl.classList).filter(c => !c.startsWith('eko-'));
-      if (filtered.length > 0) {
-        classNames = `.${filtered.slice(0, 2).join('.')}`;
-      }
-    }
-
-    const labelText = `${tag}${id}${classNames}`;
+    const friendlyName = getFriendlyName(targetEl);
     const dimText = `${Math.round(rect.width)} × ${Math.round(rect.height)}`;
 
     if (badgeEl) {
-      badgeEl.innerHTML = `<span>${labelText}</span>${isSelected ? `<span class="dimensions">${dimText}</span>` : ''}`;
+      badgeEl.innerHTML = `<span>${friendlyName}</span>${isSelected ? `<span class="dimensions">${dimText}</span>` : ''}`;
       // Flip badge inside if close to top edge of viewport
       if (rect.top < 28) {
         badgeEl.style.top = '2px';

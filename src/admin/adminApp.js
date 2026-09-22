@@ -4,7 +4,7 @@
  */
 
 import './adminStyles.css';
-import { SelectionEngine } from './selectionEngine.js';
+import { SelectionEngine, getFriendlyName } from './selectionEngine.js';
 import { SidePanel } from './sidePanel.js';
 import { ExportSystem } from './exportSystem.js';
 import { TooltipManager } from './tooltipSystem.js';
@@ -646,7 +646,7 @@ export class AdminApp {
             // Update Topbar breadcrumb
             const breadcrumbTarget = this.rootElement.querySelector('#breadcrumb-target');
             if (breadcrumbTarget) {
-              breadcrumbTarget.textContent = `${metadata.tagName.toLowerCase()}${metadata.id ? '#' + metadata.id : ''} (${metadata.selector})`;
+              breadcrumbTarget.textContent = getFriendlyName(element);
             }
 
             // Inspect in side panel
