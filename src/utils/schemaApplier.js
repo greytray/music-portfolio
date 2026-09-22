@@ -32,10 +32,23 @@ export function applyDesignSchema(schema, doc = document) {
 
     // 1. Text override
     if (el && typeof item.text === 'string' && item.text.trim() !== '') {
-      if (el.children.length === 0) {
+      if (item.html) {
+        el.innerHTML = item.html;
+      } else if (el.children.length === 0) {
         el.textContent = item.text;
       } else {
-        el.innerHTML = item.html || item.text;
+        // Element contains child elements (e.g. <small>, <span>, <strong>).
+        // Update direct text node to preserve child elements like "Original production", "process", etc.
+        const textNodes = Array.from(el.childNodes).filter(node => node.nodeType === Node.TEXT_NODE);
+        if (textNodes.length > 0) {
+          textNodes[0].textContent = item.text;
+          for (let i = 1; i < textNodes.length; i++) {
+            textNodes[i].textContent = '';
+          }
+        } else {
+          const newTextNode = el.ownerDocument ? el.ownerDocument.createTextNode(item.text) : doc.createTextNode(item.text);
+          el.insertBefore(newTextNode, el.firstChild);
+        }
       }
     }
 
@@ -138,42 +151,77 @@ export function applyDesignSchema(schema, doc = document) {
  * Checks local cache first for instant 0ms render, then verifies with /metadata.json.
  */
 export async function initPublishedDesignSchema(doc = document) {
-  // 1. Immediate local cache application (prevents FOUC)
+  let hasApplied = false;
+
+  // 1. Immediate local cache application (instant 0ms render without flash)
   try {
     const cached = localStorage.getItem(STORAGE_KEY);
     if (cached) {
       const parsed = JSON.parse(cached);
-      applyDesignSchema(parsed, doc);
+      if (parsed && parsed.elements && Object.keys(parsed.elements).length > 0) {
+        applyDesignSchema(parsed, doc);
+        hasApplied = true;
+      }
     }
   } catch (err) {
     // Ignore storage errors in restricted contexts
   }
 
-  // 2. Fetch official schema from metadata.json or /api/admin/schema
+  // Helper to count valid elements
+  const countElements = (s) => (s && s.elements ? Object.keys(s.elements).length : 0);
+
+  // 2. Fetch authoritative schema from backend API with timestamp cache-busting
   try {
-    const res = await fetch('/api/admin/schema', { cache: 'no-cache' });
+    const res = await fetch(`/api/admin/schema?t=${Date.now()}`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       if (data && data.schema) {
-        applyDesignSchema(data.schema, doc);
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data.schema));
-        } catch {}
+        const count = countElements(data.schema);
+        if (count > 0 || !hasApplied) {
+          applyDesignSchema(data.schema, doc);
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data.schema));
+          } catch {}
+          return;
+        }
       }
     }
   } catch {
-    // Fallback: try reading metadata.json directly
-    try {
-      const metaRes = await fetch('/metadata.json', { cache: 'no-cache' });
-      if (metaRes.ok) {
-        const meta = await metaRes.json();
-        if (meta && meta.designModeSchema) {
+    // API unavailable (static host or offline)
+  }
+
+  // 3. Fallback: Check publishedSchema.json static file
+  try {
+    const fileRes = await fetch(`/src/data/publishedSchema.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (fileRes.ok) {
+      const fileSchema = await fileRes.json();
+      if (fileSchema) {
+        const count = countElements(fileSchema);
+        if (count > 0 || !hasApplied) {
+          applyDesignSchema(fileSchema, doc);
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(fileSchema));
+          } catch {}
+          return;
+        }
+      }
+    }
+  } catch {}
+
+  // 4. Fallback: check metadata.json
+  try {
+    const metaRes = await fetch(`/metadata.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (metaRes.ok) {
+      const meta = await metaRes.json();
+      if (meta && meta.designModeSchema) {
+        const count = countElements(meta.designModeSchema);
+        if (count > 0 || !hasApplied) {
           applyDesignSchema(meta.designModeSchema, doc);
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(meta.designModeSchema));
           } catch {}
         }
       }
-    } catch {}
-  }
+    }
+  } catch {}
 }

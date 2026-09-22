@@ -100,6 +100,13 @@ export class AdminApp {
             <span>Schema</span>
           </button>
 
+          <!-- Checkpoint History -->
+          <button type="button" class="admin-btn admin-btn-ghost" id="btn-publish-history" data-tooltip="Publish Checkpoint History & Restore Points">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+            <span>History</span>
+            <span class="admin-history-badge" id="admin-history-count" style="display: none;">0</span>
+          </button>
+
           <!-- Revert Changes -->
           <button type="button" class="admin-btn admin-btn-ghost" id="btn-revert-changes" data-tooltip="Revert pending changes">
             <span>Revert</span>
@@ -155,6 +162,29 @@ export class AdminApp {
           <div class="admin-modal-footer">
             <button type="button" class="admin-btn admin-btn-ghost" id="btn-copy-schema-json">Copy JSON</button>
             <button type="button" class="admin-btn admin-btn-primary" id="btn-done-schema-modal">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Publish History & Checkpoints Modal (Google AI Studio Checkpoint / Restore UX) -->
+      <div class="admin-modal-backdrop" id="admin-history-modal">
+        <div class="admin-modal history-modal-window">
+          <div class="admin-modal-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+              <h3>Publish Checkpoint History</h3>
+            </div>
+            <button type="button" class="admin-btn admin-btn-ghost" id="btn-close-history-modal">✕</button>
+          </div>
+          <div class="admin-modal-desc">
+            Review past saved publish checkpoints. You can inspect changes and revert/restore any checkpoint back onto the active canvas and frontend.
+          </div>
+          <div class="admin-history-list" id="admin-history-list">
+            <div class="history-loading-indicator">Loading publish history...</div>
+          </div>
+          <div class="admin-modal-footer">
+            <button type="button" class="admin-btn admin-btn-ghost" id="btn-refresh-history">Refresh</button>
+            <button type="button" class="admin-btn admin-btn-primary" id="btn-done-history-modal">Close</button>
           </div>
         </div>
       </div>
@@ -286,7 +316,7 @@ export class AdminApp {
       }
 
       if (this.selectionEngine) {
-        setTimeout(() => this.selectionEngine._updateBoxes(), 260);
+        requestAnimationFrame(() => this.selectionEngine._updateBoxes());
       }
       this._showToast('🌐 Universal Device: Changes apply to all devices');
     });
@@ -313,7 +343,7 @@ export class AdminApp {
       }
 
       if (this.selectionEngine) {
-        setTimeout(() => this.selectionEngine._updateBoxes(), 260);
+        requestAnimationFrame(() => this.selectionEngine._updateBoxes());
       }
       this._showToast(deviceDescs[this.currentBreakpoint]);
     });
@@ -348,6 +378,7 @@ export class AdminApp {
         publishLabel.textContent = 'Published!';
         const gitMsg = result.gitStatus ? ` [${result.gitStatus}]` : '';
         this._showToast(`✓ Published to metadata.json!${gitMsg}`);
+        updateHistoryCount();
 
         setTimeout(() => {
           publishLabel.textContent = 'Publish Changes';
@@ -360,10 +391,13 @@ export class AdminApp {
       }
     });
 
-    // 6. Revert changes button
+    // 6. Master Revert changes button (Hard-refresh preview reset)
     const revertBtn = this.rootElement.querySelector('#btn-revert-changes');
     revertBtn.addEventListener('click', () => {
       this.exportSystem.revertAll();
+      try {
+        localStorage.removeItem('eko_published_design_schema');
+      } catch (_) {}
       publishBtn.classList.remove('has-changes');
 
       // Clear element baselines and sidepanel state
@@ -371,6 +405,7 @@ export class AdminApp {
         this.sidePanel.elementBaselines.clear();
         this.sidePanel.clear();
         this.sidePanel.updateTabCounters();
+        this.sidePanel._updateResetButtonVisibility();
       }
 
       if (this.selectionEngine) {
@@ -382,17 +417,15 @@ export class AdminApp {
         breadcrumbTarget.textContent = 'None (Click any component)';
       }
 
-      // Reset iframe schema styles immediately and reload iframe
+      // Completely refresh preview frame as if hard-refreshed
       const iframe = this.rootElement.querySelector('#admin-preview-frame');
       if (iframe) {
         try {
-          const iDoc = iframe.contentDocument || iframe.contentWindow.document;
-          applyDesignSchema({ elements: {} }, iDoc);
+          iframe.src = `/?admin_preview=1&_t=${Date.now()}`;
         } catch (_) {}
-        iframe.src = '/?admin_preview=1&r=' + Date.now();
       }
 
-      this._showToast('All pending visual changes reverted');
+      this._showToast('Master reset complete — preview reverted to original state');
     });
 
     // 7. Schema Modal
@@ -425,7 +458,133 @@ export class AdminApp {
       });
     });
 
-    // 8. Exit Admin
+    // 8. Publish Checkpoints History & Restore Modal
+    const historyBtn = this.rootElement.querySelector('#btn-publish-history');
+    const historyModalBackdrop = this.rootElement.querySelector('#admin-history-modal');
+    const closeHistoryModalBtn = this.rootElement.querySelector('#btn-close-history-modal');
+    const doneHistoryModalBtn = this.rootElement.querySelector('#btn-done-history-modal');
+    const refreshHistoryBtn = this.rootElement.querySelector('#btn-refresh-history');
+    const historyListContainer = this.rootElement.querySelector('#admin-history-list');
+    const historyCountBadge = this.rootElement.querySelector('#admin-history-count');
+
+    const updateHistoryCount = async () => {
+      try {
+        const history = await this.exportSystem.getHistory();
+        if (history && history.length > 0 && historyCountBadge) {
+          historyCountBadge.textContent = history.length;
+          historyCountBadge.style.display = 'inline-flex';
+        }
+      } catch (_) {}
+    };
+    updateHistoryCount();
+
+    const renderHistoryModal = async () => {
+      historyListContainer.innerHTML = '<div class="history-loading-indicator">Loading publish checkpoints...</div>';
+      const history = await this.exportSystem.getHistory();
+
+      if (!history || history.length === 0) {
+        historyListContainer.innerHTML = '<div class="history-loading-indicator">No saved publish checkpoints found. Click "Publish Changes" to record your first checkpoint.</div>';
+        return;
+      }
+
+      if (historyCountBadge) {
+        historyCountBadge.textContent = history.length;
+        historyCountBadge.style.display = 'inline-flex';
+      }
+
+      const activeSerialized = JSON.stringify(this.exportSystem.serializeSchema());
+
+      historyListContainer.innerHTML = history.map((cp, idx) => {
+        const isLatest = idx === 0;
+        const cpSerialized = cp.schema ? JSON.stringify(cp.schema) : '';
+        const isCurrentActive = cpSerialized && (cpSerialized === activeSerialized);
+        const dateStr = cp.timestamp ? new Date(cp.timestamp).toLocaleString() : 'Unknown date';
+        const elemCount = cp.elementsCount !== undefined ? cp.elementsCount : (cp.schema && cp.schema.elements ? Object.keys(cp.schema.elements).length : 0);
+
+        return `
+          <div class="history-item-card ${isCurrentActive ? 'is-active-checkpoint' : ''}" data-cp-id="${cp.id}">
+            <div class="history-item-left">
+              <div class="history-item-top">
+                <span class="history-item-label">${cp.label || `Checkpoint #${history.length - idx}`}</span>
+                ${isLatest ? '<span class="history-item-badge is-live">Latest</span>' : ''}
+                ${isCurrentActive ? '<span class="history-item-badge is-live">Active on Canvas</span>' : ''}
+                <span class="history-item-badge">${elemCount} element${elemCount === 1 ? '' : 's'}</span>
+              </div>
+              <div class="history-item-date">Published: ${dateStr}</div>
+              <div class="history-item-desc">${cp.description || 'Saved design checkpoint'}</div>
+            </div>
+            <div class="history-item-right">
+              <button type="button" class="btn-restore-checkpoint ${isCurrentActive ? 'is-active-btn' : ''}" data-restore-id="${cp.id}" ${isCurrentActive ? 'disabled' : ''}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                <span>${isCurrentActive ? 'Active' : 'Revert to this'}</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Bind restore buttons
+      historyListContainer.querySelectorAll('.btn-restore-checkpoint[data-restore-id]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const targetId = btn.dataset.restoreId;
+          btn.disabled = true;
+          btn.textContent = 'Restoring...';
+
+          try {
+            const restored = await this.exportSystem.restoreCheckpoint(targetId);
+            const iframe = this.rootElement.querySelector('#admin-preview-frame');
+            if (iframe) {
+              const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+              applyDesignSchema(restored.schema, iDoc);
+            }
+
+            // Clear element baselines in side panel and re-inspect
+            if (this.sidePanel) {
+              this.sidePanel.elementBaselines.clear();
+              if (this.sidePanel.activeElement) {
+                this.sidePanel.inspect(this.sidePanel.activeElement, this.sidePanel.activeMeta);
+              }
+              this.sidePanel.updateTabCounters();
+            }
+
+            this._showToast(`✓ Reverted to checkpoint: ${restored.checkpoint?.label || targetId}`);
+            await renderHistoryModal();
+          } catch (err) {
+            btn.disabled = false;
+            btn.textContent = 'Retry Restore';
+            this._showToast(`Failed to restore: ${err.message}`, true);
+          }
+        });
+      });
+    };
+
+    if (historyBtn) {
+      historyBtn.addEventListener('click', () => {
+        historyModalBackdrop.classList.add('is-open');
+        renderHistoryModal();
+      });
+    }
+
+    if (closeHistoryModalBtn) {
+      closeHistoryModalBtn.addEventListener('click', () => {
+        historyModalBackdrop.classList.remove('is-open');
+      });
+    }
+
+    if (doneHistoryModalBtn) {
+      doneHistoryModalBtn.addEventListener('click', () => {
+        historyModalBackdrop.classList.remove('is-open');
+      });
+    }
+
+    if (refreshHistoryBtn) {
+      refreshHistoryBtn.addEventListener('click', () => {
+        renderHistoryModal();
+      });
+    }
+
+    // 9. Exit Admin
     const exitBtn = this.rootElement.querySelector('#btn-exit-admin');
     exitBtn.addEventListener('click', () => {
       window.location.href = '/';

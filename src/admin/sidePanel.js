@@ -77,7 +77,7 @@ export class SidePanel {
       <nav class="admin-tabs-nav" aria-label="Inspector Tabs">
         <button type="button" class="admin-tab-btn is-active" data-tab="text" data-tooltip="Typography, colors, and shadows">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
-          <span>TEXT</span>
+          <span>TEXTS</span>
           <span class="tab-change-badge" id="badge-tab-text" style="display: none;">0</span>
         </button>
         <button type="button" class="admin-tab-btn" data-tab="spacing" data-tooltip="Margins, padding, and gaps">
@@ -105,9 +105,9 @@ export class SidePanel {
         </div>
       </div>
 
-      <!-- Footer Quick Actions (Reset Changes only shows when changes exist) -->
+      <!-- Footer Quick Actions (Reset Changes shows whenever changes exist) -->
       <div class="admin-sidepanel-footer" id="admin-panel-footer" style="display: none;">
-        <button type="button" class="admin-btn admin-btn-danger" id="btn-reset-element" data-tooltip="Reset all changes made to this element" style="display: none;">Reset Changes</button>
+        <button type="button" class="admin-btn admin-btn-danger" id="btn-reset-element" data-tooltip="Reset changes" style="display: none;">Reset Changes</button>
         <button type="button" class="admin-btn admin-btn-ghost" id="btn-copy-css" data-tooltip="Copy inline CSS overrides">Copy CSS</button>
       </div>
     `;
@@ -179,11 +179,22 @@ export class SidePanel {
     const selector = this.activeMeta.selector;
     if (!this.elementBaselines.has(selector)) {
       const isTextOnly = this.activeElement.children.length === 0;
+      const win = (this.activeElement.ownerDocument) ? this.activeElement.ownerDocument.defaultView : window;
+      const computed = win ? win.getComputedStyle(this.activeElement) : null;
       this.elementBaselines.set(selector, {
         style: this.activeElement.getAttribute('style') || '',
         text: isTextOnly ? this.activeElement.textContent : this.activeElement.innerHTML,
         isTextOnly,
-        dataset: { ...this.activeElement.dataset }
+        dataset: { ...this.activeElement.dataset },
+        computedColor: computed ? computed.color : '',
+        computedBgColor: computed ? computed.backgroundColor : '',
+        computedBorderColor: computed ? computed.borderColor : '',
+        computedFontFamily: computed ? computed.fontFamily : '',
+        computedFontSize: computed ? computed.fontSize : '',
+        computedFontWeight: computed ? computed.fontWeight : '',
+        computedTextAlign: computed ? computed.textAlign : '',
+        computedLineHeight: computed ? computed.lineHeight : '',
+        computedLetterSpacing: computed ? computed.letterSpacing : '',
       });
     }
   }
@@ -206,81 +217,159 @@ export class SidePanel {
   }
 
   _updateResetButtonVisibility() {
+    const footer = this.container.querySelector('#admin-panel-footer');
     const resetBtn = this.container.querySelector('#btn-reset-element');
+    const counts = this.exportSystem ? this.exportSystem.getSectionCounts() : { text: 0, spacing: 0, media: 0, props: 0, total: 0 };
+    
+    const sectionLabels = {
+      text: 'Text Section',
+      spacing: 'Spacing Section',
+      media: 'Media Section',
+      props: 'Props Section'
+    };
+
+    const currentTab = this.activeTab || 'text';
+    const sectionCount = counts[currentTab] || 0;
+    const hasSectionChanges = sectionCount > 0 || this._hasActiveElementSectionChanges(currentTab);
+
+    if (footer) {
+      footer.style.display = (this.activeElement || counts.total > 0) ? 'flex' : 'none';
+    }
+
     if (resetBtn) {
-      const hasChanges = this.hasActiveElementChanges();
-      resetBtn.style.display = hasChanges ? 'inline-flex' : 'none';
+      const label = sectionLabels[currentTab] || 'Section';
+      resetBtn.style.display = hasSectionChanges ? 'inline-flex' : 'none';
+      resetBtn.textContent = `Reset ${label}`;
+      resetBtn.setAttribute('data-tooltip', `Clear all modified properties in the ${label.toLowerCase()}`);
     }
   }
 
+  _hasActiveElementSectionChanges(sectionName) {
+    if (!this.activeMeta) return false;
+
+    const textStyleList = [
+      'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing',
+      'textAlign', 'fontStyle', 'textTransform', 'fontVariant', 'textShadow',
+      'boxShadow', 'color', 'backgroundColor', 'borderColor', 'borderWidth',
+      'borderRadius', 'opacity'
+    ];
+    const spacingStyleList = [
+      'marginTop', 'marginBottom', 'marginLeft', 'marginRight',
+      'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'gap'
+    ];
+
+    if (sectionName === 'text') {
+      if (this.isFieldChanged('text')) return true;
+      return textStyleList.some(k => this.isFieldChanged(k));
+    } else if (sectionName === 'spacing') {
+      return spacingStyleList.some(k => this.isFieldChanged(k));
+    } else if (sectionName === 'media') {
+      return this.isFieldChanged('src') || this.isFieldChanged('audio') || this.isFieldChanged('backgroundImage');
+    } else if (sectionName === 'props') {
+      return this.isFieldChanged('dataAttributes');
+    }
+    return false;
+  }
+
   /**
-   * Reset all changes made to the active element
+   * Reset all changes in the current section category
    */
-  _handleResetElement() {
-    if (!this.activeElement || !this.activeMeta) return;
-    const selector = this.activeMeta.selector;
-    const baseline = this.elementBaselines.get(selector);
+  _handleResetSection(sectionName) {
+    const currentTab = sectionName || this.activeTab || 'text';
 
-    if (baseline) {
-      // Restore style attribute
-      if (baseline.style) {
-        this.activeElement.setAttribute('style', baseline.style);
-      } else {
-        this.activeElement.removeAttribute('style');
-      }
-
-      // Restore exact text or innerHTML
-      if (baseline.isTextOnly) {
-        this.activeElement.textContent = baseline.text;
-      } else {
-        this.activeElement.innerHTML = baseline.text;
-      }
-
-      // Restore data attributes
-      Object.keys(this.activeElement.dataset).forEach(k => delete this.activeElement.dataset[k]);
-      Object.entries(baseline.dataset).forEach(([k, v]) => {
-        this.activeElement.dataset[k] = v;
-      });
-
-      this.elementBaselines.delete(selector);
-    } else {
-      this.activeElement.removeAttribute('style');
+    if (this.exportSystem) {
+      this.exportSystem.resetSection(currentTab);
     }
 
-    if (this.exportSystem && selector) {
-      this.exportSystem.resetElement(selector);
+    if (this.activeElement && this.activeMeta) {
+      const selector = this.activeMeta.selector;
+      const baseline = this.elementBaselines.get(selector);
+
+      if (currentTab === 'text') {
+        const textStyleList = [
+          'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing',
+          'textAlign', 'fontStyle', 'textTransform', 'fontVariant', 'textShadow',
+          'boxShadow', 'color', 'backgroundColor', 'borderColor', 'borderWidth',
+          'borderRadius', 'opacity'
+        ];
+        textStyleList.forEach(k => {
+          this.activeElement.style.removeProperty(this._camelToKebab(k));
+        });
+        if (baseline && baseline.text !== undefined) {
+          if (baseline.isTextOnly) {
+            this.activeElement.textContent = baseline.text;
+          } else {
+            this.activeElement.innerHTML = baseline.text;
+          }
+        }
+      } else if (currentTab === 'spacing') {
+        const spacingStyleList = [
+          'margin-top', 'margin-bottom', 'margin-left', 'margin-right',
+          'padding-top', 'padding-bottom', 'padding-left', 'padding-right', 'gap'
+        ];
+        spacingStyleList.forEach(k => this.activeElement.style.removeProperty(k));
+      } else if (currentTab === 'media') {
+        if (this.activeElement.tagName === 'IMG' || this.activeElement.tagName === 'AUDIO') {
+          if (baseline && baseline.src) this.activeElement.src = baseline.src;
+        }
+        this.activeElement.style.removeProperty('background-image');
+      } else if (currentTab === 'props') {
+        if (baseline && baseline.dataset) {
+          Object.keys(this.activeElement.dataset).forEach(k => delete this.activeElement.dataset[k]);
+          Object.entries(baseline.dataset).forEach(([k, v]) => {
+            this.activeElement.dataset[k] = v;
+          });
+        }
+      }
     }
 
-    // Refresh active computed styles so sidebar UI immediately syncs to restored values
+    // 1. Notify change FIRST so schemaApplier strips the dynamic style rules from iframe <style>
+    this._notifyChange({ reset: true, resetSection: currentTab });
+
+    // 2. Refresh activeMeta.styles directly with clean baseline defaults and computed styles
     this._refreshActiveMetaStyles();
     this._parseExistingShadow();
 
-    this._notifyChange({ reset: true });
+    // 3. Re-render UI tab with synchronized baseline values
     this._renderActiveTab();
     this.updateTabCounters();
     this._updateResetButtonVisibility();
   }
 
+  _handleResetElement() {
+    this._handleResetSection(this.activeTab);
+  }
+
   /**
-   * Refresh the activeMeta.styles snapshot directly from the element's computed styles
+   * Refresh the activeMeta.styles snapshot directly from the element's computed styles or pristine baselines
    */
   _refreshActiveMetaStyles() {
     if (!this.activeElement || !this.activeMeta) return;
-    const win = this.activeElement.ownerDocument ? this.activeElement.ownerDocument.defaultView : window;
+    const selector = this.activeMeta.selector;
+    const baseline = this.elementBaselines.get(selector);
+    const win = (this.activeElement.ownerDocument) ? this.activeElement.ownerDocument.defaultView : window;
     const computed = win ? win.getComputedStyle(this.activeElement) : null;
+
     if (computed) {
       const toNum = (val) => {
         const n = parseFloat(val);
         return isNaN(n) ? 0 : Math.round(n);
       };
 
+      const getPropVal = (propKey, computedVal, baselineVal) => {
+        if (!this.isFieldChanged(propKey) && baselineVal) {
+          return baselineVal;
+        }
+        return computedVal;
+      };
+
       this.activeMeta.styles = {
-        color: computed.color,
-        backgroundColor: computed.backgroundColor,
-        borderColor: computed.borderColor,
+        color: getPropVal('color', computed.color, baseline ? baseline.computedColor : ''),
+        backgroundColor: getPropVal('backgroundColor', computed.backgroundColor, baseline ? baseline.computedBgColor : ''),
+        borderColor: getPropVal('borderColor', computed.borderColor, baseline ? baseline.computedBorderColor : ''),
         borderWidth: toNum(computed.borderWidth),
         borderRadius: toNum(computed.borderRadius),
-        fontFamily: computed.fontFamily,
+        fontFamily: getPropVal('fontFamily', computed.fontFamily, baseline ? baseline.computedFontFamily : ''),
         fontSize: toNum(computed.fontSize),
         fontWeight: computed.fontWeight,
         fontStyle: computed.fontStyle,
@@ -311,7 +400,8 @@ export class SidePanel {
     this.activeElement = element;
     this.activeMeta = metadata;
 
-    // Parse existing shadow without mutating element
+    this._captureBaselineIfNeeded();
+    this._refreshActiveMetaStyles();
     this._parseExistingShadow();
 
     const titleEl = this.container.querySelector('#admin-panel-title');
@@ -473,7 +563,7 @@ export class SidePanel {
   }
 
   /**
-   * Calculate change counts per tab and update the tab bar badges
+   * Calculate collective change counts per section across all elements and update tab bar badges
    */
   updateTabCounters() {
     const textBadge = this.container.querySelector('#badge-tab-text');
@@ -481,36 +571,23 @@ export class SidePanel {
     const mediaBadge = this.container.querySelector('#badge-tab-media');
     const propsBadge = this.container.querySelector('#badge-tab-props');
 
-    if (!this.activeElement || !this.activeMeta) {
+    if (!this.exportSystem) {
       if (textBadge) textBadge.style.display = 'none';
       if (spacingBadge) spacingBadge.style.display = 'none';
       if (mediaBadge) mediaBadge.style.display = 'none';
       if (propsBadge) propsBadge.style.display = 'none';
+      this._updateResetButtonVisibility();
       return;
     }
 
-    const overrides = this.getElementOverrides();
-    const styleKeys = Object.keys(overrides.styles);
+    const counts = this.exportSystem.getSectionCounts();
 
-    // Text tab keys
-    const textStyleList = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textAlign', 'fontStyle', 'textTransform', 'fontVariant', 'textShadow', 'boxShadow', 'color', 'backgroundColor', 'borderColor', 'borderWidth', 'borderRadius', 'opacity'];
-    let textCount = styleKeys.filter(k => textStyleList.includes(k)).length;
-    if (overrides.hasText) textCount += 1;
+    this._updateBadge(textBadge, counts.text);
+    this._updateBadge(spacingBadge, counts.spacing);
+    this._updateBadge(mediaBadge, counts.media);
+    this._updateBadge(propsBadge, counts.props);
 
-    // Spacing tab keys
-    const spacingStyleList = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'gap'];
-    const spacingCount = styleKeys.filter(k => spacingStyleList.includes(k)).length;
-
-    // Media tab
-    const mediaCount = overrides.hasMedia ? 1 : (styleKeys.includes('backgroundImage') ? 1 : 0);
-
-    // Props tab
-    const propsCount = Object.keys(overrides.dataAttributes).length;
-
-    this._updateBadge(textBadge, textCount);
-    this._updateBadge(spacingBadge, spacingCount);
-    this._updateBadge(mediaBadge, mediaCount);
-    this._updateBadge(propsBadge, propsCount);
+    this._updateResetButtonVisibility();
   }
 
   _updateBadge(badgeEl, count) {
@@ -540,6 +617,85 @@ export class SidePanel {
       contentEl.innerHTML = this._buildPropsTabHtml();
       this._bindPropsTabControls(contentEl);
     }
+
+    this._syncFieldIndicators();
+  }
+
+  /**
+   * Synchronize the visibility of all field-level reset buttons and modification indicator dots
+   */
+  _syncFieldIndicators() {
+    if (!this.container || !this.activeElement) return;
+    const tabContent = this.container.querySelector('#admin-tab-content');
+    if (!tabContent) return;
+
+    tabContent.querySelectorAll('.admin-field-row, .admin-section').forEach(containerEl => {
+      const allResetBtns = containerEl.querySelectorAll('.btn-field-reset');
+      const allDots = containerEl.querySelectorAll('.field-change-dot');
+
+      allResetBtns.forEach(btn => {
+        const type = btn.dataset.resetType;
+        const key = btn.dataset.resetKey;
+        let isChanged = false;
+
+        if (type === 'text') {
+          isChanged = this.isFieldChanged('text');
+        } else if (type === 'shadow') {
+          isChanged = this.isFieldChanged('boxShadow') || this.isFieldChanged('textShadow');
+        } else if (type === 'allMargins') {
+          isChanged = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'].some(k => this.isFieldChanged(k));
+        } else if (type === 'allPaddings') {
+          isChanged = ['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'].some(k => this.isFieldChanged(k));
+        } else if (type === 'media') {
+          isChanged = this.isFieldChanged('media') || this.isFieldChanged('backgroundImage');
+        } else if (type === 'dataAttr') {
+          isChanged = this.isFieldChanged(`data-${key}`) || this.isFieldChanged(key);
+        } else if (type === 'style') {
+          if (key === 'textTransform' || key === 'appearance') {
+            isChanged = this.isFieldChanged('textTransform') || this.isFieldChanged('fontVariant');
+          } else {
+            isChanged = this.isFieldChanged(key);
+          }
+        }
+
+        btn.style.display = isChanged ? 'inline-flex' : 'none';
+      });
+
+      allDots.forEach(dotEl => {
+        const fieldKey = dotEl.dataset.fieldIndicator;
+        let isChanged = false;
+        if (fieldKey === 'text') isChanged = this.isFieldChanged('text');
+        else if (fieldKey === 'shadow') isChanged = this.isFieldChanged('boxShadow') || this.isFieldChanged('textShadow');
+        else if (fieldKey === 'allMargins') isChanged = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'].some(k => this.isFieldChanged(k));
+        else if (fieldKey === 'allPaddings') isChanged = ['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'].some(k => this.isFieldChanged(k));
+        else if (fieldKey === 'media') isChanged = this.isFieldChanged('media') || this.isFieldChanged('backgroundImage');
+        else if (fieldKey === 'appearance') isChanged = this.isFieldChanged('textTransform') || this.isFieldChanged('fontVariant');
+        else if (fieldKey && fieldKey.startsWith('data-')) isChanged = this.isFieldChanged(fieldKey);
+        else if (fieldKey) isChanged = this.isFieldChanged(fieldKey);
+
+        dotEl.style.display = isChanged ? 'inline-block' : 'none';
+      });
+
+      if (containerEl.classList.contains('admin-section')) {
+        const hasModifiedInside = containerEl.querySelector('.btn-field-reset[style*="inline-flex"], .field-change-dot[style*="inline-block"]') !== null;
+        if (hasModifiedInside) {
+          containerEl.classList.add('is-modified');
+        } else {
+          containerEl.classList.remove('is-modified');
+        }
+      } else if (containerEl.classList.contains('admin-field-row')) {
+        const rowBtn = containerEl.querySelector('.btn-field-reset');
+        const isRowChanged = rowBtn && rowBtn.style.display !== 'none';
+        if (isRowChanged) {
+          containerEl.classList.add('is-modified');
+        } else {
+          containerEl.classList.remove('is-modified');
+        }
+      }
+    });
+
+    this.updateTabCounters();
+    this._updateResetButtonVisibility();
   }
 
   /**
@@ -587,6 +743,7 @@ export class SidePanel {
     } else if (type === 'shadow') {
       this.activeElement.style.removeProperty('text-shadow');
       this.activeElement.style.removeProperty('box-shadow');
+      this.shadowState = { type: 'text', x: 0, y: 0, blur: 0, spread: 0, color: '#00e5ff', opacity: 0 };
       if (this.exportSystem) {
         this.exportSystem.removeChange(selector, 'style', 'textShadow', this.currentBreakpoint);
         this.exportSystem.removeChange(selector, 'style', 'boxShadow', this.currentBreakpoint);
@@ -642,11 +799,27 @@ export class SidePanel {
       }
     }
 
-    // Refresh styles snapshot and shadow parsing from live DOM
+    // 1. Notify change so exportSystem & schemaApplier immediately strip the dynamic override rule from the iframe <style>
+    this._notifyChange({ reset: true, resetProperty: key });
+
+    // 2. Now that dynamic styles are removed from iframe, refresh activeMeta.styles with clean computed values
     this._refreshActiveMetaStyles();
+
+    // 3. If baseline recorded true computed color/background, ensure activeMeta matches accurately
+    if (baseline) {
+      if (key === 'color' && baseline.computedColor) {
+        this.activeMeta.styles.color = baseline.computedColor;
+      } else if (key === 'backgroundColor' && baseline.computedBgColor) {
+        this.activeMeta.styles.backgroundColor = baseline.computedBgColor;
+      } else if (key === 'borderColor' && baseline.computedBorderColor) {
+        this.activeMeta.styles.borderColor = baseline.computedBorderColor;
+      }
+    }
+
+    // 4. Re-parse existing shadow
     this._parseExistingShadow();
 
-    this._notifyChange({ resetProperty: key });
+    // 5. Re-render the active tab
     this._renderActiveTab();
     this.updateTabCounters();
     this._updateResetButtonVisibility();
@@ -656,13 +829,32 @@ export class SidePanel {
   // TAB 1: TEXT & TYPOGRAPHY EDITOR
   // ==========================================================================
   _buildTextTabHtml() {
+    const selector = this.activeMeta ? this.activeMeta.selector : null;
+    const baseline = selector ? this.elementBaselines.get(selector) : null;
     const s = this.activeMeta.styles;
-    const computed = window.getComputedStyle ? window.getComputedStyle(this.activeElement) : s;
-    const textVal = this.activeElement.children.length === 0 ? this.activeElement.textContent : (this.activeElement.innerText || this.activeElement.textContent);
+    const win = (this.activeElement && this.activeElement.ownerDocument) ? this.activeElement.ownerDocument.defaultView : window;
+    const computed = win ? win.getComputedStyle(this.activeElement) : s;
 
-    const textColorHex = this._rgbToHex(this.activeElement.style.color || s.color || computed.color);
-    const bgColorHex = this._rgbToHex(this.activeElement.style.backgroundColor || s.backgroundColor || computed.backgroundColor);
-    const borderColorHex = this._rgbToHex(this.activeElement.style.borderColor || s.borderColor || computed.borderColor);
+    let textVal = '';
+    const textNodes = Array.from(this.activeElement.childNodes).filter(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
+    if (textNodes.length > 0) {
+      textVal = textNodes.map(n => n.textContent).join(' ').trim();
+    } else if (this.activeElement.children.length === 0) {
+      textVal = (this.activeElement.textContent || '').trim();
+    } else {
+      textVal = (this.activeElement.innerText || this.activeElement.textContent || '').trim();
+    }
+
+    const getEffectiveColor = (key, computedVal, baselineVal) => {
+      if (this.isFieldChanged(key)) {
+        return this.activeElement.style[key] || s[key] || computedVal;
+      }
+      return baselineVal || computedVal || s[key];
+    };
+
+    const textColorHex = this._rgbToHex(getEffectiveColor('color', computed.color, baseline ? baseline.computedColor : ''));
+    const bgColorHex = this._rgbToHex(getEffectiveColor('backgroundColor', computed.backgroundColor, baseline ? baseline.computedBgColor : ''));
+    const borderColorHex = this._rgbToHex(getEffectiveColor('borderColor', computed.borderColor, baseline ? baseline.computedBorderColor : ''));
 
     const isBold = (this.activeElement.style.fontWeight || s.fontWeight || computed.fontWeight) >= 700;
     const isItalic = (this.activeElement.style.fontStyle || s.fontStyle || computed.fontStyle) === 'italic';
@@ -699,9 +891,9 @@ export class SidePanel {
         <div class="admin-section-header">
           <div class="section-title-wrap">
             <span>Text Content</span>
-            ${hasTextChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="text" style="display: ${hasTextChanged ? 'inline-block' : 'none'};">●</span>
           </div>
-          ${hasTextChanged ? `<button type="button" class="btn-field-reset" data-reset-type="text" data-tooltip="Reset text content">↺</button>` : ''}
+          <button type="button" class="btn-field-reset" data-reset-type="text" data-tooltip="Reset text content" style="display: ${hasTextChanged ? 'inline-flex' : 'none'};">↺</button>
         </div>
         <div class="admin-field-row" style="margin-bottom: 0;">
           <textarea class="admin-textarea" id="ctrl-text-content" rows="2" placeholder="Edit text content...">${textVal ? textVal.trim() : ''}</textarea>
@@ -720,7 +912,7 @@ export class SidePanel {
         <div class="admin-field-row ${hasFontFamilyChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label" for="ctrl-font-family">Font</label>
-            ${hasFontFamilyChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="fontFamily" style="display: ${hasFontFamilyChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             <select class="admin-select" id="ctrl-font-family">
@@ -732,7 +924,7 @@ export class SidePanel {
               <option value="Georgia, serif">Classic Serif</option>
               <option value="'SF Mono', Monaco, monospace">Monospace</option>
             </select>
-            ${hasFontFamilyChanged ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="fontFamily" data-tooltip="Reset font family">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="fontFamily" data-tooltip="Reset font family" style="display: ${hasFontFamilyChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -740,11 +932,11 @@ export class SidePanel {
         <div class="admin-field-row ${hasFontSizeChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Font Size</label>
-            ${hasFontSizeChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="fontSize" style="display: ${hasFontSizeChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('font-size', 10, 140, 1, parseFloat(s.fontSize) || 16, 'px')}
-            ${hasFontSizeChanged ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="fontSize" data-tooltip="Reset font size">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="fontSize" data-tooltip="Reset font size" style="display: ${hasFontSizeChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -752,7 +944,7 @@ export class SidePanel {
         <div class="admin-field-row ${hasFontWeightChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label" for="ctrl-font-weight">Font Weight</label>
-            ${hasFontWeightChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="fontWeight" style="display: ${hasFontWeightChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             <select class="admin-select" id="ctrl-font-weight">
@@ -766,7 +958,7 @@ export class SidePanel {
               <option value="800">800 - Extra Bold</option>
               <option value="900">900 - Black</option>
             </select>
-            ${hasFontWeightChanged ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="fontWeight" data-tooltip="Reset font weight">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="fontWeight" data-tooltip="Reset font weight" style="display: ${hasFontWeightChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -774,11 +966,11 @@ export class SidePanel {
         <div class="admin-field-row ${hasLineHeightChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Line Spacing</label>
-            ${hasLineHeightChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="lineHeight" style="display: ${hasLineHeightChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('line-height', 0.8, 3.5, 0.05, currentLineHeight, 'em')}
-            ${hasLineHeightChanged ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="lineHeight" data-tooltip="Reset line spacing">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="lineHeight" data-tooltip="Reset line spacing" style="display: ${hasLineHeightChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -786,11 +978,11 @@ export class SidePanel {
         <div class="admin-field-row ${hasLetterSpacingChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Letter Spacing</label>
-            ${hasLetterSpacingChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="letterSpacing" style="display: ${hasLetterSpacingChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('letter-spacing', -3, 24, 0.5, currentLetterSpacing, 'px')}
-            ${hasLetterSpacingChanged ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="letterSpacing" data-tooltip="Reset letter spacing">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="letterSpacing" data-tooltip="Reset letter spacing" style="display: ${hasLetterSpacingChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -798,7 +990,7 @@ export class SidePanel {
         <div class="admin-field-row ${hasAppearanceChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Appearance</label>
-            ${hasAppearanceChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="appearance" style="display: ${hasAppearanceChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             <div class="admin-appearance-group">
@@ -808,7 +1000,7 @@ export class SidePanel {
               <button type="button" class="admin-case-btn ${textTransform === 'capitalize' ? 'is-active' : ''}" data-case="capitalize" data-tooltip="Title Case">Abc</button>
               <button type="button" class="admin-case-btn ${fontVariant === 'small-caps' ? 'is-active' : ''}" data-case="small-caps" data-tooltip="Small Caps">A<span style="font-size: 8px;">A</span></button>
             </div>
-            ${hasAppearanceChanged ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="textTransform" data-tooltip="Reset appearance">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="textTransform" data-tooltip="Reset appearance" style="display: ${hasAppearanceChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -816,7 +1008,7 @@ export class SidePanel {
         <div class="admin-field-row ${hasTextAlignChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Alignment</label>
-            ${hasTextAlignChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="textAlign" style="display: ${hasTextAlignChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control" style="justify-content: space-between;">
             <div class="admin-button-group">
@@ -840,7 +1032,7 @@ export class SidePanel {
                 <em>I</em>
               </button>
             </div>
-            ${hasTextAlignChanged ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="textAlign" data-tooltip="Reset alignment">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="textAlign" data-tooltip="Reset alignment" style="display: ${hasTextAlignChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
       </div>
@@ -850,9 +1042,9 @@ export class SidePanel {
         <div class="admin-section-header">
           <div class="section-title-wrap">
             <span>Shadow & Glow Studio</span>
-            ${hasShadowChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="shadow" style="display: ${hasShadowChanged ? 'inline-block' : 'none'};">●</span>
           </div>
-          ${hasShadowChanged ? `<button type="button" class="btn-field-reset" data-reset-type="shadow" data-tooltip="Reset shadow & glow">↺</button>` : ''}
+          <button type="button" class="btn-field-reset" data-reset-type="shadow" data-tooltip="Reset shadow & glow" style="display: ${hasShadowChanged ? 'inline-flex' : 'none'};">↺</button>
         </div>
 
         <div class="admin-shadow-studio-body">
@@ -959,7 +1151,7 @@ export class SidePanel {
         <div class="admin-field-row ${hasColorChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Font Color</label>
-            ${hasColorChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="color" style="display: ${hasColorChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             <div class="admin-color-field">
@@ -968,7 +1160,7 @@ export class SidePanel {
               </div>
               <input type="text" class="admin-input admin-color-hex-input" id="hex-color-text" value="${textColorHex}">
             </div>
-            ${hasColorChanged ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="color" data-tooltip="Reset font color">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="color" data-tooltip="Reset font color" style="display: ${hasColorChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -976,7 +1168,7 @@ export class SidePanel {
         <div class="admin-field-row ${hasBgChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Background</label>
-            ${hasBgChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="backgroundColor" style="display: ${hasBgChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             <div class="admin-color-field">
@@ -985,7 +1177,7 @@ export class SidePanel {
               </div>
               <input type="text" class="admin-input admin-color-hex-input" id="hex-color-bg" value="${bgColorHex}">
             </div>
-            ${hasBgChanged ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="backgroundColor" data-tooltip="Reset background">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="backgroundColor" data-tooltip="Reset background" style="display: ${hasBgChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -993,7 +1185,7 @@ export class SidePanel {
         <div class="admin-field-row ${hasBorderChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Border Color</label>
-            ${hasBorderChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="borderColor" style="display: ${hasBorderChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             <div class="admin-color-field">
@@ -1002,7 +1194,7 @@ export class SidePanel {
               </div>
               <input type="text" class="admin-input admin-color-hex-input" id="hex-color-border" value="${borderColorHex}">
             </div>
-            ${hasBorderChanged ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="borderColor" data-tooltip="Reset border">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="borderColor" data-tooltip="Reset border color" style="display: ${hasBorderChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -1010,11 +1202,11 @@ export class SidePanel {
         <div class="admin-field-row ${this.isFieldChanged('borderWidth') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Border Width</label>
-            ${this.isFieldChanged('borderWidth') ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="borderWidth" style="display: ${this.isFieldChanged('borderWidth') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('border-width', 0, 20, 1, parseFloat(s.borderWidth) || 0, 'px')}
-            ${this.isFieldChanged('borderWidth') ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="borderWidth" data-tooltip="Reset border width">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="borderWidth" data-tooltip="Reset border width" style="display: ${this.isFieldChanged('borderWidth') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -1022,11 +1214,11 @@ export class SidePanel {
         <div class="admin-field-row ${this.isFieldChanged('borderRadius') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Border Radius</label>
-            ${this.isFieldChanged('borderRadius') ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="borderRadius" style="display: ${this.isFieldChanged('borderRadius') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('border-radius', 0, 48, 1, parseFloat(s.borderRadius) || 0, 'px')}
-            ${this.isFieldChanged('borderRadius') ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="borderRadius" data-tooltip="Reset border radius">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="borderRadius" data-tooltip="Reset border radius" style="display: ${this.isFieldChanged('borderRadius') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
       </div>
@@ -1038,12 +1230,20 @@ export class SidePanel {
     const textInput = container.querySelector('#ctrl-text-content');
     if (textInput) {
       textInput.addEventListener('input', () => {
-        if (this.activeElement.children.length === 0) {
-          this.activeElement.textContent = textInput.value;
+        const newVal = textInput.value;
+        const textNodes = Array.from(this.activeElement.childNodes).filter(node => node.nodeType === Node.TEXT_NODE);
+        if (textNodes.length > 0) {
+          textNodes[0].textContent = newVal;
+          for (let i = 1; i < textNodes.length; i++) {
+            textNodes[i].textContent = '';
+          }
+        } else if (this.activeElement.children.length === 0) {
+          this.activeElement.textContent = newVal;
         } else {
-          this.activeElement.innerText = textInput.value;
+          const newTextNode = this.activeElement.ownerDocument.createTextNode(newVal);
+          this.activeElement.insertBefore(newTextNode, this.activeElement.firstChild);
         }
-        this._notifyChange({ text: textInput.value });
+        this._notifyChange({ text: newVal });
         this.updateTabCounters();
       });
     }
@@ -1051,13 +1251,29 @@ export class SidePanel {
     // 2. Font Family
     const fontSelect = container.querySelector('#ctrl-font-family');
     if (fontSelect) {
-      const currentFamily = this.activeElement.style.fontFamily || this.activeMeta.styles.fontFamily || '';
-      for (const opt of fontSelect.options) {
-        if (currentFamily.toLowerCase().includes(opt.value.toLowerCase().replace(/['"]/g, '').split(',')[0])) {
-          fontSelect.value = opt.value;
-          break;
+      const computed = window.getComputedStyle ? window.getComputedStyle(this.activeElement) : {};
+      const currentFamily = this.activeElement.style.fontFamily || (this.activeMeta.styles && this.activeMeta.styles.fontFamily) || computed.fontFamily || '';
+      let matched = false;
+      if (currentFamily) {
+        const cleanCurrent = currentFamily.toLowerCase().replace(/['"]/g, '').split(',')[0].trim();
+        for (const opt of fontSelect.options) {
+          const cleanOpt = opt.value.toLowerCase().replace(/['"]/g, '').split(',')[0].trim();
+          if (cleanOpt === cleanCurrent || cleanCurrent.includes(cleanOpt) || cleanOpt.includes(cleanCurrent)) {
+            fontSelect.value = opt.value;
+            matched = true;
+            break;
+          }
+        }
+        if (!matched && cleanCurrent) {
+          const customOpt = document.createElement('option');
+          customOpt.value = currentFamily;
+          customOpt.textContent = `Custom (${currentFamily.split(',')[0].replace(/['"]/g, '')})`;
+          customOpt.selected = true;
+          fontSelect.appendChild(customOpt);
+          fontSelect.value = currentFamily;
         }
       }
+
       fontSelect.addEventListener('change', () => {
         this.activeElement.style.fontFamily = fontSelect.value;
         this._notifyChange({ styleKey: 'fontFamily', val: fontSelect.value });
@@ -1075,8 +1291,25 @@ export class SidePanel {
     // 4. Font Weight
     const weightSelect = container.querySelector('#ctrl-font-weight');
     if (weightSelect) {
-      const curWeight = this.activeElement.style.fontWeight || this.activeMeta.styles.fontWeight || '400';
-      weightSelect.value = curWeight;
+      const computed = window.getComputedStyle ? window.getComputedStyle(this.activeElement) : {};
+      const rawWeight = this.activeElement.style.fontWeight || (this.activeMeta.styles && this.activeMeta.styles.fontWeight) || computed.fontWeight || '400';
+      let normWeight = '400';
+      if (rawWeight === 'bold' || rawWeight === 'bolder') normWeight = '700';
+      else if (rawWeight === 'normal' || rawWeight === 'lighter') normWeight = '400';
+      else if (!isNaN(parseInt(rawWeight, 10))) normWeight = String(parseInt(rawWeight, 10));
+
+      let matchedWeight = false;
+      for (const opt of weightSelect.options) {
+        if (opt.value === normWeight) {
+          weightSelect.value = normWeight;
+          matchedWeight = true;
+          break;
+        }
+      }
+      if (!matchedWeight) {
+        weightSelect.value = '400';
+      }
+
       weightSelect.addEventListener('change', () => {
         this.activeElement.style.fontWeight = weightSelect.value;
         this._notifyChange({ styleKey: 'fontWeight', val: weightSelect.value });
@@ -1397,13 +1630,13 @@ export class SidePanel {
         <div class="admin-section-header">
           <div class="section-title-wrap">
             <span>Margins (0px – 120px)</span>
-            ${hasMarginChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="allMargins" style="display: ${hasMarginChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div style="display: flex; align-items: center; gap: 6px;">
             <button type="button" class="admin-btn admin-btn-ghost" id="btn-toggle-link-margin" style="padding: 2px 6px; font-size: 10px;">
               ${this.linkMargins ? '🔗 Linked' : '🔓 Unlinked'}
             </button>
-            ${hasMarginChanged ? `<button type="button" class="btn-field-reset" data-reset-type="allMargins" data-tooltip="Reset all margins">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="allMargins" data-tooltip="Reset all margins" style="display: ${hasMarginChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -1411,11 +1644,11 @@ export class SidePanel {
         <div class="admin-field-row ${this.isFieldChanged('marginTop') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Margin Top</label>
-            ${this.isFieldChanged('marginTop') ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="marginTop" style="display: ${this.isFieldChanged('marginTop') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('margin-top', 0, 120, 1, mt, 'px')}
-            ${this.isFieldChanged('marginTop') ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="marginTop" data-tooltip="Reset margin top">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="marginTop" data-tooltip="Reset margin top" style="display: ${this.isFieldChanged('marginTop') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -1423,11 +1656,11 @@ export class SidePanel {
         <div class="admin-field-row ${this.isFieldChanged('marginBottom') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Margin Bottom</label>
-            ${this.isFieldChanged('marginBottom') ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="marginBottom" style="display: ${this.isFieldChanged('marginBottom') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('margin-bottom', 0, 120, 1, mb, 'px')}
-            ${this.isFieldChanged('marginBottom') ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="marginBottom" data-tooltip="Reset margin bottom">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="marginBottom" data-tooltip="Reset margin bottom" style="display: ${this.isFieldChanged('marginBottom') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -1435,11 +1668,11 @@ export class SidePanel {
         <div class="admin-field-row ${this.isFieldChanged('marginLeft') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Margin Left</label>
-            ${this.isFieldChanged('marginLeft') ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="marginLeft" style="display: ${this.isFieldChanged('marginLeft') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('margin-left', 0, 120, 1, ml, 'px')}
-            ${this.isFieldChanged('marginLeft') ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="marginLeft" data-tooltip="Reset margin left">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="marginLeft" data-tooltip="Reset margin left" style="display: ${this.isFieldChanged('marginLeft') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -1447,11 +1680,11 @@ export class SidePanel {
         <div class="admin-field-row ${this.isFieldChanged('marginRight') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Margin Right</label>
-            ${this.isFieldChanged('marginRight') ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="marginRight" style="display: ${this.isFieldChanged('marginRight') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('margin-right', 0, 120, 1, mr, 'px')}
-            ${this.isFieldChanged('marginRight') ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="marginRight" data-tooltip="Reset margin right">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="marginRight" data-tooltip="Reset margin right" style="display: ${this.isFieldChanged('marginRight') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
       </div>
@@ -1461,13 +1694,13 @@ export class SidePanel {
         <div class="admin-section-header">
           <div class="section-title-wrap">
             <span>Paddings (0px – 120px)</span>
-            ${hasPaddingChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="allPaddings" style="display: ${hasPaddingChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div style="display: flex; align-items: center; gap: 6px;">
             <button type="button" class="admin-btn admin-btn-ghost" id="btn-toggle-link-padding" style="padding: 2px 6px; font-size: 10px;">
               ${this.linkPaddings ? '🔗 Linked' : '🔓 Unlinked'}
             </button>
-            ${hasPaddingChanged ? `<button type="button" class="btn-field-reset" data-reset-type="allPaddings" data-tooltip="Reset all paddings">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="allPaddings" data-tooltip="Reset all paddings" style="display: ${hasPaddingChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -1475,11 +1708,11 @@ export class SidePanel {
         <div class="admin-field-row ${this.isFieldChanged('paddingTop') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Padding Top</label>
-            ${this.isFieldChanged('paddingTop') ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="paddingTop" style="display: ${this.isFieldChanged('paddingTop') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('padding-top', 0, 120, 1, pt, 'px')}
-            ${this.isFieldChanged('paddingTop') ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="paddingTop" data-tooltip="Reset padding top">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="paddingTop" data-tooltip="Reset padding top" style="display: ${this.isFieldChanged('paddingTop') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -1487,11 +1720,11 @@ export class SidePanel {
         <div class="admin-field-row ${this.isFieldChanged('paddingBottom') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Padding Bottom</label>
-            ${this.isFieldChanged('paddingBottom') ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="paddingBottom" style="display: ${this.isFieldChanged('paddingBottom') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('padding-bottom', 0, 120, 1, pb, 'px')}
-            ${this.isFieldChanged('paddingBottom') ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="paddingBottom" data-tooltip="Reset padding bottom">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="paddingBottom" data-tooltip="Reset padding bottom" style="display: ${this.isFieldChanged('paddingBottom') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -1499,11 +1732,11 @@ export class SidePanel {
         <div class="admin-field-row ${this.isFieldChanged('paddingLeft') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Padding Left</label>
-            ${this.isFieldChanged('paddingLeft') ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="paddingLeft" style="display: ${this.isFieldChanged('paddingLeft') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('padding-left', 0, 120, 1, pl, 'px')}
-            ${this.isFieldChanged('paddingLeft') ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="paddingLeft" data-tooltip="Reset padding left">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="paddingLeft" data-tooltip="Reset padding left" style="display: ${this.isFieldChanged('paddingLeft') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
@@ -1511,11 +1744,11 @@ export class SidePanel {
         <div class="admin-field-row ${this.isFieldChanged('paddingRight') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Padding Right</label>
-            ${this.isFieldChanged('paddingRight') ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="paddingRight" style="display: ${this.isFieldChanged('paddingRight') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('padding-right', 0, 120, 1, pr, 'px')}
-            ${this.isFieldChanged('paddingRight') ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="paddingRight" data-tooltip="Reset padding right">↺</button>` : ''}
+            <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="paddingRight" data-tooltip="Reset padding right" style="display: ${this.isFieldChanged('paddingRight') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
       </div>
@@ -1525,9 +1758,9 @@ export class SidePanel {
         <div class="admin-section-header">
           <div class="section-title-wrap">
             <span>Flex / Grid Gap</span>
-            ${hasGapChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="gap" style="display: ${hasGapChanged ? 'inline-block' : 'none'};">●</span>
           </div>
-          ${hasGapChanged ? `<button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="gap" data-tooltip="Reset gap">↺</button>` : ''}
+          <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="gap" data-tooltip="Reset gap" style="display: ${hasGapChanged ? 'inline-flex' : 'none'};">↺</button>
         </div>
         <div class="admin-field-row">
           <label class="admin-field-label">Gap Spacing</label>
@@ -1672,9 +1905,9 @@ export class SidePanel {
         <div class="admin-section-header">
           <div class="section-title-wrap">
             <span>${isAudioTarget ? 'Audio Track Replacement' : (isImg ? 'Image Asset Replacement' : 'Background Image')}</span>
-            ${hasMediaChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="media" style="display: ${hasMediaChanged ? 'inline-block' : 'none'};">●</span>
           </div>
-          ${hasMediaChanged ? `<button type="button" class="btn-field-reset" data-reset-type="media" data-tooltip="Reset media">↺</button>` : ''}
+          <button type="button" class="btn-field-reset" data-reset-type="media" data-tooltip="Reset media" style="display: ${hasMediaChanged ? 'inline-flex' : 'none'};">↺</button>
         </div>
 
         <div class="admin-dropzone" id="media-dropzone">
@@ -1814,7 +2047,7 @@ export class SidePanel {
         <div class="admin-section-header">
           <div class="section-title-wrap">
             <span>Custom Data Attributes</span>
-            ${hasPropsChanged ? '<span class="field-change-dot">●</span>' : ''}
+            <span class="field-change-dot" data-field-indicator="props" style="display: ${hasPropsChanged ? 'inline-block' : 'none'};">●</span>
           </div>
         </div>
 
@@ -1827,11 +2060,16 @@ export class SidePanel {
             ${propKeys.map(key => {
               const val = dataset[key];
               const kebab = this._camelToKebab(key);
+              const isChanged = this.isFieldChanged(`data-${key}`) || this.isFieldChanged(key);
               return `
                 <div class="admin-field-row" style="margin-bottom: 6px;">
-                  <label class="admin-field-label" style="font-family: var(--admin-mono); font-size: 10px;">data-${kebab}</label>
+                  <div class="admin-field-label-wrap">
+                    <label class="admin-field-label" style="font-family: var(--admin-mono); font-size: 10px;">data-${kebab}</label>
+                    <span class="field-change-dot" data-field-indicator="data-${key}" style="display: ${isChanged ? 'inline-block' : 'none'};">●</span>
+                  </div>
                   <div class="admin-field-control">
                     <input type="text" class="admin-input prop-val-input" data-prop="${key}" value="${val}">
+                    <button type="button" class="btn-field-reset" data-reset-type="dataAttr" data-reset-key="${key}" data-tooltip="Reset attribute" style="display: ${isChanged ? 'inline-flex' : 'none'};">↺</button>
                     <button type="button" class="admin-btn admin-btn-ghost btn-remove-prop" data-prop="${key}" data-tooltip="Remove attribute" style="padding: 2px 6px; color: #ef4444;">✕</button>
                   </div>
                 </div>
@@ -1897,6 +2135,8 @@ export class SidePanel {
         this.updateTabCounters();
       });
     }
+
+    this._bindResetButtons(container);
   }
 
   // ==========================================================================
@@ -1963,22 +2203,446 @@ export class SidePanel {
   _bindColorPair(container, prefix, onChange) {
     const native = container.querySelector(`#native-color-${prefix}`);
     const hex = container.querySelector(`#hex-color-${prefix}`);
-    const previewWrap = native ? native.parentElement : null;
+    const previewWrap = native ? native.closest('.admin-color-preview-wrap') : null;
+    const parentField = previewWrap ? previewWrap.closest('.admin-color-field') : null;
+
+    const parseToHex = (raw) => {
+      if (!raw) return null;
+      let str = String(raw).trim();
+      const rgbMatch = str.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+      if (rgbMatch) {
+        const r = parseInt(rgbMatch[1], 10);
+        const g = parseInt(rgbMatch[2], 10);
+        const b = parseInt(rgbMatch[3], 10);
+        return '#' + [r, g, b].map(x => Math.max(0, Math.min(255, x)).toString(16).padStart(2, '0')).join('').toUpperCase();
+      }
+      const hexMatch = str.match(/#?([0-9a-fA-F]{3,6})/);
+      if (hexMatch) {
+        let h = hexMatch[1];
+        if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+        if (h.length === 6) return `#${h.toUpperCase()}`;
+      }
+      return null;
+    };
+
+    const copyColorToClipboard = (inputEl, btnEl) => {
+      let val = parseToHex(typeof inputEl === 'string' ? inputEl : inputEl ? inputEl.value : '');
+      if (!val) val = '#00F0FF';
+
+      window.__adminColorClipboard = val;
+
+      if (inputEl && inputEl.focus) {
+        try {
+          inputEl.focus();
+          inputEl.select();
+        } catch (_) {}
+      }
+
+      const showCopiedUI = () => {
+        if (btnEl) {
+          btnEl.classList.add('copied');
+          const origText = btnEl.innerHTML;
+          btnEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+          setTimeout(() => {
+            btnEl.classList.remove('copied');
+            btnEl.innerHTML = origText;
+          }, 1200);
+        }
+      };
+
+      try {
+        document.execCommand('copy');
+      } catch (_) {}
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(val).then(showCopiedUI).catch(() => {
+          showCopiedUI();
+        });
+      } else {
+        showCopiedUI();
+      }
+    };
+
+    const pasteColorFromClipboard = (inputEl, btnEl, onPasted) => {
+      const applyVal = (rawText) => {
+        const cleaned = parseToHex(rawText);
+        if (cleaned) {
+          if (inputEl) inputEl.value = cleaned;
+          window.__adminColorClipboard = cleaned;
+          onPasted(cleaned);
+          return true;
+        }
+        return false;
+      };
+
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        navigator.clipboard.readText()
+          .then(text => {
+            if (!applyVal(text)) {
+              if (!applyVal(window.__adminColorClipboard)) {
+                const current = inputEl ? inputEl.value : '#00F0FF';
+                const val = prompt('Paste HEX color code:', current);
+                if (val) applyVal(val);
+              }
+            }
+          })
+          .catch(() => {
+            if (!applyVal(window.__adminColorClipboard)) {
+              const current = inputEl ? inputEl.value : '#00F0FF';
+              const val = prompt('Paste HEX color code:', current);
+              if (val) applyVal(val);
+            }
+          });
+      } else {
+        if (!applyVal(window.__adminColorClipboard)) {
+          const current = inputEl ? inputEl.value : '#00F0FF';
+          const val = prompt('Paste HEX color code:', current);
+          if (val) applyVal(val);
+        }
+      }
+    };
+
+    const attachPasteListener = (inputElement, onParsed) => {
+      if (!inputElement) return;
+      inputElement.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData('text');
+        const cleaned = parseToHex(text);
+        if (cleaned) {
+          inputElement.value = cleaned;
+          onParsed(cleaned);
+        }
+      });
+    };
+
+    const hexToHsv = (hexStr) => {
+      let c = (hexStr || '').replace('#', '').trim();
+      if (c.length === 3) c = c.split('').map(x => x + x).join('');
+      if (c.length !== 6) return [0, 1, 1];
+      const r = parseInt(c.substring(0, 2), 16) / 255;
+      const g = parseInt(c.substring(2, 4), 16) / 255;
+      const b = parseInt(c.substring(4, 6), 16) / 255;
+
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      const d = max - min;
+      let h = 0;
+      const s = max === 0 ? 0 : d / max;
+      const v = max;
+
+      if (max !== min) {
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+      return [Math.round(h * 360), s, v];
+    };
+
+    const hsvToRgb = (h, s, v) => {
+      let r, g, b;
+      const i = Math.floor(h / 60) % 6;
+      const f = h / 60 - Math.floor(h / 60);
+      const p = v * (1 - s);
+      const q = v * (1 - f * s);
+      const t = v * (1 - (1 - f) * s);
+      switch (i) {
+        case 0: r = v; g = t; b = p; break;
+        case 1: r = q; g = v; b = p; break;
+        case 2: r = p; g = v; b = t; break;
+        case 3: r = p; g = q; b = v; break;
+        case 4: r = t; g = p; b = v; break;
+        case 5: r = v; g = p; b = q; break;
+      }
+      return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+    };
+
+    const rgbToHex = (r, g, b) => {
+      return '#' + [r, g, b].map(x => Math.max(0, Math.min(255, x)).toString(16).padStart(2, '0')).join('').toUpperCase();
+    };
 
     if (native && hex) {
+      // Attach paste listener to main hex input
+      attachPasteListener(hex, (cleaned) => {
+        hex.value = cleaned;
+        native.value = cleaned;
+        if (previewWrap) previewWrap.style.backgroundColor = cleaned;
+        onChange(cleaned);
+      });
+
+      if (previewWrap && parentField) {
+        // Inject Copy & Paste buttons next to the color field if missing
+        if (!parentField.querySelector('.admin-color-copy-btn')) {
+          const copyBtn = document.createElement('button');
+          copyBtn.type = 'button';
+          copyBtn.className = 'admin-color-btn admin-color-copy-btn';
+          copyBtn.title = 'Copy HEX';
+          copyBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+          parentField.appendChild(copyBtn);
+
+          copyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            copyColorToClipboard(hex, copyBtn);
+          });
+        }
+
+        if (!parentField.querySelector('.admin-color-paste-btn')) {
+          const pasteBtn = document.createElement('button');
+          pasteBtn.type = 'button';
+          pasteBtn.className = 'admin-color-btn admin-color-paste-btn';
+          pasteBtn.title = 'Paste HEX';
+          pasteBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>`;
+          parentField.appendChild(pasteBtn);
+
+          pasteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            pasteColorFromClipboard(hex, pasteBtn, (pastedVal) => {
+              hex.value = pastedVal;
+              native.value = pastedVal;
+              if (previewWrap) previewWrap.style.backgroundColor = pastedVal;
+              onChange(pastedVal);
+            });
+          });
+        }
+
+        previewWrap.addEventListener('click', (e) => {
+          e.stopPropagation();
+
+          // Close active panels
+          container.querySelectorAll('.admin-hex-picker-panel').forEach(p => p.remove());
+
+          let currentHex = parseToHex(hex.value) || '#00F0FF';
+          let [h, s, v] = hexToHsv(currentHex);
+
+          const panel = document.createElement('div');
+          panel.className = 'admin-hex-picker-panel';
+
+          panel.innerHTML = `
+            <div class="admin-sat-val-box">
+              <div class="admin-sat-val-white"></div>
+              <div class="admin-sat-val-black"></div>
+              <div class="admin-sat-val-handle"></div>
+            </div>
+            <div class="admin-hue-slider-wrap">
+              <div class="admin-hue-handle"></div>
+            </div>
+            <div class="admin-picker-footer">
+              <div class="admin-picker-preview" style="background-color: ${currentHex};"></div>
+              <input type="text" class="admin-picker-hex-input" value="${currentHex}" maxlength="7" spellcheck="false" placeholder="#00F0FF">
+              <button type="button" class="admin-color-btn admin-picker-copy-btn" title="Copy HEX">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+              <button type="button" class="admin-color-btn admin-picker-paste-btn" title="Paste HEX">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+              </button>
+            </div>
+          `;
+
+          parentField.appendChild(panel);
+
+          // Smart Viewport Calculation (relative to container & screen)
+          const scrollParent = parentField.closest('.admin-side-panel-body, .admin-tab-content, .admin-side-panel') || document.body;
+          const fieldRect = parentField.getBoundingClientRect();
+          const scrollRect = scrollParent.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+          const panelHeight = 185;
+
+          const containerBottom = Math.min(viewportHeight, scrollRect.bottom);
+          const containerTop = Math.max(0, scrollRect.top);
+
+          const spaceBelow = containerBottom - fieldRect.bottom;
+          const spaceAbove = fieldRect.top - containerTop;
+
+          if (spaceBelow < panelHeight + 10 && spaceAbove > spaceBelow) {
+            panel.classList.add('position-above');
+          } else {
+            panel.classList.add('position-below');
+          }
+
+          setTimeout(() => {
+            if (panel.scrollIntoView) {
+              panel.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+            }
+          }, 20);
+
+          const satValBox = panel.querySelector('.admin-sat-val-box');
+          const satValHandle = panel.querySelector('.admin-sat-val-handle');
+          const hueSlider = panel.querySelector('.admin-hue-slider-wrap');
+          const hueHandle = panel.querySelector('.admin-hue-handle');
+          const pickerPreview = panel.querySelector('.admin-picker-preview');
+          const pickerInput = panel.querySelector('.admin-picker-hex-input');
+          const panelCopyBtn = panel.querySelector('.admin-picker-copy-btn');
+          const panelPasteBtn = panel.querySelector('.admin-picker-paste-btn');
+
+          const updateUI = (notify = true) => {
+            const pureHue = hsvToRgb(h, 1, 1);
+            satValBox.style.backgroundColor = `rgb(${pureHue[0]}, ${pureHue[1]}, ${pureHue[2]})`;
+
+            satValHandle.style.left = `${Math.max(0, Math.min(100, s * 100))}%`;
+            satValHandle.style.top = `${Math.max(0, Math.min(100, (1 - v) * 100))}%`;
+
+            hueHandle.style.left = `${Math.max(0, Math.min(100, (h / 360) * 100))}%`;
+
+            const [r, g, b] = hsvToRgb(h, s, v);
+            const hexVal = rgbToHex(r, g, b);
+
+            pickerPreview.style.backgroundColor = hexVal;
+            previewWrap.style.backgroundColor = hexVal;
+            pickerInput.value = hexVal;
+            hex.value = hexVal;
+            native.value = hexVal;
+
+            if (notify) onChange(hexVal);
+          };
+
+          updateUI(false);
+
+          // Attach paste listener to panel hex input
+          attachPasteListener(pickerInput, (cleaned) => {
+            [h, s, v] = hexToHsv(cleaned);
+            updateUI(true);
+          });
+
+          // Panel Copy & Paste Handlers
+          if (panelCopyBtn) {
+            panelCopyBtn.addEventListener('click', (ce) => {
+              ce.stopPropagation();
+              copyColorToClipboard(pickerInput, panelCopyBtn);
+            });
+          }
+
+          if (panelPasteBtn) {
+            panelPasteBtn.addEventListener('click', (pe) => {
+              pe.stopPropagation();
+              pasteColorFromClipboard(pickerInput, panelPasteBtn, (pastedVal) => {
+                [h, s, v] = hexToHsv(pastedVal);
+                updateUI(true);
+              });
+            });
+          }
+
+          // Saturation / Value Canvas Drag (Pointer Events with setPointerCapture)
+          let isDraggingSatVal = false;
+          const handleSatVal = (evt) => {
+            const rect = satValBox.getBoundingClientRect();
+            const x = Math.max(0, Math.min(rect.width, evt.clientX - rect.left));
+            const y = Math.max(0, Math.min(rect.height, evt.clientY - rect.top));
+            s = x / rect.width;
+            v = 1 - (y / rect.height);
+            updateUI(true);
+          };
+
+          const satValPointerDown = (evt) => {
+            if (evt.button !== 0 && evt.buttons !== 1) return;
+            isDraggingSatVal = true;
+            try { satValBox.setPointerCapture(evt.pointerId); } catch (_) {}
+            handleSatVal(evt);
+          };
+
+          const satValPointerMove = (evt) => {
+            if (isDraggingSatVal) {
+              handleSatVal(evt);
+            }
+          };
+
+          const satValPointerUp = (evt) => {
+            isDraggingSatVal = false;
+            try { satValBox.releasePointerCapture(evt.pointerId); } catch (_) {}
+          };
+
+          satValBox.addEventListener('pointerdown', satValPointerDown);
+          satValBox.addEventListener('pointermove', satValPointerMove);
+          satValBox.addEventListener('pointerup', satValPointerUp);
+          satValBox.addEventListener('pointercancel', satValPointerUp);
+
+          // Hue Slider Drag (Pointer Events with setPointerCapture)
+          let isDraggingHue = false;
+          const handleHue = (evt) => {
+            const rect = hueSlider.getBoundingClientRect();
+            const x = Math.max(0, Math.min(rect.width, evt.clientX - rect.left));
+            h = Math.round((x / rect.width) * 360) % 360;
+            updateUI(true);
+          };
+
+          const huePointerDown = (evt) => {
+            if (evt.button !== 0 && evt.buttons !== 1) return;
+            isDraggingHue = true;
+            try { hueSlider.setPointerCapture(evt.pointerId); } catch (_) {}
+            handleHue(evt);
+          };
+
+          const huePointerMove = (evt) => {
+            if (isDraggingHue) {
+              handleHue(evt);
+            }
+          };
+
+          const huePointerUp = (evt) => {
+            isDraggingHue = false;
+            try { hueSlider.releasePointerCapture(evt.pointerId); } catch (_) {}
+          };
+
+          hueSlider.addEventListener('pointerdown', huePointerDown);
+          hueSlider.addEventListener('pointermove', huePointerMove);
+          hueSlider.addEventListener('pointerup', huePointerUp);
+          hueSlider.addEventListener('pointercancel', huePointerUp);
+
+          // Direct HEX Input inside Panel
+          pickerInput.addEventListener('input', () => {
+            const cleaned = parseToHex(pickerInput.value);
+            if (cleaned) {
+              [h, s, v] = hexToHsv(cleaned);
+              updateUI(true);
+            }
+          });
+
+          const closeHandler = (evt) => {
+            if (!panel.contains(evt.target) && evt.target !== previewWrap) {
+              panel.remove();
+              document.removeEventListener('click', closeHandler);
+            }
+          };
+          setTimeout(() => document.addEventListener('click', closeHandler), 10);
+        });
+      }
+
       native.addEventListener('input', () => {
-        hex.value = native.value.toUpperCase();
-        if (previewWrap) previewWrap.style.backgroundColor = native.value;
-        onChange(native.value);
+        const hexVal = native.value.toUpperCase();
+        hex.value = hexVal;
+        if (previewWrap) previewWrap.style.backgroundColor = hexVal;
+        onChange(hexVal);
       });
 
       hex.addEventListener('input', () => {
         let val = hex.value.trim();
-        if (!val.startsWith('#')) val = `#${val}`;
+        if (!val.startsWith('#') && /^[0-9A-Fa-f]{3,6}$/.test(val)) {
+          val = `#${val}`;
+        }
         if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
-          native.value = val;
-          if (previewWrap) previewWrap.style.backgroundColor = val;
-          onChange(val);
+          const upper = val.toUpperCase();
+          native.value = upper;
+          if (previewWrap) previewWrap.style.backgroundColor = upper;
+          onChange(upper);
+        } else if (/^#[0-9A-Fa-f]{3}$/.test(val)) {
+          const expanded = `#${val[1]}${val[1]}${val[2]}${val[2]}${val[3]}${val[3]}`.toUpperCase();
+          native.value = expanded;
+          if (previewWrap) previewWrap.style.backgroundColor = expanded;
+          onChange(expanded);
+        }
+      });
+
+      hex.addEventListener('blur', () => {
+        let val = hex.value.trim();
+        if (!val.startsWith('#') && /^[0-9A-Fa-f]{3,6}$/.test(val)) {
+          val = `#${val}`;
+        }
+        if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+          hex.value = val.toUpperCase();
+        } else if (/^#[0-9A-Fa-f]{3}$/.test(val)) {
+          hex.value = `#${val[1]}${val[1]}${val[2]}${val[2]}${val[3]}${val[3]}`.toUpperCase();
+        } else {
+          hex.value = native.value.toUpperCase();
         }
       });
     }
@@ -1991,23 +2655,40 @@ export class SidePanel {
     if (typeof this.onElementChange === 'function' && this.activeElement && this.activeMeta) {
       this.onElementChange(this.activeElement, this.activeMeta, detail, this.currentBreakpoint);
     }
-    this._updateResetButtonVisibility();
+    this._syncFieldIndicators();
   }
 
-  _rgbToHex(rgbStr) {
-    if (!rgbStr || rgbStr === 'transparent' || rgbStr === 'rgba(0, 0, 0, 0)') {
+  _rgbToHex(colorStr) {
+    if (!colorStr || colorStr === 'transparent' || colorStr === 'rgba(0, 0, 0, 0)') {
       return '#000000';
     }
-    if (rgbStr.startsWith('#')) return rgbStr;
-
-    const match = rgbStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-    if (!match) return '#000000';
-
-    const r = parseInt(match[1], 10).toString(16).padStart(2, '0');
-    const g = parseInt(match[2], 10).toString(16).padStart(2, '0');
-    const b = parseInt(match[3], 10).toString(16).padStart(2, '0');
-
-    return `#${r}${g}${b}`.toUpperCase();
+    const str = String(colorStr).trim();
+    if (str.startsWith('#')) {
+      if (str.length === 4) {
+        return `#${str[1]}${str[1]}${str[2]}${str[2]}${str[3]}${str[3]}`.toUpperCase();
+      }
+      return str.toUpperCase();
+    }
+    const match = str.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+      const r = parseInt(match[1], 10).toString(16).padStart(2, '0');
+      const g = parseInt(match[2], 10).toString(16).padStart(2, '0');
+      const b = parseInt(match[3], 10).toString(16).padStart(2, '0');
+      return `#${r}${g}${b}`.toUpperCase();
+    }
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1;
+      canvas.height = 1;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = str;
+      ctx.fillRect(0, 0, 1, 1);
+      const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+      const toHex = (c) => c.toString(16).padStart(2, '0');
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+    } catch {
+      return '#FFFFFF';
+    }
   }
 
   _hexToRgb(hex) {

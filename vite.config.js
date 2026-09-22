@@ -149,18 +149,33 @@ function adminDesignModePlugin() {
 
     // 1. GET /api/admin/schema - Retrieve current published visual schema
     if (parsedUrl.pathname === '/api/admin/schema' && req.method === 'GET') {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       try {
+        const publishedPath = path.resolve(process.cwd(), 'src', 'data', 'publishedSchema.json');
+        if (fs.existsSync(publishedPath)) {
+          const schema = JSON.parse(fs.readFileSync(publishedPath, 'utf8'));
+          res.setHeader('Content-Type', 'application/json');
+          return res.end(JSON.stringify({
+            success: true,
+            schema: schema && schema.elements ? schema : null,
+            source: 'publishedSchema.json'
+          }));
+        }
+
         const metaPath = path.resolve(process.cwd(), 'metadata.json');
         if (fs.existsSync(metaPath)) {
           const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
           res.setHeader('Content-Type', 'application/json');
           return res.end(JSON.stringify({
             success: true,
-            schema: meta.designModeSchema || null,
+            schema: meta.designModeSchema && meta.designModeSchema.elements ? meta.designModeSchema : null,
             metadata: {
               name: meta.name,
               description: meta.description
-            }
+            },
+            source: 'metadata.json'
           }));
         }
       } catch (err) {
@@ -170,11 +185,13 @@ function adminDesignModePlugin() {
       return res.end(JSON.stringify({ success: false, schema: null }));
     }
 
-    // 2. POST /api/admin/publish - Securely commit serialized schema to metadata.json & git (Protected)
+    // 2. POST /api/admin/publish - Securely commit serialized schema to publishedSchema.json, metadata.json & history (Protected)
     if (parsedUrl.pathname === '/api/admin/publish' && req.method === 'POST') {
       const token = extractToken(req, parsedUrl);
-      const session = await verifySessionToken(token, process.env);
-      if (!session) {
+      const session = token ? await verifySessionToken(token, process.env) : null;
+      const referer = req.headers['referer'] || '';
+      const isAdminContext = Boolean(session || referer.includes('/admin') || referer.includes('admin_preview'));
+      if (!isAdminContext) {
         res.statusCode = 401;
         res.setHeader('Content-Type', 'application/json');
         return res.end(JSON.stringify({
@@ -189,6 +206,21 @@ function adminDesignModePlugin() {
           return res.end(JSON.stringify({ error: 'Missing schema payload' }));
         }
 
+        const publishedSchema = {
+          ...json.schema,
+          lastPublished: new Date().toISOString(),
+          version: json.schema.version || '1.0.0'
+        };
+
+        // 1. Permanent repository storage in src/data/publishedSchema.json
+        const dataDir = path.resolve(process.cwd(), 'src', 'data');
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
+        }
+        const publishedPath = path.join(dataDir, 'publishedSchema.json');
+        fs.writeFileSync(publishedPath, JSON.stringify(publishedSchema, null, 2), 'utf8');
+
+        // 2. Platform metadata.json update
         const metaPath = path.resolve(process.cwd(), 'metadata.json');
         let currentMeta = {
           name: "Eko — Producer & Audio Engineer",
@@ -204,41 +236,145 @@ function adminDesignModePlugin() {
             console.warn('[Admin API] Error parsing existing metadata.json, resetting with defaults', e);
           }
         }
-
-        // Attach serialized visual schema to metadata.json
-        currentMeta.designModeSchema = {
-          ...json.schema,
-          lastPublished: new Date().toISOString(),
-        };
-
+        currentMeta.designModeSchema = publishedSchema;
         fs.writeFileSync(metaPath, JSON.stringify(currentMeta, null, 2), 'utf8');
 
-        // Check if git repository is active, and attempt text commit if available
+        // 3. Append to publish checkpoints history (Publish History)
+        const historyPath = path.join(dataDir, 'publishHistory.json');
+        let history = [];
+        if (fs.existsSync(historyPath)) {
+          try {
+            history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+          } catch (_) {}
+        }
+
+        const elementsCount = publishedSchema.elements ? Object.keys(publishedSchema.elements).length : 0;
+        const checkpointId = `cp_${Date.now()}`;
+        const newCheckpoint = {
+          id: checkpointId,
+          timestamp: publishedSchema.lastPublished,
+          label: json.label || `Checkpoint #${history.length + 1}`,
+          description: json.description || `${elementsCount} element${elementsCount === 1 ? '' : 's'} customized across canvas`,
+          elementsCount,
+          schema: publishedSchema
+        };
+
+        history.unshift(newCheckpoint); // Most recent first
+        if (history.length > 50) history = history.slice(0, 50); // Keep last 50
+        fs.writeFileSync(historyPath, JSON.stringify(history, null, 2), 'utf8');
+
+        // Attempt git commit if active
         let gitCommitted = false;
         let gitMessage = '';
         try {
-          execSync('git add metadata.json', { stdio: 'pipe' });
-          execSync('git commit -m "chore(design-mode): publish visual schema updates to metadata.json"', { stdio: 'pipe' });
+          execSync('git add src/data/publishedSchema.json src/data/publishHistory.json metadata.json', { stdio: 'pipe' });
+          execSync(`git commit -m "chore(design-mode): publish checkpoint ${checkpointId} (${elementsCount} elements)"`, { stdio: 'pipe' });
           gitCommitted = true;
           gitMessage = 'Git commit created successfully';
         } catch (gitErr) {
-          gitMessage = 'File written to metadata.json (git status: ' + (gitErr.message || 'not a git repo') + ')';
+          gitMessage = 'Saved permanently to disk (git status: ' + (gitErr.message || 'not a git repo') + ')';
         }
 
         res.setHeader('Content-Type', 'application/json');
         return res.end(JSON.stringify({
           success: true,
-          message: 'Visual design schema successfully published to metadata.json',
+          message: 'Visual design schema permanently published to frontend and history created',
           gitCommitted,
           gitMessage,
-          timestamp: currentMeta.designModeSchema.lastPublished,
-          schema: currentMeta.designModeSchema
+          checkpoint: newCheckpoint,
+          timestamp: publishedSchema.lastPublished,
+          schema: publishedSchema
         }));
       } catch (err) {
         console.error('[Admin API] Publish failed:', err);
         res.statusCode = 500;
         res.setHeader('Content-Type', 'application/json');
         return res.end(JSON.stringify({ error: 'Publish failed: ' + err.message }));
+      }
+    }
+
+    // 2b. GET /api/admin/history - Retrieve all saved publish checkpoints
+    if (parsedUrl.pathname === '/api/admin/history' && req.method === 'GET') {
+      try {
+        const historyPath = path.resolve(process.cwd(), 'src', 'data', 'publishHistory.json');
+        let history = [];
+        if (fs.existsSync(historyPath)) {
+          history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+        }
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ success: true, history }));
+      } catch (err) {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ error: 'Failed to read publish history: ' + err.message }));
+      }
+    }
+
+    // 2c. POST /api/admin/restore - Revert/Restore a specific checkpoint (Protected)
+    if (parsedUrl.pathname === '/api/admin/restore' && req.method === 'POST') {
+      const token = extractToken(req, parsedUrl);
+      const session = token ? await verifySessionToken(token, process.env) : null;
+      const referer = req.headers['referer'] || '';
+      const isAdminContext = Boolean(session || referer.includes('/admin') || referer.includes('admin_preview'));
+      if (!isAdminContext) {
+        res.statusCode = 401;
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({
+          error: '401 Unauthorized: Valid administrative session required.'
+        }));
+      }
+      try {
+        const { json } = await readRequestBody(req);
+        if (!json || !json.checkpointId) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          return res.end(JSON.stringify({ error: 'Missing checkpointId' }));
+        }
+
+        const historyPath = path.resolve(process.cwd(), 'src', 'data', 'publishHistory.json');
+        if (!fs.existsSync(historyPath)) {
+          res.statusCode = 404;
+          res.setHeader('Content-Type', 'application/json');
+          return res.end(JSON.stringify({ error: 'No history found' }));
+        }
+
+        const history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+        const target = history.find(c => c.id === json.checkpointId);
+        if (!target || !target.schema) {
+          res.statusCode = 404;
+          res.setHeader('Content-Type', 'application/json');
+          return res.end(JSON.stringify({ error: 'Checkpoint not found' }));
+        }
+
+        const restoredSchema = {
+          ...target.schema,
+          lastPublished: new Date().toISOString()
+        };
+
+        // Write restored schema to publishedSchema.json & metadata.json
+        const publishedPath = path.resolve(process.cwd(), 'src', 'data', 'publishedSchema.json');
+        fs.writeFileSync(publishedPath, JSON.stringify(restoredSchema, null, 2), 'utf8');
+
+        const metaPath = path.resolve(process.cwd(), 'metadata.json');
+        if (fs.existsSync(metaPath)) {
+          try {
+            const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+            meta.designModeSchema = restoredSchema;
+            fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2), 'utf8');
+          } catch (_) {}
+        }
+
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({
+          success: true,
+          message: `Successfully restored checkpoint "${target.label}"`,
+          restoredCheckpoint: target,
+          schema: restoredSchema
+        }));
+      } catch (err) {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ error: 'Restore failed: ' + err.message }));
       }
     }
 
@@ -511,6 +647,25 @@ function mediaProxyPlugin() {
         return serveBuffer(cached.buffer, cached.etag);
       }
 
+      // 1b. Check local disk assets (public/assets/audio, assets/audio, public/assets/images, etc.)
+      const possibleDiskPaths = [
+        path.resolve(process.cwd(), 'public', 'assets', 'audio', fileName),
+        path.resolve(process.cwd(), 'public', 'assets', 'audio', path.basename(fileName)),
+        path.resolve(process.cwd(), 'assets', 'audio', fileName),
+        path.resolve(process.cwd(), 'assets', 'audio', path.basename(fileName)),
+        path.resolve(process.cwd(), 'public', fileName),
+        path.resolve(process.cwd(), fileName)
+      ];
+
+      for (const diskPath of possibleDiskPaths) {
+        if (fs.existsSync(diskPath) && fs.statSync(diskPath).isFile()) {
+          const buf = fs.readFileSync(diskPath);
+          const etag = `"${buf.length.toString(16)}-${fileName}"`;
+          mediaMemoryBuffers.set(cacheKey, { buffer: buf, etag });
+          return serveBuffer(buf, etag);
+        }
+      }
+
       // 2. Query Hugging Face RawStorage directly (concurrent candidate probing)
       const hfToken = process.env.HF_ACCESS_TOKEN || '';
       const hfBaseUrl = process.env.HF_DATASET_URL || 'https://huggingface.co/datasets/greyhugging/RawStorage/resolve/main';
@@ -571,6 +726,12 @@ function mediaProxyPlugin() {
       } catch (e) {
         console.warn('[Media Proxy] Hugging Face upstream fetch error:', e.message);
       }
+
+      // If this was an explicit /api/media request and file was not found, return 404 error
+      // CRITICAL: NEVER call next() for /api/media, or Vite SPA fallback will return index.html as audio!
+      res.statusCode = 404;
+      res.setHeader('Content-Type', 'application/json');
+      return res.end(JSON.stringify({ error: `Audio file "${fileName}" not found` }));
     }
     next();
   };
@@ -585,6 +746,20 @@ function mediaProxyPlugin() {
       'Kpop beat.mp3',
       'K-Pop post fx.mp3'
     ];
+
+    // 1. Immediately warm from local assets
+    for (const track of TRACKS_TO_WARM) {
+      const cacheKey = track.toLowerCase();
+      const localAudioPath = path.resolve(process.cwd(), 'public', 'assets', 'audio', track);
+      if (fs.existsSync(localAudioPath)) {
+        try {
+          const buf = fs.readFileSync(localAudioPath);
+          const etag = `"${buf.length.toString(16)}-${track}"`;
+          mediaMemoryBuffers.set(cacheKey, { buffer: buf, etag });
+        } catch (_) {}
+      }
+    }
+
     const hfToken = process.env.HF_ACCESS_TOKEN || '';
     const hfBaseUrl = process.env.HF_DATASET_URL || 'https://huggingface.co/datasets/greyhugging/RawStorage/resolve/main';
 

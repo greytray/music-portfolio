@@ -238,23 +238,40 @@ export class SelectionEngine {
       }
     }
 
-    // Structural parent hierarchy
+    // Structural parent hierarchy with precise nth-of-type indexing
     const path = [];
     let current = el;
     while (current && current.nodeType === Node.ELEMENT_NODE && current !== this.doc.body) {
-      let selector = current.tagName.toLowerCase();
+      const tag = current.tagName.toLowerCase();
+      let selector = tag;
+
       if (current.id) {
         selector = `#${current.id}`;
         path.unshift(selector);
         break;
       } else {
+        let sameTagCount = 0;
+        if (current.parentElement) {
+          sameTagCount = Array.from(current.parentElement.children).filter(c => c.tagName.toLowerCase() === tag).length;
+        }
+
         let sibling = current;
         let nth = 1;
         while ((sibling = sibling.previousElementSibling)) {
-          if (sibling.tagName.toLowerCase() === selector) nth++;
+          if (sibling.tagName.toLowerCase() === tag) nth++;
         }
-        if (nth > 1) {
-          selector += `:nth-of-type(${nth})`;
+
+        // Add class modifier if available
+        let classModifier = '';
+        if (current.classList && current.classList.length > 0) {
+          const cls = Array.from(current.classList).find(c => !c.startsWith('is-') && !c.startsWith('eko-'));
+          if (cls) classModifier = `.${cls}`;
+        }
+
+        if (sameTagCount > 1) {
+          selector += `${classModifier}:nth-of-type(${nth})`;
+        } else {
+          selector += classModifier;
         }
       }
       path.unshift(selector);
@@ -277,13 +294,16 @@ export class SelectionEngine {
       return isNaN(n) ? 0 : Math.round(n);
     };
 
-    // Extract text content
+    // Extract direct text content (excluding nested child elements like <small>)
     let textContent = '';
-    if (el.children.length === 0) {
-      textContent = el.textContent || '';
+    const textNodes = Array.from(el.childNodes).filter(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
+    if (textNodes.length > 0) {
+      textContent = textNodes.map(n => n.textContent).join(' ').trim();
+    } else if (el.children.length === 0) {
+      textContent = (el.textContent || '').trim();
     } else {
-      // Direct text or child text
-      textContent = el.innerText || el.textContent || '';
+      // Fallback for elements with only nested text
+      textContent = (el.innerText || el.textContent || '').trim();
     }
 
     // Media properties

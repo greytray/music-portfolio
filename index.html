@@ -2012,8 +2012,9 @@ function selectTrack(track, shouldPlay = true) {
       ? window.__getInstantMediaUrl(rawSrc)
       : rawSrc;
 
-    if (audio.src !== effectiveSrc) {
-      audio.src = effectiveSrc;
+    const resolvedTarget = effectiveSrc.startsWith('blob:') ? effectiveSrc : new URL(effectiveSrc, window.location.href).href;
+    if (audio.src !== resolvedTarget) {
+      audio.src = resolvedTarget;
     }
   }
   if (shouldPlay) {
@@ -2021,7 +2022,19 @@ function selectTrack(track, shouldPlay = true) {
       audio.pause();
     } else {
       ensureAudioGraph();
-      audio.play().catch(() => setPlayingState(false));
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('Playback error caught, attempting fallback play:', err);
+          if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume().then(() => {
+              audio.play().catch(() => setPlayingState(false));
+            }).catch(() => setPlayingState(false));
+          } else {
+            setPlayingState(false);
+          }
+        });
+      }
     }
   }
 }

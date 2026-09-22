@@ -85,6 +85,10 @@ export function fetchAndCacheBlob(pathOrUrl, highPriority = false) {
   const promise = fetch(standardUrl, fetchOptions)
     .then((res) => {
       if (!res.ok && res.status !== 206) throw new Error(`HTTP ${res.status}`);
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('text/html')) {
+        throw new Error(`Endpoint returned HTML instead of audio binary`);
+      }
       return res.blob();
     })
     .then((blob) => {

@@ -6,9 +6,10 @@
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ],
   "designModeSchema": {
-    "colors": {
-      "primary": "#c8ff00"
-    },
-    "lastPublished": "2026-09-21T08:59:36.583Z"
+    "version": "1.0.0",
+    "lastUpdated": "2026-09-21T08:59:36.583Z",
+    "elementsCount": 0,
+    "elements": {},
+    "lastPublished": "2026-09-22T14:32:57.052Z"
   }
 }
