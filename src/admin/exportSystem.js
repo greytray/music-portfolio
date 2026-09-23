@@ -409,22 +409,33 @@ export class ExportSystem {
         localHist = JSON.parse(cached);
       }
       if (!Array.isArray(localHist)) localHist = [];
-      
+
+      const currentPublishedCount = localHist.filter(c => c.id !== 'cp_v0' && !c.isV0).length;
       const newCp = data.checkpoint || {
         id: `cp_${Date.now()}`,
         timestamp: schema.lastPublished || new Date().toISOString(),
-        label: `Checkpoint #${localHist.length + 1}`,
+        label: `Checkpoint #${currentPublishedCount + 1}`,
         description: `${schema.elementsCount || Object.keys(schema.elements || {}).length} element(s) customized`,
         elementsCount: schema.elementsCount || Object.keys(schema.elements || {}).length,
         schema
       };
 
-      // Add to front
-      localHist = [newCp, ...localHist.filter(c => c.id !== newCp.id && c.id !== 'cp_v0')];
-      // Ensure v0 at the end
-      localHist.push(this.getV0Checkpoint());
+      if (Array.isArray(data.history) && data.history.length > 0) {
+        localHist = data.history;
+      } else {
+        // Prepend new checkpoint, excluding duplicates and v0
+        localHist = [newCp, ...localHist.filter(c => c.id !== newCp.id && c.id !== 'cp_v0' && !c.isV0)];
+      }
+
+      // Guarantee v0 at the end
+      if (!localHist.some(c => c.id === 'cp_v0' || c.isV0)) {
+        localHist.push(this.getV0Checkpoint());
+      }
+
       localStorage.setItem('eko_publish_history', JSON.stringify(localHist));
-    } catch (_) {}
+    } catch (e) {
+      console.warn('Failed to cache history locally:', e);
+    }
 
     return {
       success: true,
@@ -442,8 +453,21 @@ export class ExportSystem {
    */
   async getHistory() {
     const v0 = this.getV0Checkpoint();
-    let history = [];
+    let serverHistory = [];
+    let localHistory = [];
 
+    // 1. Read cached local history
+    try {
+      const cached = localStorage.getItem('eko_publish_history');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          localHistory = parsed;
+        }
+      }
+    } catch (_) {}
+
+    // 2. Fetch server history
     try {
       const res = await fetch(`/api/admin/history?t=${Date.now()}`, {
         cache: 'no-store',
@@ -451,38 +475,48 @@ export class ExportSystem {
       });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data.history) && data.history.length > 0) {
-          history = data.history;
+        if (Array.isArray(data.history)) {
+          serverHistory = data.history;
         }
       }
     } catch (err) {
       console.warn('Failed to fetch history from API:', err);
     }
 
-    // Fallback to local storage if API is empty or failed
-    if (!history || history.length === 0) {
-      try {
-        const cached = localStorage.getItem('eko_publish_history');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            history = parsed;
-          }
-        }
-      } catch (_) {}
-    }
+    // 3. Deduplicate and merge: Map by checkpoint ID
+    const checkpointsMap = new Map();
+    // Anchor v0 first
+    checkpointsMap.set('cp_v0', v0);
 
-    // Always guarantee v0 checkpoint is present as base checkpoint
-    const hasV0 = history.some(cp => cp.id === 'cp_v0' || cp.isV0);
-    if (!hasV0) {
-      history.push(v0);
-    }
+    // Add server checkpoints
+    serverHistory.forEach(cp => {
+      if (cp && cp.id && cp.id !== 'cp_v0' && !cp.isV0) {
+        checkpointsMap.set(cp.id, cp);
+      }
+    });
+
+    // Add local checkpoints (ensures newly published checkpoints are never dropped)
+    localHistory.forEach(cp => {
+      if (cp && cp.id && cp.id !== 'cp_v0' && !cp.isV0) {
+        if (!checkpointsMap.has(cp.id)) {
+          checkpointsMap.set(cp.id, cp);
+        }
+      }
+    });
+
+    // Sort non-v0 checkpoints by timestamp descending (newest first)
+    const published = Array.from(checkpointsMap.values())
+      .filter(cp => cp.id !== 'cp_v0' && !cp.isV0)
+      .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+
+    // Ensure v0 is always at the end
+    const mergedHistory = [...published, v0];
 
     try {
-      localStorage.setItem('eko_publish_history', JSON.stringify(history));
+      localStorage.setItem('eko_publish_history', JSON.stringify(mergedHistory));
     } catch (_) {}
 
-    return history;
+    return mergedHistory;
   }
 
   /**

@@ -429,33 +429,61 @@ function adminDesignModePlugin() {
         // Append to publish checkpoints history (Publish History)
         const dataDir = path.resolve(process.cwd(), 'src', 'data');
         const historyPath = path.join(dataDir, 'publishHistory.json');
+        const publicHistoryPath = path.resolve(process.cwd(), 'public', 'publishHistory.json');
         let history = [];
         if (fs.existsSync(historyPath)) {
           try {
             history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
           } catch (_) {}
+        } else if (fs.existsSync(publicHistoryPath)) {
+          try {
+            history = JSON.parse(fs.readFileSync(publicHistoryPath, 'utf8'));
+          } catch (_) {}
         }
 
         const elementsCount = publishedSchema.elements ? Object.keys(publishedSchema.elements).length : 0;
         const checkpointId = `cp_${Date.now()}`;
+        const publishedCount = history.filter(c => c.id !== 'cp_v0' && !c.isV0).length;
         const newCheckpoint = {
           id: checkpointId,
           timestamp: publishedSchema.lastPublished,
-          label: json.label || `Checkpoint #${history.length + 1}`,
+          label: json.label || `Checkpoint #${publishedCount + 1}`,
           description: json.description || `${elementsCount} element${elementsCount === 1 ? '' : 's'} customized across canvas`,
           elementsCount,
           schema: publishedSchema
         };
 
-        history.unshift(newCheckpoint); // Most recent first
+        // Prepend new checkpoint and ensure v0 is preserved at end
+        history = [
+          newCheckpoint,
+          ...history.filter(c => c.id !== checkpointId && c.id !== 'cp_v0' && !c.isV0)
+        ];
+        history.push({
+          id: 'cp_v0',
+          timestamp: '2026-09-23T00:00:00.000Z',
+          label: 'Checkpoint v0 (Default Baseline)',
+          description: 'Default pristine project baseline. Reverting here resets all visual modifications across all devices.',
+          elementsCount: 0,
+          schema: {
+            version: '1.0.0',
+            lastUpdated: '2026-09-23T00:00:00.000Z',
+            elementsCount: 0,
+            elements: {}
+          },
+          isV0: true
+        });
+
         if (history.length > 50) history = history.slice(0, 50); // Keep last 50
         fs.writeFileSync(historyPath, JSON.stringify(history, null, 2), 'utf8');
+        try {
+          fs.writeFileSync(publicHistoryPath, JSON.stringify(history, null, 2), 'utf8');
+        } catch (_) {}
 
         // Attempt git commit if active
         let gitCommitted = false;
         let gitMessage = '';
         try {
-          execSync('git add index.html src/data/publishedSchema.json public/publishedSchema.json src/data/publishHistory.json metadata.json public/metadata.json dist/', { stdio: 'pipe' });
+          execSync('git add index.html src/data/publishedSchema.json public/publishedSchema.json src/data/publishHistory.json public/publishHistory.json metadata.json public/metadata.json dist/', { stdio: 'pipe' });
           execSync(`git commit -m "chore(design-mode): publish checkpoint ${checkpointId} (${elementsCount} elements)"`, { stdio: 'pipe' });
           gitCommitted = true;
           gitMessage = 'Git commit and production build created successfully';
@@ -471,6 +499,7 @@ function adminDesignModePlugin() {
           gitMessage,
           buildSuccess: deployResult.buildSuccess,
           checkpoint: newCheckpoint,
+          history,
           timestamp: publishedSchema.lastPublished,
           schema: publishedSchema
         }));
@@ -486,10 +515,37 @@ function adminDesignModePlugin() {
     if (parsedUrl.pathname === '/api/admin/history' && req.method === 'GET') {
       try {
         const historyPath = path.resolve(process.cwd(), 'src', 'data', 'publishHistory.json');
+        const publicHistoryPath = path.resolve(process.cwd(), 'public', 'publishHistory.json');
         let history = [];
         if (fs.existsSync(historyPath)) {
-          history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+          try {
+            history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+          } catch (_) {}
+        } else if (fs.existsSync(publicHistoryPath)) {
+          try {
+            history = JSON.parse(fs.readFileSync(publicHistoryPath, 'utf8'));
+          } catch (_) {}
         }
+        if (!Array.isArray(history)) history = [];
+
+        // Always guarantee v0 baseline checkpoint at the end
+        if (!history.some(c => c.id === 'cp_v0' || c.isV0)) {
+          history.push({
+            id: 'cp_v0',
+            timestamp: '2026-09-23T00:00:00.000Z',
+            label: 'Checkpoint v0 (Default Baseline)',
+            description: 'Default pristine project baseline. Reverting here resets all visual modifications across all devices.',
+            elementsCount: 0,
+            schema: {
+              version: '1.0.0',
+              lastUpdated: '2026-09-23T00:00:00.000Z',
+              elementsCount: 0,
+              elements: {}
+            },
+            isV0: true
+          });
+        }
+
         res.setHeader('Content-Type', 'application/json');
         return res.end(JSON.stringify({ success: true, history }));
       } catch (err) {

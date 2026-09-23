@@ -51,29 +51,80 @@ export async function onRequest(context) {
       let kvSaved = false;
       let hfSaved = false;
 
+      const elementsCount = publishedSchema.elements ? Object.keys(publishedSchema.elements).length : 0;
+      const checkpointId = `cp_${Date.now()}`;
+
+      // Retrieve existing history from KV or fallback
+      let history = [];
+      if (env && env.EKO_KV) {
+        try {
+          const stored = await env.EKO_KV.get('designModePublishHistory', { type: 'json' });
+          if (Array.isArray(stored)) {
+            history = stored;
+          }
+        } catch (_) {}
+      }
+
+      const publishedCount = history.filter(c => c.id !== 'cp_v0' && !c.isV0).length;
+      const newCheckpoint = {
+        id: checkpointId,
+        timestamp: publishedSchema.lastPublished,
+        label: body.label || `Checkpoint #${publishedCount + 1}`,
+        description: body.description || `${elementsCount} element${elementsCount === 1 ? '' : 's'} customized across canvas`,
+        elementsCount,
+        schema: publishedSchema
+      };
+
+      // Add to front of history list and ensure v0 is preserved at end
+      history = [
+        newCheckpoint,
+        ...history.filter(c => c.id !== checkpointId && c.id !== 'cp_v0' && !c.isV0)
+      ];
+      history.push({
+        id: 'cp_v0',
+        timestamp: '2026-09-23T00:00:00.000Z',
+        label: 'Checkpoint v0 (Default Baseline)',
+        description: 'Default pristine project baseline. Reverting here resets all visual modifications across all devices.',
+        elementsCount: 0,
+        schema: {
+          version: '1.0.0',
+          lastUpdated: '2026-09-23T00:00:00.000Z',
+          elementsCount: 0,
+          elements: {}
+        },
+        isV0: true
+      });
+
       // 1. Save to Cloudflare KV if bound
       if (env && env.EKO_KV) {
         try {
           await env.EKO_KV.put('designModeSchema', JSON.stringify(publishedSchema));
+          await env.EKO_KV.put('designModePublishHistory', JSON.stringify(history));
           kvSaved = true;
         } catch (e) {
           console.warn('[Cloudflare Publish] KV save error:', e.message);
         }
       }
 
-      // 2. Commit schema to Hugging Face RawStorage dataset if token available
+      // 2. Commit schema & history to Hugging Face RawStorage dataset if token available
       const hfToken = (env && env.HF_ACCESS_TOKEN) || '';
       if (hfToken) {
         try {
           const hfCommitUrl = 'https://huggingface.co/api/datasets/greyhugging/RawStorage/commit/main';
           const commitPayload = {
-            summary: `Publish design schema updates [${new Date().toISOString()}]`,
+            summary: `Publish design schema checkpoint ${checkpointId} [${publishedSchema.lastPublished}]`,
             operations: [
               {
                 key: 'file',
                 value: btoa(unescape(encodeURIComponent(JSON.stringify(publishedSchema, null, 2)))),
                 encoding: 'base64',
                 path: 'schema.json'
+              },
+              {
+                key: 'file',
+                value: btoa(unescape(encodeURIComponent(JSON.stringify(history, null, 2)))),
+                encoding: 'base64',
+                path: 'publishHistory.json'
               }
             ]
           };
@@ -101,6 +152,8 @@ export async function onRequest(context) {
         timestamp: publishedSchema.lastPublished,
         kvSaved,
         hfSaved,
+        checkpoint: newCheckpoint,
+        history,
         schema: publishedSchema
       }), {
         status: 200,

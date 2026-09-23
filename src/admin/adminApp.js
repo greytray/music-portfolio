@@ -491,9 +491,15 @@ export class AdminApp {
     const updateHistoryCount = async () => {
       try {
         const history = await this.exportSystem.getHistory();
-        if (history && history.length > 0 && historyCountBadge) {
-          historyCountBadge.textContent = history.length;
-          historyCountBadge.style.display = 'inline-flex';
+        const published = (history || []).filter(cp => cp.id !== 'cp_v0' && !cp.isV0);
+        if (historyCountBadge) {
+          if (published.length > 0) {
+            historyCountBadge.textContent = published.length;
+            historyCountBadge.style.display = 'inline-flex';
+          } else {
+            historyCountBadge.textContent = '0';
+            historyCountBadge.style.display = 'none';
+          }
         }
       } catch (_) {}
     };
@@ -508,15 +514,21 @@ export class AdminApp {
         return;
       }
 
+      const publishedCheckpoints = history.filter(cp => cp.id !== 'cp_v0' && !cp.isV0);
       if (historyCountBadge) {
-        historyCountBadge.textContent = history.length;
-        historyCountBadge.style.display = 'inline-flex';
+        if (publishedCheckpoints.length > 0) {
+          historyCountBadge.textContent = publishedCheckpoints.length;
+          historyCountBadge.style.display = 'inline-flex';
+        } else {
+          historyCountBadge.textContent = '0';
+          historyCountBadge.style.display = 'none';
+        }
       }
 
       const activeSerialized = JSON.stringify(this.exportSystem.serializeSchema());
 
       historyListContainer.innerHTML = history.map((cp, idx) => {
-        const isLatest = idx === 0 && cp.id !== 'cp_v0';
+        const isLatest = idx === 0 && cp.id !== 'cp_v0' && !cp.isV0;
         const isV0 = cp.id === 'cp_v0' || cp.isV0;
         const cpSerialized = cp.schema ? JSON.stringify(cp.schema) : '';
         const isCurrentActive = cpSerialized && (cpSerialized === activeSerialized);
@@ -527,7 +539,7 @@ export class AdminApp {
           <div class="history-item-card ${isCurrentActive ? 'is-active-checkpoint' : ''} ${isV0 ? 'is-v0-checkpoint' : ''}" data-cp-id="${cp.id}">
             <div class="history-item-left">
               <div class="history-item-top">
-                <span class="history-item-label">${cp.label || `Checkpoint #${history.length - idx}`}</span>
+                <span class="history-item-label">${cp.label || (isV0 ? 'Checkpoint v0 (Default Baseline)' : `Checkpoint #${publishedCheckpoints.length - idx}`)}</span>
                 ${isV0 ? '<span class="history-item-badge is-v0" style="background: rgba(16, 185, 129, 0.16); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35);">Default v0</span>' : ''}
                 ${isLatest ? '<span class="history-item-badge is-live">Latest</span>' : ''}
                 ${isCurrentActive ? '<span class="history-item-badge is-live">Active on Canvas</span>' : ''}
