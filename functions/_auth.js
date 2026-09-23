@@ -5,10 +5,6 @@
 export const COOKIE_NAME = 'eko_session';
 export const SESSION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-// Precomputed one-way cryptographic SHA-256 hash of master administrative passphrase
-// No plaintext passwords exist in source code or client bundles
-const MASTER_PASSWORD_HASH = 'f6ba10241700add97b8780d8f3b32027ac851e5990f51c14772b7892da01420c';
-
 function strToUint8(str) {
   return new TextEncoder().encode(str);
 }
@@ -71,9 +67,9 @@ export function timingSafeEqual(a, b) {
 }
 
 /**
- * Inspect-proof password validator: verifies input against Cloudflare Pages environment variables,
- * local environment variables, or SHA-256 master hash fallback.
- * NEVER stores or compares against raw plaintext strings in source code.
+ * Inspect-proof password validator: verifies input ONLY against the dynamic Cloudflare Pages
+ * environment variable (ADMIN_PASSWORD or ADMIN_PASSWORD_HASH).
+ * NEVER stores, caches, or falls back to any static/hardcoded passwords.
  */
 export async function verifyAdminPassword(inputPassword, env) {
   if (!inputPassword || typeof inputPassword !== 'string') return false;
@@ -83,17 +79,25 @@ export async function verifyAdminPassword(inputPassword, env) {
   // Resolve environment from Cloudflare context.env or Node process.env
   const targetEnv = env || (typeof process !== 'undefined' ? process.env : {}) || {};
 
-  // 1. If explicit environment variable ADMIN_PASSWORD is set in Cloudflare or local env
-  if (targetEnv.ADMIN_PASSWORD) {
-    const rawEnvPassword = String(targetEnv.ADMIN_PASSWORD).replace(/\r/g, '').trim();
-    const unquotedEnvPassword = rawEnvPassword.replace(/^["']|["']$/g, '').trim();
+  const configuredPass = targetEnv.ADMIN_PASSWORD ? String(targetEnv.ADMIN_PASSWORD).replace(/\r/g, '').trim() : '';
+  const configuredHash = targetEnv.ADMIN_PASSWORD_HASH ? String(targetEnv.ADMIN_PASSWORD_HASH).replace(/\r/g, '').trim().replace(/^["']|["']$/g, '').toLowerCase() : '';
+
+  // If no dynamic password has been provisioned in Cloudflare environment, fail closed immediately
+  if (!configuredPass && !configuredHash) {
+    console.warn('[Auth] No ADMIN_PASSWORD or ADMIN_PASSWORD_HASH configured in Cloudflare environment.');
+    return false;
+  }
+
+  // 1. Verify against dynamic Cloudflare ADMIN_PASSWORD
+  if (configuredPass) {
+    const unquotedEnvPassword = configuredPass.replace(/^["']|["']$/g, '').trim();
 
     // 1a. Plaintext match against trimmed or unquoted secret
-    if (timingSafeEqual(trimmed, unquotedEnvPassword) || timingSafeEqual(trimmed, rawEnvPassword) || timingSafeEqual(inputPassword, rawEnvPassword)) {
+    if (timingSafeEqual(trimmed, unquotedEnvPassword) || timingSafeEqual(trimmed, configuredPass) || timingSafeEqual(inputPassword, configuredPass)) {
       return true;
     }
 
-    // 1b. If the user pasted a 64-char SHA-256 hex hash into Cloudflare's ADMIN_PASSWORD
+    // 1b. If the secret entered in Cloudflare is a 64-char SHA-256 hex hash
     if (unquotedEnvPassword.length === 64 && /^[0-9a-fA-F]{64}$/.test(unquotedEnvPassword)) {
       const inputHash = await sha256Hex(trimmed);
       if (timingSafeEqual(inputHash, unquotedEnvPassword.toLowerCase())) {
@@ -102,18 +106,16 @@ export async function verifyAdminPassword(inputPassword, env) {
     }
   }
 
-  // 2. If explicit environment variable ADMIN_PASSWORD_HASH is set in Cloudflare or local env
-  if (targetEnv.ADMIN_PASSWORD_HASH) {
-    const rawHash = String(targetEnv.ADMIN_PASSWORD_HASH).replace(/\r/g, '').trim().replace(/^["']|["']$/g, '').toLowerCase();
+  // 2. Verify against dynamic Cloudflare ADMIN_PASSWORD_HASH
+  if (configuredHash) {
     const inputHash = await sha256Hex(trimmed);
-    if (rawHash && timingSafeEqual(inputHash, rawHash)) {
+    if (timingSafeEqual(inputHash, configuredHash)) {
       return true;
     }
   }
 
-  // 3. Fallback: Cryptographic hash comparison against master hash (constant-time, one-way hash)
-  const inputHash = await sha256Hex(trimmed);
-  return timingSafeEqual(inputHash, MASTER_PASSWORD_HASH);
+  // Strictly dynamic: Never falls back to any static password or cached hash
+  return false;
 }
 
 async function getHmacKey(secret) {
@@ -130,7 +132,8 @@ async function getHmacKey(secret) {
 export function getSecret(env) {
   const targetEnv = env || (typeof process !== 'undefined' ? process.env : {}) || {};
   const cleanPass = targetEnv.ADMIN_PASSWORD ? String(targetEnv.ADMIN_PASSWORD).replace(/\r/g, '').replace(/^["']|["']$/g, '').trim() : '';
-  return targetEnv.SESSION_SECRET || cleanPass || targetEnv.ADMIN_PASSWORD_HASH || 'eko-master-auth-secret-key-9812739182';
+  const cleanHash = targetEnv.ADMIN_PASSWORD_HASH ? String(targetEnv.ADMIN_PASSWORD_HASH).replace(/\r/g, '').replace(/^["']|["']$/g, '').trim() : '';
+  return targetEnv.SESSION_SECRET || cleanPass || cleanHash || 'eko-dynamic-session-salt';
 }
 
 /**
