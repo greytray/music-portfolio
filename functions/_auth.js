@@ -71,28 +71,47 @@ export function timingSafeEqual(a, b) {
 }
 
 /**
- * Inspect-proof password validator: verifies input against environment variable or SHA-256 master hash
- * NEVER stores or compares against raw plaintext strings in source code
+ * Inspect-proof password validator: verifies input against Cloudflare Pages environment variables,
+ * local environment variables, or SHA-256 master hash fallback.
+ * NEVER stores or compares against raw plaintext strings in source code.
  */
 export async function verifyAdminPassword(inputPassword, env) {
   if (!inputPassword || typeof inputPassword !== 'string') return false;
   const trimmed = inputPassword.trim();
   if (!trimmed) return false;
 
-  // 1. If explicit environment variable ADMIN_PASSWORD is set by user, check against that
-  if (env && env.ADMIN_PASSWORD) {
-    const envPassword = String(env.ADMIN_PASSWORD).trim();
-    if (envPassword && timingSafeEqual(trimmed, envPassword)) return true;
+  // Resolve environment from Cloudflare context.env or Node process.env
+  const targetEnv = env || (typeof process !== 'undefined' ? process.env : {}) || {};
+
+  // 1. If explicit environment variable ADMIN_PASSWORD is set in Cloudflare or local env
+  if (targetEnv.ADMIN_PASSWORD) {
+    const rawEnvPassword = String(targetEnv.ADMIN_PASSWORD).replace(/\r/g, '').trim();
+    const unquotedEnvPassword = rawEnvPassword.replace(/^["']|["']$/g, '').trim();
+
+    // 1a. Plaintext match against trimmed or unquoted secret
+    if (timingSafeEqual(trimmed, unquotedEnvPassword) || timingSafeEqual(trimmed, rawEnvPassword) || timingSafeEqual(inputPassword, rawEnvPassword)) {
+      return true;
+    }
+
+    // 1b. If the user pasted a 64-char SHA-256 hex hash into Cloudflare's ADMIN_PASSWORD
+    if (unquotedEnvPassword.length === 64 && /^[0-9a-fA-F]{64}$/.test(unquotedEnvPassword)) {
+      const inputHash = await sha256Hex(trimmed);
+      if (timingSafeEqual(inputHash, unquotedEnvPassword.toLowerCase())) {
+        return true;
+      }
+    }
   }
 
-  // 2. If explicit environment variable ADMIN_PASSWORD_HASH is set, check against that
-  if (env && env.ADMIN_PASSWORD_HASH) {
-    const envHash = String(env.ADMIN_PASSWORD_HASH).trim().toLowerCase();
+  // 2. If explicit environment variable ADMIN_PASSWORD_HASH is set in Cloudflare or local env
+  if (targetEnv.ADMIN_PASSWORD_HASH) {
+    const rawHash = String(targetEnv.ADMIN_PASSWORD_HASH).replace(/\r/g, '').trim().replace(/^["']|["']$/g, '').toLowerCase();
     const inputHash = await sha256Hex(trimmed);
-    if (envHash && timingSafeEqual(inputHash, envHash)) return true;
+    if (rawHash && timingSafeEqual(inputHash, rawHash)) {
+      return true;
+    }
   }
 
-  // 3. Cryptographic hash comparison against master hash (constant-time, one-way hash)
+  // 3. Fallback: Cryptographic hash comparison against master hash (constant-time, one-way hash)
   const inputHash = await sha256Hex(trimmed);
   return timingSafeEqual(inputHash, MASTER_PASSWORD_HASH);
 }
@@ -109,7 +128,9 @@ async function getHmacKey(secret) {
 }
 
 export function getSecret(env) {
-  return (env && (env.SESSION_SECRET || env.ADMIN_PASSWORD || env.ADMIN_PASSWORD_HASH)) || 'eko-master-auth-secret-key-9812739182';
+  const targetEnv = env || (typeof process !== 'undefined' ? process.env : {}) || {};
+  const cleanPass = targetEnv.ADMIN_PASSWORD ? String(targetEnv.ADMIN_PASSWORD).replace(/\r/g, '').replace(/^["']|["']$/g, '').trim() : '';
+  return targetEnv.SESSION_SECRET || cleanPass || targetEnv.ADMIN_PASSWORD_HASH || 'eko-master-auth-secret-key-9812739182';
 }
 
 /**

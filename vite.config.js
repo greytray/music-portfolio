@@ -12,6 +12,25 @@ import {
 } from "./functions/_auth.js";
 import { FAKE_CHROME_ERROR_HTML } from "./functions/_fakeErrorHtml.js";
 
+// Automatically parse and load .env file into process.env if present
+const localEnvPath = path.resolve(process.cwd(), '.env');
+if (fs.existsSync(localEnvPath)) {
+  try {
+    const envRaw = fs.readFileSync(localEnvPath, 'utf8');
+    envRaw.split('\n').forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+        const [k, ...vParts] = trimmed.split('=');
+        const key = k.trim();
+        const val = vParts.join('=').trim().replace(/^["']|["']$/g, '');
+        if (key && !process.env[key]) {
+          process.env[key] = val;
+        }
+      }
+    });
+  } catch (_) {}
+}
+
 function copyAssetsPlugin() {
   return {
     name: "copy-assets",
@@ -656,25 +675,9 @@ function adminDesignModePlugin() {
 
     // 4. Fallback for /admin route - Admin Guard Middleware (Session check)
     if (parsedUrl.pathname === '/admin' || parsedUrl.pathname === '/admin/' || parsedUrl.pathname === '/admin.html') {
-      // 1. Detect hard refresh: Cache-Control or Pragma header contains 'no-cache'
-      const cacheControl = String(req.headers['cache-control'] || '').toLowerCase();
-      const pragma = String(req.headers['pragma'] || '').toLowerCase();
-      const isHardRefresh = cacheControl.includes('no-cache') || pragma.includes('no-cache');
-
-      if (isHardRefresh) {
-        // Hard refresh: invalidate authorization and return fake error screen
-        res.statusCode = 200;
-        res.setHeader('Set-Cookie', buildClearCookie());
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-        return res.end(FAKE_CHROME_ERROR_HTML);
-      }
-
-      // 2. Validate session token from query parameters (?auth=... or ?token=...)
-      // On new arrivals (/admin), query token is absent, requiring authentication each time.
-      // On soft refreshes, the browser reloads the current URL retaining ?auth=<token>.
-      const queryToken = (parsedUrl.searchParams.get('auth') || parsedUrl.searchParams.get('token') || '').trim();
-      const session = queryToken ? await verifySessionToken(queryToken, process.env) : null;
+      // Validate session token from query parameters (?auth=... or ?token=...), cookies, or headers
+      const token = extractToken(req, parsedUrl);
+      const session = token ? await verifySessionToken(token, process.env) : null;
 
       if (session) {
         // Authenticated: Serve real visual editor codebase with full Vite module transformation
