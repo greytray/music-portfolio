@@ -118,6 +118,9 @@ export class SelectionEngine {
   init() {
     if (!this.doc) return;
 
+    // Inject isolated overlay CSS directly into iframe document head
+    this._injectOverlayStyles();
+
     // Remove any existing overlay roots
     const existing = this.doc.getElementById('eko-designer-overlays');
     if (existing) existing.remove();
@@ -158,6 +161,122 @@ export class SelectionEngine {
     this.doc.addEventListener('click', this._boundOnClick, true);
     this.win.addEventListener('scroll', this._boundOnScroll, { passive: true });
     this.win.addEventListener('resize', this._boundOnResize, { passive: true });
+  }
+
+  _injectOverlayStyles() {
+    if (!this.doc || !this.doc.head) return;
+    let styleTag = this.doc.getElementById('eko-overlay-styles');
+    if (!styleTag) {
+      styleTag = this.doc.createElement('style');
+      styleTag.id = 'eko-overlay-styles';
+      styleTag.textContent = `
+        .eko-designer-overlay-root {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          pointer-events: none !important;
+          z-index: 99999999 !important;
+          overflow: hidden !important;
+          overscroll-behavior: contain !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+        }
+
+        .eko-hover-box {
+          position: absolute !important;
+          border: 1.5px dashed #00e5ff !important;
+          background: rgba(0, 229, 255, 0.06) !important;
+          pointer-events: none !important;
+          transition: all 0.06s ease-out !important;
+          border-radius: 2px !important;
+          box-sizing: border-box !important;
+          z-index: 99999999 !important;
+        }
+
+        .eko-hover-badge {
+          position: absolute !important;
+          top: -24px;
+          left: 0;
+          background: #ffffff !important;
+          color: #0b0f19 !important;
+          font-family: -apple-system, BlinkMacSystemFont, "SF Mono", Monaco, "Work Sans", "DM Sans", sans-serif !important;
+          font-size: 10px !important;
+          font-weight: 700 !important;
+          padding: 2px 7px !important;
+          border-radius: 3px !important;
+          white-space: nowrap !important;
+          border: 1px solid rgba(0, 229, 255, 0.7) !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 0 8px rgba(0, 229, 255, 0.25) !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 4px !important;
+          z-index: 100000000 !important;
+          pointer-events: none !important;
+        }
+
+        .eko-selected-box {
+          position: absolute !important;
+          border: 2px solid #007fff !important;
+          background: rgba(0, 127, 255, 0.08) !important;
+          pointer-events: none !important;
+          border-radius: 2px !important;
+          box-sizing: border-box !important;
+          box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 16px rgba(0, 127, 255, 0.3) !important;
+          z-index: 99999999 !important;
+        }
+
+        .eko-selected-badge {
+          position: absolute !important;
+          top: -26px;
+          left: 0;
+          background: #ffffff !important;
+          color: #090c15 !important;
+          font-family: -apple-system, BlinkMacSystemFont, "SF Mono", Monaco, "Work Sans", "DM Sans", sans-serif !important;
+          font-size: 11px !important;
+          font-weight: 700 !important;
+          padding: 3px 8px !important;
+          border-radius: 4px !important;
+          white-space: nowrap !important;
+          border: 1.5px solid #007fff !important;
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3), 0 0 10px rgba(0, 127, 255, 0.25) !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 6px !important;
+          z-index: 100000000 !important;
+          pointer-events: none !important;
+        }
+
+        .eko-selected-badge .dimensions {
+          background: #f1f5f9 !important;
+          color: #0066cc !important;
+          font-weight: 600 !important;
+          font-size: 10px !important;
+          padding: 1px 5px !important;
+          border-radius: 2px !important;
+          border: 1px solid #e2e8f0 !important;
+        }
+
+        .eko-handle {
+          position: absolute !important;
+          width: 7px !important;
+          height: 7px !important;
+          background: #ffffff !important;
+          border: 1.5px solid #007fff !important;
+          border-radius: 1px !important;
+          pointer-events: none !important;
+        }
+        .eko-handle.tl { top: -4px !important; left: -4px !important; }
+        .eko-handle.tr { top: -4px !important; right: -4px !important; }
+        .eko-handle.bl { bottom: -4px !important; left: -4px !important; }
+        .eko-handle.br { bottom: -4px !important; right: -4px !important; }
+      `;
+      this.doc.head.appendChild(styleTag);
+    }
   }
 
   setMode(newMode) {
@@ -436,6 +555,8 @@ export class SelectionEngine {
     if (this.doc) {
       this.doc.removeEventListener('mousemove', this._boundOnMouseMove);
       this.doc.removeEventListener('click', this._boundOnClick, true);
+      const styleTag = this.doc.getElementById('eko-overlay-styles');
+      if (styleTag) styleTag.remove();
     }
     if (this.win) {
       this.win.removeEventListener('scroll', this._boundOnScroll);
