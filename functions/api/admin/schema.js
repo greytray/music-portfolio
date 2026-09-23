@@ -20,7 +20,7 @@ export async function onRequest(context) {
       // 1. Try reading from Cloudflare KV if configured
       if (env && env.EKO_KV) {
         const stored = await env.EKO_KV.get('designModeSchema', { type: 'json' });
-        if (stored) {
+        if (stored && stored.elements && Object.keys(stored.elements).length > 0) {
           return new Response(JSON.stringify({ success: true, schema: stored }), {
             status: 200,
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
@@ -37,13 +37,45 @@ export async function onRequest(context) {
           });
           if (hfRes.ok) {
             const hfSchema = await hfRes.json();
-            return new Response(JSON.stringify({ success: true, schema: hfSchema }), {
+            if (hfSchema && hfSchema.elements && Object.keys(hfSchema.elements).length > 0) {
+              return new Response(JSON.stringify({ success: true, schema: hfSchema }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              });
+            }
+          }
+        } catch (_) {}
+      }
+
+      // 3. Try fetching static publishedSchema.json from origin asset
+      try {
+        const originUrl = new URL('/src/data/publishedSchema.json', request.url);
+        const staticRes = await fetch(originUrl.toString());
+        if (staticRes.ok) {
+          const staticSchema = await staticRes.json();
+          if (staticSchema && staticSchema.elements && Object.keys(staticSchema.elements).length > 0) {
+            return new Response(JSON.stringify({ success: true, schema: staticSchema }), {
               status: 200,
               headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
             });
           }
-        } catch (_) {}
-      }
+        }
+      } catch (_) {}
+
+      // 4. Try fetching static metadata.json from origin asset
+      try {
+        const metaUrl = new URL('/metadata.json', request.url);
+        const metaRes = await fetch(metaUrl.toString());
+        if (metaRes.ok) {
+          const metaData = await metaRes.json();
+          if (metaData && metaData.designModeSchema && metaData.designModeSchema.elements) {
+            return new Response(JSON.stringify({ success: true, schema: metaData.designModeSchema }), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          }
+        }
+      } catch (_) {}
 
       // 3. Fallback default schema
       return new Response(JSON.stringify({

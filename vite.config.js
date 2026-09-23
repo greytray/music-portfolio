@@ -239,6 +239,50 @@ function adminDesignModePlugin() {
         currentMeta.designModeSchema = publishedSchema;
         fs.writeFileSync(metaPath, JSON.stringify(currentMeta, null, 2), 'utf8');
 
+        // 2b. Directly patch published text changes into internal source files (index.html)
+        const indexHtmlPath = path.resolve(process.cwd(), 'index.html');
+        if (fs.existsSync(indexHtmlPath) && publishedSchema.elements) {
+          try {
+            let htmlContent = fs.readFileSync(indexHtmlPath, 'utf8');
+            let htmlModified = false;
+
+            Object.entries(publishedSchema.elements).forEach(([selectorKey, item]) => {
+              if (item && typeof item.text === 'string' && item.text.trim() !== '') {
+                const selector = item.selector || selectorKey;
+                const newText = item.text.trim();
+
+                // 1) Match by class name if selector is .className or contains .className
+                const classMatches = selector.match(/\.([a-zA-Z0-9_-]+)/g);
+                if (classMatches && classMatches.length > 0) {
+                  const targetClass = classMatches[classMatches.length - 1].replace('.', '');
+                  const tagRegex = new RegExp(`(<[^>]*class=["'][^"']*\\b${targetClass}\\b[^"']*["'][^>]*>)(.*?)(<\\/[a-zA-Z0-9]+>)`, 'gs');
+                  if (tagRegex.test(htmlContent)) {
+                    htmlContent = htmlContent.replace(tagRegex, `$1${newText}$3`);
+                    htmlModified = true;
+                  }
+                }
+
+                // 2) Match by ID if selector is #id or contains #id
+                const idMatches = selector.match(/#([a-zA-Z0-9_-]+)/g);
+                if (idMatches && idMatches.length > 0) {
+                  const targetId = idMatches[idMatches.length - 1].replace('#', '');
+                  const idRegex = new RegExp(`(<[^>]*id=["']${targetId}["'][^>]*>)(.*?)(<\\/[a-zA-Z0-9]+>)`, 'gs');
+                  if (idRegex.test(htmlContent)) {
+                    htmlContent = htmlContent.replace(idRegex, `$1${newText}$3`);
+                    htmlModified = true;
+                  }
+                }
+              }
+            });
+
+            if (htmlModified) {
+              fs.writeFileSync(indexHtmlPath, htmlContent, 'utf8');
+            }
+          } catch (htmlErr) {
+            console.warn('[Admin API] Source code html patching notice:', htmlErr.message);
+          }
+        }
+
         // 3. Append to publish checkpoints history (Publish History)
         const historyPath = path.join(dataDir, 'publishHistory.json');
         let history = [];
@@ -267,7 +311,7 @@ function adminDesignModePlugin() {
         let gitCommitted = false;
         let gitMessage = '';
         try {
-          execSync('git add src/data/publishedSchema.json src/data/publishHistory.json metadata.json', { stdio: 'pipe' });
+          execSync('git add index.html src/data/publishedSchema.json src/data/publishHistory.json metadata.json', { stdio: 'pipe' });
           execSync(`git commit -m "chore(design-mode): publish checkpoint ${checkpointId} (${elementsCount} elements)"`, { stdio: 'pipe' });
           gitCommitted = true;
           gitMessage = 'Git commit created successfully';

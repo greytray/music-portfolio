@@ -177,7 +177,7 @@ export async function initPublishedDesignSchema(doc = document) {
       const data = await res.json();
       if (data && data.schema) {
         const count = countElements(data.schema);
-        if (count > 0 || !hasApplied) {
+        if (count > 0) {
           applyDesignSchema(data.schema, doc);
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data.schema));
@@ -197,7 +197,7 @@ export async function initPublishedDesignSchema(doc = document) {
       const fileSchema = await fileRes.json();
       if (fileSchema) {
         const count = countElements(fileSchema);
-        if (count > 0 || !hasApplied) {
+        if (count > 0) {
           applyDesignSchema(fileSchema, doc);
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(fileSchema));
@@ -215,7 +215,7 @@ export async function initPublishedDesignSchema(doc = document) {
       const meta = await metaRes.json();
       if (meta && meta.designModeSchema) {
         const count = countElements(meta.designModeSchema);
-        if (count > 0 || !hasApplied) {
+        if (count > 0) {
           applyDesignSchema(meta.designModeSchema, doc);
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(meta.designModeSchema));
