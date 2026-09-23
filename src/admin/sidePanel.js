@@ -540,29 +540,109 @@ export class SidePanel {
 
     const universalStyles = data.styles || {};
     const bpStyles = (data.breakpoints && data.breakpoints[this.currentBreakpoint]) || {};
-    const effectiveStyles = { ...universalStyles, ...bpStyles };
+    const effectiveStyles = this.currentBreakpoint === 'universal'
+      ? { ...universalStyles }
+      : { ...universalStyles, ...bpStyles };
+
+    const hasText = this.currentBreakpoint === 'universal'
+      ? data.text !== undefined
+      : ((data.breakpoints && data.breakpoints[this.currentBreakpoint] && data.breakpoints[this.currentBreakpoint].text !== undefined) || data.text !== undefined);
+
+    const hasMedia = this.currentBreakpoint === 'universal'
+      ? data.media !== undefined
+      : ((data.breakpoints && data.breakpoints[this.currentBreakpoint] && data.breakpoints[this.currentBreakpoint].media !== undefined) || data.media !== undefined);
 
     return {
       styles: effectiveStyles,
       dataAttributes: data.dataAttributes || {},
-      hasText: data.text !== undefined,
-      hasMedia: data.media !== undefined
+      hasText,
+      hasMedia
     };
   }
 
   /**
-   * Check if a specific style or setting has been changed on the element
+   * Reads the current effective property value considering breakpoint overrides, universal overrides, and baselines
+   */
+  getEffectiveFieldValue(propKey, fallback = null) {
+    if (!this.activeMeta || !this.exportSystem) return fallback;
+    const selector = this.activeMeta.selector;
+    const data = this.exportSystem.getElementData(selector);
+    if (!data) return fallback;
+
+    if (this.currentBreakpoint !== 'universal') {
+      const bp = data.breakpoints && data.breakpoints[this.currentBreakpoint];
+      if (bp && bp[propKey] !== undefined && bp[propKey] !== null && bp[propKey] !== '') {
+        return bp[propKey];
+      }
+    }
+
+    if (data.styles && data.styles[propKey] !== undefined && data.styles[propKey] !== null && data.styles[propKey] !== '') {
+      return data.styles[propKey];
+    }
+
+    return fallback;
+  }
+
+  /**
+   * Reads current effective text content considering breakpoint overrides, universal overrides, and baselines
+   */
+  getEffectiveText(fallback = '') {
+    if (!this.activeMeta || !this.exportSystem) return fallback;
+    const selector = this.activeMeta.selector;
+    const data = this.exportSystem.getElementData(selector);
+    if (!data) return fallback;
+
+    if (this.currentBreakpoint !== 'universal') {
+      const bp = data.breakpoints && data.breakpoints[this.currentBreakpoint];
+      if (bp && bp.text !== undefined) {
+        return bp.text;
+      }
+    }
+
+    if (data.text !== undefined) {
+      return data.text;
+    }
+
+    return fallback;
+  }
+
+  /**
+   * Check if a specific style or setting has been changed on the element for the current breakpoint context
    */
   isFieldChanged(fieldKey) {
-    if (!this.activeElement) return false;
-    const overrides = this.getElementOverrides();
-    if (fieldKey === 'text') return overrides.hasText;
-    if (fieldKey === 'media') return overrides.hasMedia;
+    if (!this.activeElement || !this.activeMeta || !this.exportSystem) return false;
+    const selector = this.activeMeta.selector;
+    const data = this.exportSystem.getElementData(selector);
+    if (!data) return false;
+
+    if (fieldKey === 'text') {
+      if (this.currentBreakpoint === 'universal') {
+        return data.text !== undefined;
+      }
+      const hasBpText = Boolean(data.breakpoints && data.breakpoints[this.currentBreakpoint] && data.breakpoints[this.currentBreakpoint].text !== undefined);
+      return hasBpText || (data.text !== undefined);
+    }
+
+    if (fieldKey === 'media') {
+      if (this.currentBreakpoint === 'universal') {
+        return data.media !== undefined;
+      }
+      const hasBpMedia = Boolean(data.breakpoints && data.breakpoints[this.currentBreakpoint] && data.breakpoints[this.currentBreakpoint].media !== undefined);
+      return hasBpMedia || (data.media !== undefined);
+    }
+
     if (fieldKey.startsWith('data-')) {
       const propName = fieldKey.replace(/^data-/, '');
-      return overrides.dataAttributes[propName] !== undefined;
+      return Boolean(data.dataAttributes && data.dataAttributes[propName] !== undefined);
     }
-    return overrides.styles[fieldKey] !== undefined;
+
+    if (this.currentBreakpoint === 'universal') {
+      return Boolean(data.styles && data.styles[fieldKey] !== undefined);
+    }
+
+    const hasBpStyle = Boolean(data.breakpoints && data.breakpoints[this.currentBreakpoint] && data.breakpoints[this.currentBreakpoint][fieldKey] !== undefined);
+    const hasUnivStyle = Boolean(data.styles && data.styles[fieldKey] !== undefined);
+    return hasBpStyle || hasUnivStyle;
   }
 
   /**
@@ -838,20 +918,21 @@ export class SidePanel {
     const win = (this.activeElement && this.activeElement.ownerDocument) ? this.activeElement.ownerDocument.defaultView : window;
     const computed = win ? win.getComputedStyle(this.activeElement) : s;
 
-    let textVal = '';
-    const textNodes = Array.from(this.activeElement.childNodes).filter(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
-    if (textNodes.length > 0) {
-      textVal = textNodes.map(n => n.textContent).join(' ').trim();
-    } else if (this.activeElement.children.length === 0) {
-      textVal = (this.activeElement.textContent || '').trim();
-    } else {
-      textVal = (this.activeElement.innerText || this.activeElement.textContent || '').trim();
+    let textVal = this.getEffectiveText('');
+    if (!textVal) {
+      const textNodes = Array.from(this.activeElement.childNodes).filter(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
+      if (textNodes.length > 0) {
+        textVal = textNodes.map(n => n.textContent).join(' ').trim();
+      } else if (this.activeElement.children.length === 0) {
+        textVal = (this.activeElement.textContent || '').trim();
+      } else {
+        textVal = (this.activeElement.innerText || this.activeElement.textContent || '').trim();
+      }
     }
 
     const getEffectiveColor = (key, computedVal, baselineVal) => {
-      if (this.isFieldChanged(key)) {
-        return this.activeElement.style[key] || s[key] || computedVal;
-      }
+      const eff = this.getEffectiveFieldValue(key, null);
+      if (eff) return eff;
       return baselineVal || computedVal || s[key];
     };
 
@@ -859,20 +940,22 @@ export class SidePanel {
     const bgColorHex = this._rgbToHex(getEffectiveColor('backgroundColor', computed.backgroundColor, baseline ? baseline.computedBgColor : ''));
     const borderColorHex = this._rgbToHex(getEffectiveColor('borderColor', computed.borderColor, baseline ? baseline.computedBorderColor : ''));
 
-    const isBold = (this.activeElement.style.fontWeight || s.fontWeight || computed.fontWeight) >= 700;
-    const isItalic = (this.activeElement.style.fontStyle || s.fontStyle || computed.fontStyle) === 'italic';
-    const textTransform = this.activeElement.style.textTransform || s.textTransform || computed.textTransform || 'none';
-    const fontVariant = this.activeElement.style.fontVariant || s.fontVariant || computed.fontVariant || 'normal';
+    const effectiveWeight = this.getEffectiveFieldValue('fontWeight', baseline ? baseline.computedFontWeight : computed.fontWeight);
+    const isBold = effectiveWeight >= 700 || effectiveWeight === 'bold';
+    const effectiveFontStyle = this.getEffectiveFieldValue('fontStyle', computed.fontStyle);
+    const isItalic = effectiveFontStyle === 'italic';
+    const textTransform = this.getEffectiveFieldValue('textTransform', computed.textTransform || 'none');
+    const fontVariant = this.getEffectiveFieldValue('fontVariant', computed.fontVariant || 'normal');
 
     // Parse Line Height
-    let currentLineHeight = parseFloat(this.activeElement.style.lineHeight || s.lineHeight || computed.lineHeight) || 1.5;
+    let currentLineHeight = parseFloat(this.getEffectiveFieldValue('lineHeight', computed.lineHeight)) || 1.5;
     if (currentLineHeight > 10) {
-      const fs = parseFloat(s.fontSize || computed.fontSize) || 16;
+      const fs = parseFloat(this.getEffectiveFieldValue('fontSize', computed.fontSize)) || 16;
       currentLineHeight = Math.round((currentLineHeight / fs) * 100) / 100;
     }
 
     // Parse Letter Spacing
-    let currentLetterSpacing = parseFloat(this.activeElement.style.letterSpacing || s.letterSpacing || computed.letterSpacing) || 0;
+    let currentLetterSpacing = parseFloat(this.getEffectiveFieldValue('letterSpacing', computed.letterSpacing)) || 0;
 
     // Check changed states for dots & reset symbols
     const hasTextChanged = this.isFieldChanged('text');
@@ -938,7 +1021,7 @@ export class SidePanel {
             <span class="field-change-dot" data-field-indicator="fontSize" style="display: ${hasFontSizeChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
-            ${this._renderSliderRow('font-size', 10, 140, 1, parseFloat(s.fontSize) || 16, 'px')}
+            ${this._renderSliderRow('font-size', 10, 140, 1, parseFloat(this.getEffectiveFieldValue('fontSize', s.fontSize || computed.fontSize)) || 16, 'px')}
             <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="fontSize" data-tooltip="Reset font size" style="display: ${hasFontSizeChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
@@ -1208,7 +1291,7 @@ export class SidePanel {
             <span class="field-change-dot" data-field-indicator="borderWidth" style="display: ${this.isFieldChanged('borderWidth') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
-            ${this._renderSliderRow('border-width', 0, 20, 1, parseFloat(s.borderWidth) || 0, 'px')}
+            ${this._renderSliderRow('border-width', 0, 20, 1, parseFloat(this.getEffectiveFieldValue('borderWidth', s.borderWidth || computed.borderWidth)) || 0, 'px')}
             <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="borderWidth" data-tooltip="Reset border width" style="display: ${this.isFieldChanged('borderWidth') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
@@ -1220,7 +1303,7 @@ export class SidePanel {
             <span class="field-change-dot" data-field-indicator="borderRadius" style="display: ${this.isFieldChanged('borderRadius') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
-            ${this._renderSliderRow('border-radius', 0, 48, 1, parseFloat(s.borderRadius) || 0, 'px')}
+            ${this._renderSliderRow('border-radius', 0, 48, 1, parseFloat(this.getEffectiveFieldValue('borderRadius', s.borderRadius || computed.borderRadius)) || 0, 'px')}
             <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="borderRadius" data-tooltip="Reset border radius" style="display: ${this.isFieldChanged('borderRadius') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
@@ -1278,7 +1361,7 @@ export class SidePanel {
       }
 
       fontSelect.addEventListener('change', () => {
-        this.activeElement.style.fontFamily = fontSelect.value;
+        this.activeElement.style.removeProperty('font-family');
         this._notifyChange({ styleKey: 'fontFamily', val: fontSelect.value });
         this.updateTabCounters();
       });
@@ -1286,7 +1369,7 @@ export class SidePanel {
 
     // 3. Font Size Slider & Stepper
     this._bindSliderPair(container, 'font-size', (val) => {
-      this.activeElement.style.fontSize = `${val}px`;
+      this.activeElement.style.removeProperty('font-size');
       this._notifyChange({ styleKey: 'fontSize', val: `${val}px` });
       this.updateTabCounters();
     });
@@ -1314,7 +1397,7 @@ export class SidePanel {
       }
 
       weightSelect.addEventListener('change', () => {
-        this.activeElement.style.fontWeight = weightSelect.value;
+        this.activeElement.style.removeProperty('font-weight');
         this._notifyChange({ styleKey: 'fontWeight', val: weightSelect.value });
         this.updateTabCounters();
       });
@@ -1322,14 +1405,14 @@ export class SidePanel {
 
     // 5. Line Spacing (Line Height)
     this._bindSliderPair(container, 'line-height', (val) => {
-      this.activeElement.style.lineHeight = `${val}`;
+      this.activeElement.style.removeProperty('line-height');
       this._notifyChange({ styleKey: 'lineHeight', val: `${val}` });
       this.updateTabCounters();
     });
 
     // 6. Letter Spacing
     this._bindSliderPair(container, 'letter-spacing', (val) => {
-      this.activeElement.style.letterSpacing = `${val}px`;
+      this.activeElement.style.removeProperty('letter-spacing');
       this._notifyChange({ styleKey: 'letterSpacing', val: `${val}px` });
       this.updateTabCounters();
     });
@@ -1341,14 +1424,12 @@ export class SidePanel {
         btn.classList.add('is-active');
 
         const caseVal = btn.dataset.case;
+        this.activeElement.style.removeProperty('font-variant');
+        this.activeElement.style.removeProperty('text-transform');
         if (caseVal === 'small-caps') {
-          this.activeElement.style.fontVariant = 'small-caps';
-          this.activeElement.style.textTransform = 'none';
           this._notifyChange({ styleKey: 'fontVariant', val: 'small-caps' });
           this._notifyChange({ styleKey: 'textTransform', val: 'none' });
         } else {
-          this.activeElement.style.fontVariant = 'normal';
-          this.activeElement.style.textTransform = caseVal === 'normal' ? 'none' : caseVal;
           this._notifyChange({ styleKey: 'fontVariant', val: 'normal' });
           this._notifyChange({ styleKey: 'textTransform', val: caseVal === 'normal' ? 'none' : caseVal });
         }
@@ -1362,7 +1443,7 @@ export class SidePanel {
         container.querySelectorAll('[data-align]').forEach(b => b.classList.remove('is-active'));
         btn.classList.add('is-active');
         const align = btn.dataset.align;
-        this.activeElement.style.textAlign = align;
+        this.activeElement.style.removeProperty('text-align');
         this._notifyChange({ styleKey: 'textAlign', val: align });
         this.updateTabCounters();
       });
@@ -1374,7 +1455,7 @@ export class SidePanel {
       boldBtn.addEventListener('click', () => {
         const isBold = boldBtn.classList.toggle('is-active');
         const val = isBold ? '700' : '400';
-        this.activeElement.style.fontWeight = val;
+        this.activeElement.style.removeProperty('font-weight');
         if (weightSelect) weightSelect.value = val;
         this._notifyChange({ styleKey: 'fontWeight', val });
         this.updateTabCounters();
@@ -1386,7 +1467,7 @@ export class SidePanel {
       italicBtn.addEventListener('click', () => {
         const isItalic = italicBtn.classList.toggle('is-active');
         const val = isItalic ? 'italic' : 'normal';
-        this.activeElement.style.fontStyle = val;
+        this.activeElement.style.removeProperty('font-style');
         this._notifyChange({ styleKey: 'fontStyle', val });
         this.updateTabCounters();
       });
@@ -1397,38 +1478,32 @@ export class SidePanel {
 
     // 11. Colors
     this._bindColorPair(container, 'text', (val) => {
-      this.activeElement.style.color = val;
+      this.activeElement.style.removeProperty('color');
       this._notifyChange({ styleKey: 'color', val });
       this.updateTabCounters();
     });
 
     this._bindColorPair(container, 'bg', (val) => {
-      this.activeElement.style.backgroundColor = val;
+      this.activeElement.style.removeProperty('background-color');
       this._notifyChange({ styleKey: 'backgroundColor', val });
       this.updateTabCounters();
     });
 
     this._bindColorPair(container, 'border', (val) => {
-      this.activeElement.style.borderColor = val;
-      if (!this.activeElement.style.borderStyle) {
-        this.activeElement.style.borderStyle = 'solid';
-      }
+      this.activeElement.style.removeProperty('border-color');
       this._notifyChange({ styleKey: 'borderColor', val });
       this.updateTabCounters();
     });
 
     // 12. Border width & radius
     this._bindSliderPair(container, 'border-width', (val) => {
-      this.activeElement.style.borderWidth = `${val}px`;
-      if (!this.activeElement.style.borderStyle && val > 0) {
-        this.activeElement.style.borderStyle = 'solid';
-      }
+      this.activeElement.style.removeProperty('border-width');
       this._notifyChange({ styleKey: 'borderWidth', val: `${val}px` });
       this.updateTabCounters();
     });
 
     this._bindSliderPair(container, 'border-radius', (val) => {
-      this.activeElement.style.borderRadius = `${val}px`;
+      this.activeElement.style.removeProperty('border-radius');
       this._notifyChange({ styleKey: 'borderRadius', val: `${val}px` });
       this.updateTabCounters();
     });
@@ -1474,11 +1549,11 @@ export class SidePanel {
 
       if (type === 'text') {
         const textShadowCss = opacity > 0 ? `${x}px ${y}px ${blur}px ${rgbaColor}` : 'none';
-        this.activeElement.style.textShadow = textShadowCss;
+        this.activeElement.style.removeProperty('text-shadow');
         this._notifyChange({ styleKey: 'textShadow', val: textShadowCss });
       } else {
         const boxCss = opacity > 0 ? `${x}px ${y}px ${blur}px ${spread}px ${rgbaColor}` : 'none';
-        this.activeElement.style.boxShadow = boxCss;
+        this.activeElement.style.removeProperty('box-shadow');
         this._notifyChange({ styleKey: 'boxShadow', val: boxCss });
       }
 
@@ -1580,20 +1655,22 @@ export class SidePanel {
   // TAB 2: MARGIN & SPACING SLIDERS (0px to 120px)
   // ==========================================================================
   _buildSpacingTabHtml() {
+    const selector = this.activeMeta ? this.activeMeta.selector : null;
+    const baseline = selector ? this.elementBaselines.get(selector) : null;
     const s = this.activeMeta.styles;
     const computed = window.getComputedStyle ? window.getComputedStyle(this.activeElement) : s;
 
-    const mt = parseFloat(this.activeElement.style.marginTop || s.marginTop || computed.marginTop) || 0;
-    const mb = parseFloat(this.activeElement.style.marginBottom || s.marginBottom || computed.marginBottom) || 0;
-    const ml = parseFloat(this.activeElement.style.marginLeft || s.marginLeft || computed.marginLeft) || 0;
-    const mr = parseFloat(this.activeElement.style.marginRight || s.marginRight || computed.marginRight) || 0;
+    const mt = parseFloat(this.getEffectiveFieldValue('marginTop', baseline ? baseline.marginTop : (s.marginTop || computed.marginTop))) || 0;
+    const mb = parseFloat(this.getEffectiveFieldValue('marginBottom', baseline ? baseline.marginBottom : (s.marginBottom || computed.marginBottom))) || 0;
+    const ml = parseFloat(this.getEffectiveFieldValue('marginLeft', baseline ? baseline.marginLeft : (s.marginLeft || computed.marginLeft))) || 0;
+    const mr = parseFloat(this.getEffectiveFieldValue('marginRight', baseline ? baseline.marginRight : (s.marginRight || computed.marginRight))) || 0;
 
-    const pt = parseFloat(this.activeElement.style.paddingTop || s.paddingTop || computed.paddingTop) || 0;
-    const pb = parseFloat(this.activeElement.style.paddingBottom || s.paddingBottom || computed.paddingBottom) || 0;
-    const pl = parseFloat(this.activeElement.style.paddingLeft || s.paddingLeft || computed.paddingLeft) || 0;
-    const pr = parseFloat(this.activeElement.style.paddingRight || s.paddingRight || computed.paddingRight) || 0;
+    const pt = parseFloat(this.getEffectiveFieldValue('paddingTop', baseline ? baseline.paddingTop : (s.paddingTop || computed.paddingTop))) || 0;
+    const pb = parseFloat(this.getEffectiveFieldValue('paddingBottom', baseline ? baseline.paddingBottom : (s.paddingBottom || computed.paddingBottom))) || 0;
+    const pl = parseFloat(this.getEffectiveFieldValue('paddingLeft', baseline ? baseline.paddingLeft : (s.paddingLeft || computed.paddingLeft))) || 0;
+    const pr = parseFloat(this.getEffectiveFieldValue('paddingRight', baseline ? baseline.paddingRight : (s.paddingRight || computed.paddingRight))) || 0;
 
-    const gap = parseFloat(this.activeElement.style.gap || s.gap || computed.gap) || 0;
+    const gap = parseFloat(this.getEffectiveFieldValue('gap', baseline ? baseline.gap : (s.gap || computed.gap))) || 0;
 
     const hasMarginChanged = this.isFieldChanged('marginTop') || this.isFieldChanged('marginBottom') || this.isFieldChanged('marginLeft') || this.isFieldChanged('marginRight');
     const hasPaddingChanged = this.isFieldChanged('paddingTop') || this.isFieldChanged('paddingBottom') || this.isFieldChanged('paddingLeft') || this.isFieldChanged('paddingRight');
@@ -1807,7 +1884,7 @@ export class SidePanel {
     // 2. Margins
     const setMargin = (dir, val) => {
       const key = `margin${dir.charAt(0).toUpperCase() + dir.slice(1)}`;
-      this.activeElement.style[key] = `${val}px`;
+      this.activeElement.style.removeProperty(this._camelToKebab(key));
       this._notifyChange({ styleKey: key, val: `${val}px` });
     };
 
@@ -1815,7 +1892,7 @@ export class SidePanel {
       if (boxMt) boxMt.textContent = val;
       if (this.linkMargins) {
         ['Top', 'Bottom', 'Left', 'Right'].forEach(d => {
-          this.activeElement.style[`margin${d}`] = `${val}px`;
+          this.activeElement.style.removeProperty(`margin-${d.toLowerCase()}`);
           this._notifyChange({ styleKey: `margin${d}`, val: `${val}px` });
         });
         this._renderActiveTab();
@@ -1846,7 +1923,7 @@ export class SidePanel {
     // 3. Paddings
     const setPadding = (dir, val) => {
       const key = `padding${dir.charAt(0).toUpperCase() + dir.slice(1)}`;
-      this.activeElement.style[key] = `${val}px`;
+      this.activeElement.style.removeProperty(this._camelToKebab(key));
       this._notifyChange({ styleKey: key, val: `${val}px` });
     };
 
@@ -1854,7 +1931,7 @@ export class SidePanel {
       if (boxPt) boxPt.textContent = val;
       if (this.linkPaddings) {
         ['Top', 'Bottom', 'Left', 'Right'].forEach(d => {
-          this.activeElement.style[`padding${d}`] = `${val}px`;
+          this.activeElement.style.removeProperty(`padding-${d.toLowerCase()}`);
           this._notifyChange({ styleKey: `padding${d}`, val: `${val}px` });
         });
         this._renderActiveTab();
@@ -1884,7 +1961,7 @@ export class SidePanel {
 
     // 4. Gap
     this._bindSliderPair(container, 'gap', (val) => {
-      this.activeElement.style.gap = `${val}px`;
+      this.activeElement.style.removeProperty('gap');
       this._notifyChange({ styleKey: 'gap', val: `${val}px` });
       this.updateTabCounters();
     });

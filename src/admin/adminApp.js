@@ -315,10 +315,19 @@ export class AdminApp {
         this.sidePanel.setBreakpoint('universal');
       }
 
+      // Reapply schema to iframe doc so universal text and media are active
+      const iframe = this.rootElement.querySelector('#admin-preview-frame');
+      if (iframe) {
+        try {
+          const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+          applyDesignSchema(this.exportSystem.serializeSchema(), iDoc);
+        } catch (_) {}
+      }
+
       if (this.selectionEngine) {
         requestAnimationFrame(() => this.selectionEngine._updateBoxes());
       }
-      this._showToast('🌐 Universal Device: Changes apply to all devices');
+      this._showToast('🌐 Universal Device: Changes apply globally to all devices');
     });
 
     cycleBtn.addEventListener('click', () => {
@@ -340,6 +349,15 @@ export class AdminApp {
 
       if (this.sidePanel) {
         this.sidePanel.setBreakpoint(this.currentBreakpoint);
+      }
+
+      // Reapply schema to iframe doc so device-scoped text and media are active
+      const iframe = this.rootElement.querySelector('#admin-preview-frame');
+      if (iframe) {
+        try {
+          const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+          applyDesignSchema(this.exportSystem.serializeSchema(), iDoc);
+        } catch (_) {}
       }
 
       if (this.selectionEngine) {
@@ -377,8 +395,11 @@ export class AdminApp {
         publishBtn.classList.remove('has-changes');
         publishLabel.textContent = 'Published!';
         const gitMsg = result.gitStatus ? ` [${result.gitStatus}]` : '';
-        this._showToast(`✓ Published to metadata.json!${gitMsg}`);
-        updateHistoryCount();
+        this._showToast(`✓ Published checkpoint!${gitMsg}`);
+        await updateHistoryCount();
+        if (historyModalBackdrop && historyModalBackdrop.classList.contains('is-open')) {
+          await renderHistoryModal();
+        }
 
         setTimeout(() => {
           publishLabel.textContent = 'Publish Changes';
@@ -495,28 +516,30 @@ export class AdminApp {
       const activeSerialized = JSON.stringify(this.exportSystem.serializeSchema());
 
       historyListContainer.innerHTML = history.map((cp, idx) => {
-        const isLatest = idx === 0;
+        const isLatest = idx === 0 && cp.id !== 'cp_v0';
+        const isV0 = cp.id === 'cp_v0' || cp.isV0;
         const cpSerialized = cp.schema ? JSON.stringify(cp.schema) : '';
         const isCurrentActive = cpSerialized && (cpSerialized === activeSerialized);
-        const dateStr = cp.timestamp ? new Date(cp.timestamp).toLocaleString() : 'Unknown date';
+        const dateStr = cp.timestamp ? new Date(cp.timestamp).toLocaleString() : 'Default Baseline';
         const elemCount = cp.elementsCount !== undefined ? cp.elementsCount : (cp.schema && cp.schema.elements ? Object.keys(cp.schema.elements).length : 0);
 
         return `
-          <div class="history-item-card ${isCurrentActive ? 'is-active-checkpoint' : ''}" data-cp-id="${cp.id}">
+          <div class="history-item-card ${isCurrentActive ? 'is-active-checkpoint' : ''} ${isV0 ? 'is-v0-checkpoint' : ''}" data-cp-id="${cp.id}">
             <div class="history-item-left">
               <div class="history-item-top">
                 <span class="history-item-label">${cp.label || `Checkpoint #${history.length - idx}`}</span>
+                ${isV0 ? '<span class="history-item-badge is-v0" style="background: rgba(16, 185, 129, 0.16); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35);">Default v0</span>' : ''}
                 ${isLatest ? '<span class="history-item-badge is-live">Latest</span>' : ''}
                 ${isCurrentActive ? '<span class="history-item-badge is-live">Active on Canvas</span>' : ''}
                 <span class="history-item-badge">${elemCount} element${elemCount === 1 ? '' : 's'}</span>
               </div>
-              <div class="history-item-date">Published: ${dateStr}</div>
-              <div class="history-item-desc">${cp.description || 'Saved design checkpoint'}</div>
+              <div class="history-item-date">${isV0 ? 'Baseline initial state' : `Published: ${dateStr}`}</div>
+              <div class="history-item-desc">${cp.description || (isV0 ? 'Initial unedited site baseline (v0)' : 'Saved design checkpoint')}</div>
             </div>
             <div class="history-item-right">
               <button type="button" class="btn-restore-checkpoint ${isCurrentActive ? 'is-active-btn' : ''}" data-restore-id="${cp.id}" ${isCurrentActive ? 'disabled' : ''}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                <span>${isCurrentActive ? 'Active' : 'Revert to this'}</span>
+                <span>${isCurrentActive ? 'Active' : (isV0 ? 'Restore v0' : 'Revert to this')}</span>
               </button>
             </div>
           </div>

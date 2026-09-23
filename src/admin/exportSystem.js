@@ -74,7 +74,12 @@ export class ExportSystem {
     }
 
     if (changeData.text !== undefined) {
-      existing.text = changeData.text;
+      if (breakpoint === 'universal') {
+        existing.text = changeData.text;
+      } else {
+        if (!existing.breakpoints[breakpoint]) existing.breakpoints[breakpoint] = {};
+        existing.breakpoints[breakpoint].text = changeData.text;
+      }
     }
 
     if (changeData.styleKey && changeData.val !== undefined) {
@@ -104,7 +109,12 @@ export class ExportSystem {
     }
 
     if (changeData.media) {
-      existing.media = changeData.media;
+      if (breakpoint === 'universal') {
+        existing.media = changeData.media;
+      } else {
+        if (!existing.breakpoints[breakpoint]) existing.breakpoints[breakpoint] = {};
+        existing.breakpoints[breakpoint].media = changeData.media;
+      }
     }
 
     this.changesMap.set(selector, existing);
@@ -120,7 +130,18 @@ export class ExportSystem {
     if (!existing) return;
 
     if (type === 'text') {
-      delete existing.text;
+      if (breakpoint === 'all' || !breakpoint) {
+        delete existing.text;
+        if (existing.breakpoints) {
+          Object.keys(existing.breakpoints).forEach(bp => {
+            if (existing.breakpoints[bp]) delete existing.breakpoints[bp].text;
+          });
+        }
+      } else if (breakpoint === 'universal') {
+        delete existing.text;
+      } else if (existing.breakpoints && existing.breakpoints[breakpoint]) {
+        delete existing.breakpoints[breakpoint].text;
+      }
     } else if (type === 'style') {
       if (breakpoint === 'all' || !breakpoint) {
         if (existing.styles) delete existing.styles[key];
@@ -137,7 +158,18 @@ export class ExportSystem {
     } else if (type === 'dataAttr' && existing.dataAttributes) {
       delete existing.dataAttributes[key];
     } else if (type === 'media') {
-      delete existing.media;
+      if (breakpoint === 'all' || !breakpoint) {
+        delete existing.media;
+        if (existing.breakpoints) {
+          Object.keys(existing.breakpoints).forEach(bp => {
+            if (existing.breakpoints[bp]) delete existing.breakpoints[bp].media;
+          });
+        }
+      } else if (breakpoint === 'universal') {
+        delete existing.media;
+      } else if (existing.breakpoints && existing.breakpoints[breakpoint]) {
+        delete existing.breakpoints[breakpoint].media;
+      }
     }
 
     // Clean up empty objects
@@ -312,6 +344,26 @@ export class ExportSystem {
   }
 
   /**
+   * Generates the immutable default v0 baseline checkpoint
+   */
+  getV0Checkpoint() {
+    return {
+      id: 'cp_v0',
+      timestamp: '2026-09-23T00:00:00.000Z',
+      label: 'Checkpoint v0 (Default Baseline)',
+      description: 'Default pristine project baseline. Reverting here resets all visual modifications across all devices.',
+      elementsCount: 0,
+      schema: {
+        version: '1.0.0',
+        lastUpdated: '2026-09-23T00:00:00.000Z',
+        elementsCount: 0,
+        elements: {}
+      },
+      isV0: true
+    };
+  }
+
+  /**
    * Publishes the current serialized schema to /api/admin/publish and metadata.json
    */
   async publish() {
@@ -330,6 +382,7 @@ export class ExportSystem {
       new URLSearchParams(window.location.search).get('auth');
     const headers = {
       'Content-Type': 'application/json',
+      'x-admin-request': 'true'
     };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -347,9 +400,37 @@ export class ExportSystem {
 
     const data = await res.json();
     this.hasUnpublishedChanges = false;
+
+    // 3. Immediately cache newly published checkpoint in local history store
+    try {
+      let localHist = [];
+      const cached = localStorage.getItem('eko_publish_history');
+      if (cached) {
+        localHist = JSON.parse(cached);
+      }
+      if (!Array.isArray(localHist)) localHist = [];
+      
+      const newCp = data.checkpoint || {
+        id: `cp_${Date.now()}`,
+        timestamp: schema.lastPublished || new Date().toISOString(),
+        label: `Checkpoint #${localHist.length + 1}`,
+        description: `${schema.elementsCount || Object.keys(schema.elements || {}).length} element(s) customized`,
+        elementsCount: schema.elementsCount || Object.keys(schema.elements || {}).length,
+        schema
+      };
+
+      // Add to front
+      localHist = [newCp, ...localHist.filter(c => c.id !== newCp.id && c.id !== 'cp_v0')];
+      // Ensure v0 at the end
+      localHist.push(this.getV0Checkpoint());
+      localStorage.setItem('eko_publish_history', JSON.stringify(localHist));
+    } catch (_) {}
+
     return {
       success: true,
       schema,
+      checkpoint: data.checkpoint,
+      history: data.history,
       message: data.message || 'Published successfully',
       gitStatus: data.gitStatus,
       publishedAt: data.publishedAt
@@ -357,19 +438,51 @@ export class ExportSystem {
   }
 
   /**
-   * Retrieves all saved publish checkpoints
+   * Retrieves all saved publish checkpoints, ensuring v0 is always present
    */
   async getHistory() {
+    const v0 = this.getV0Checkpoint();
+    let history = [];
+
     try {
-      const res = await fetch(`/api/admin/history?t=${Date.now()}`, { cache: 'no-store' });
+      const res = await fetch(`/api/admin/history?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'x-admin-request': 'true' }
+      });
       if (res.ok) {
         const data = await res.json();
-        return data.history || [];
+        if (Array.isArray(data.history) && data.history.length > 0) {
+          history = data.history;
+        }
       }
     } catch (err) {
-      console.warn('Failed to fetch history:', err);
+      console.warn('Failed to fetch history from API:', err);
     }
-    return [];
+
+    // Fallback to local storage if API is empty or failed
+    if (!history || history.length === 0) {
+      try {
+        const cached = localStorage.getItem('eko_publish_history');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            history = parsed;
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Always guarantee v0 checkpoint is present as base checkpoint
+    const hasV0 = history.some(cp => cp.id === 'cp_v0' || cp.isV0);
+    if (!hasV0) {
+      history.push(v0);
+    }
+
+    try {
+      localStorage.setItem('eko_publish_history', JSON.stringify(history));
+    } catch (_) {}
+
+    return history;
   }
 
   /**
@@ -378,29 +491,55 @@ export class ExportSystem {
   async restoreCheckpoint(checkpointId) {
     if (!checkpointId) throw new Error('Missing checkpoint ID');
 
+    let restoredSchema = null;
+    let checkpointObj = null;
+
     const token = sessionStorage.getItem('eko_admin_token') ||
       localStorage.getItem('eko_admin_token') ||
       new URLSearchParams(window.location.search).get('auth');
     const headers = {
       'Content-Type': 'application/json',
+      'x-admin-request': 'true'
     };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const res = await fetch('/api/admin/restore', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ checkpointId })
-    });
+    try {
+      const res = await fetch('/api/admin/restore', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ checkpointId })
+      });
 
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || `Restore failed with HTTP ${res.status}`);
+      if (res.ok) {
+        const data = await res.json();
+        restoredSchema = data.schema;
+        checkpointObj = data.checkpoint;
+      }
+    } catch (apiErr) {
+      console.warn('[ExportSystem] Server restore network error:', apiErr);
     }
 
-    const data = await res.json();
-    const restoredSchema = data.schema;
+    // If server didn't provide restored schema (e.g. offline or v0 fallback)
+    if (!restoredSchema) {
+      if (checkpointId === 'cp_v0') {
+        const v0 = this.getV0Checkpoint();
+        restoredSchema = v0.schema;
+        checkpointObj = v0;
+      } else {
+        const localHist = await this.getHistory();
+        const found = localHist.find(c => c.id === checkpointId);
+        if (found && found.schema) {
+          restoredSchema = found.schema;
+          checkpointObj = found;
+        }
+      }
+    }
+
+    if (!restoredSchema) {
+      throw new Error(`Checkpoint ${checkpointId} not found`);
+    }
 
     // Repopulate local state
     this.changesMap.clear();
@@ -417,7 +556,7 @@ export class ExportSystem {
     this.hasUnpublishedChanges = false;
     return {
       success: true,
-      checkpoint: data.checkpoint,
+      checkpoint: checkpointObj,
       schema: restoredSchema
     };
   }

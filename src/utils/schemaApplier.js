@@ -94,7 +94,75 @@ export function generateCssFromSchema(schema) {
  * @param {Document} [doc=document]
  */
 export function applyDesignSchema(schema, doc = document) {
-  if (!schema || !schema.elements) return;
+  if (!doc) return;
+
+  const win = doc.defaultView || (typeof window !== 'undefined' ? window : null);
+  const width = win ? win.innerWidth : 1280;
+  let activeBreakpoint = 'desktop';
+  if (width <= 767) {
+    activeBreakpoint = 'mobile';
+  } else if (width <= 1023) {
+    activeBreakpoint = 'tablet';
+  }
+
+  // Save active schema for responsive recalculation on resize
+  if (doc) {
+    doc.__ekoLastActiveSchema = schema;
+  }
+
+  // Setup resize listener if not already attached
+  if (win && !win.__ekoResizeListenerBound) {
+    win.__ekoResizeListenerBound = true;
+    let resizeTimer = null;
+    win.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (doc && doc.__ekoLastActiveSchema) {
+          applyDesignSchema(doc.__ekoLastActiveSchema, doc);
+        }
+      }, 80);
+    });
+  }
+
+  // Inject or update stylesheet
+  let styleTag = doc.getElementById('eko-design-schema-styles');
+  if (!styleTag) {
+    styleTag = doc.createElement('style');
+    styleTag.id = 'eko-design-schema-styles';
+    if (doc.head) {
+      doc.head.appendChild(styleTag);
+    } else if (doc.body) {
+      doc.body.appendChild(styleTag);
+    }
+  }
+
+  if (!schema || !schema.elements || Object.keys(schema.elements).length === 0) {
+    if (styleTag) styleTag.textContent = '';
+    // Restore elements that had text/media overrides if resetting/restoring to v0
+    if (doc.__ekoOverriddenElements) {
+      doc.__ekoOverriddenElements.forEach(el => {
+        if (el.__ekoOriginalText !== undefined) {
+          if (el.children.length === 0) {
+            el.textContent = el.__ekoOriginalText;
+          } else {
+            el.innerHTML = el.__ekoOriginalHtml !== undefined ? el.__ekoOriginalHtml : el.__ekoOriginalText;
+          }
+        }
+        if (el.__ekoOriginalSrc !== undefined) {
+          el.src = el.__ekoOriginalSrc;
+        }
+        if (el.__ekoOriginalBg !== undefined) {
+          el.style.backgroundImage = el.__ekoOriginalBg;
+        }
+      });
+      doc.__ekoOverriddenElements.clear();
+    }
+    return;
+  }
+
+  if (!doc.__ekoOverriddenElements) {
+    doc.__ekoOverriddenElements = new Set();
+  }
 
   const elements = schema.elements;
   const universalCssRules = [];
@@ -107,25 +175,54 @@ export function applyDesignSchema(schema, doc = document) {
     const selector = item.selector || (key.startsWith('#') || key.startsWith('.') ? key : `#${key}`);
     const el = doc.querySelector(selector);
 
-    // 1. Text override
-    if (el && typeof item.text === 'string' && item.text.trim() !== '') {
-      if (item.html) {
-        el.innerHTML = item.html;
+    if (el) {
+      doc.__ekoOverriddenElements.add(el);
+      if (el.__ekoOriginalText === undefined) {
+        el.__ekoOriginalText = el.textContent || '';
+        el.__ekoOriginalHtml = el.innerHTML || '';
+      }
+      if (el.__ekoOriginalSrc === undefined && (el.tagName === 'IMG' || el.tagName === 'AUDIO')) {
+        el.__ekoOriginalSrc = el.getAttribute('src') || '';
+      }
+      if (el.__ekoOriginalBg === undefined) {
+        el.__ekoOriginalBg = el.style.backgroundImage || '';
+      }
+    }
+
+    // 1. Text override: Check device breakpoint first, then universal
+    let targetText = null;
+    let targetHtml = null;
+    if (item.breakpoints && item.breakpoints[activeBreakpoint] && item.breakpoints[activeBreakpoint].text !== undefined) {
+      targetText = item.breakpoints[activeBreakpoint].text;
+      targetHtml = item.breakpoints[activeBreakpoint].html;
+    } else if (item.text !== undefined && typeof item.text === 'string' && item.text.trim() !== '') {
+      targetText = item.text;
+      targetHtml = item.html;
+    }
+
+    if (el && targetText !== null) {
+      if (targetHtml) {
+        el.innerHTML = targetHtml;
       } else if (el.children.length === 0) {
-        el.textContent = item.text;
+        el.textContent = targetText;
       } else {
-        // Element contains child elements (e.g. <small>, <span>, <strong>).
-        // Update direct text node to preserve child elements like "Original production", "process", etc.
         const textNodes = Array.from(el.childNodes).filter(node => node.nodeType === Node.TEXT_NODE);
         if (textNodes.length > 0) {
-          textNodes[0].textContent = item.text;
+          textNodes[0].textContent = targetText;
           for (let i = 1; i < textNodes.length; i++) {
             textNodes[i].textContent = '';
           }
         } else {
-          const newTextNode = el.ownerDocument ? el.ownerDocument.createTextNode(item.text) : doc.createTextNode(item.text);
+          const newTextNode = el.ownerDocument ? el.ownerDocument.createTextNode(targetText) : doc.createTextNode(targetText);
           el.insertBefore(newTextNode, el.firstChild);
         }
+      }
+    } else if (el && targetText === null && el.__ekoOriginalText !== undefined && !item.text && !(item.breakpoints && Object.values(item.breakpoints).some(bp => bp && bp.text !== undefined))) {
+      // Revert to original if no text override
+      if (el.children.length === 0) {
+        el.textContent = el.__ekoOriginalText;
+      } else if (el.__ekoOriginalHtml !== undefined) {
+        el.innerHTML = el.__ekoOriginalHtml;
       }
     }
 
@@ -136,27 +233,34 @@ export function applyDesignSchema(schema, doc = document) {
       });
     }
 
-    // 3. Media overrides (Audio / Image)
-    if (el && item.media && item.media.src) {
+    // 3. Media overrides (Audio / Image): Check device breakpoint first, then universal
+    let targetMedia = null;
+    if (item.breakpoints && item.breakpoints[activeBreakpoint] && item.breakpoints[activeBreakpoint].media) {
+      targetMedia = item.breakpoints[activeBreakpoint].media;
+    } else if (item.media && item.media.src) {
+      targetMedia = item.media;
+    }
+
+    if (el && targetMedia && targetMedia.src) {
       if (el.tagName === 'IMG') {
-        el.src = item.media.src;
+        el.src = targetMedia.src;
       } else if (el.tagName === 'AUDIO' || el.tagName === 'SOURCE') {
-        el.src = item.media.src;
+        el.src = targetMedia.src;
         if (el.tagName === 'AUDIO') {
           el.load();
         }
-      } else if (item.media.type === 'image') {
-        el.style.backgroundImage = `url("${item.media.src}")`;
-      } else if (item.media.type === 'audio') {
+      } else if (targetMedia.type === 'image') {
+        el.style.backgroundImage = `url("${targetMedia.src}")`;
+      } else if (targetMedia.type === 'audio') {
         const audioEl = el.querySelector('audio') || doc.querySelector('#audio');
         if (audioEl) {
-          audioEl.src = item.media.src;
+          audioEl.src = targetMedia.src;
           audioEl.load();
         }
       }
     }
 
-    // 4. Universal styles
+    // 4. Universal styles (Applies to all devices)
     if (item.styles && typeof item.styles === 'object') {
       const declarations = Object.entries(item.styles)
         .filter(([_, val]) => val !== undefined && val !== null && val !== '')
@@ -171,7 +275,7 @@ export function applyDesignSchema(schema, doc = document) {
     if (item.breakpoints) {
       if (item.breakpoints.desktop && typeof item.breakpoints.desktop === 'object') {
         const dDec = Object.entries(item.breakpoints.desktop)
-          .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+          .filter(([key, val]) => key !== 'text' && key !== 'media' && val !== undefined && val !== null && val !== '')
           .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
           .join(' ');
         if (dDec) desktopCssRules.push(`${selector} { ${dDec} }`);
@@ -179,7 +283,7 @@ export function applyDesignSchema(schema, doc = document) {
 
       if (item.breakpoints.tablet && typeof item.breakpoints.tablet === 'object') {
         const tDec = Object.entries(item.breakpoints.tablet)
-          .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+          .filter(([key, val]) => key !== 'text' && key !== 'media' && val !== undefined && val !== null && val !== '')
           .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
           .join(' ');
         if (tDec) tabletCssRules.push(`${selector} { ${tDec} }`);
@@ -187,25 +291,13 @@ export function applyDesignSchema(schema, doc = document) {
 
       if (item.breakpoints.mobile && typeof item.breakpoints.mobile === 'object') {
         const mDec = Object.entries(item.breakpoints.mobile)
-          .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+          .filter(([key, val]) => key !== 'text' && key !== 'media' && val !== undefined && val !== null && val !== '')
           .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
           .join(' ');
         if (mDec) mobileCssRules.push(`${selector} { ${mDec} }`);
       }
     }
   });
-
-  // Inject or update stylesheet
-  let styleTag = doc.getElementById('eko-design-schema-styles');
-  if (!styleTag) {
-    styleTag = doc.createElement('style');
-    styleTag.id = 'eko-design-schema-styles';
-    if (doc.head) {
-      doc.head.appendChild(styleTag);
-    } else if (doc.body) {
-      doc.body.appendChild(styleTag);
-    }
-  }
 
   let finalCss = universalCssRules.join('\n');
   if (desktopCssRules.length > 0) {
