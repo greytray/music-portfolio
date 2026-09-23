@@ -197,6 +197,15 @@ export class SidePanel {
         computedTextAlign: computed ? computed.textAlign : '',
         computedLineHeight: computed ? computed.lineHeight : '',
         computedLetterSpacing: computed ? computed.letterSpacing : '',
+        computedMarginTop: computed ? computed.marginTop : '',
+        computedMarginBottom: computed ? computed.marginBottom : '',
+        computedMarginLeft: computed ? computed.marginLeft : '',
+        computedMarginRight: computed ? computed.marginRight : '',
+        computedPaddingTop: computed ? computed.paddingTop : '',
+        computedPaddingBottom: computed ? computed.paddingBottom : '',
+        computedPaddingLeft: computed ? computed.paddingLeft : '',
+        computedPaddingRight: computed ? computed.paddingRight : '',
+        computedGap: computed ? computed.gap : '',
       });
     }
   }
@@ -1657,20 +1666,56 @@ export class SidePanel {
   _buildSpacingTabHtml() {
     const selector = this.activeMeta ? this.activeMeta.selector : null;
     const baseline = selector ? this.elementBaselines.get(selector) : null;
-    const s = this.activeMeta.styles;
-    const computed = window.getComputedStyle ? window.getComputedStyle(this.activeElement) : s;
+    const s = (this.activeMeta && this.activeMeta.styles) ? this.activeMeta.styles : {};
+    const win = (this.activeElement && this.activeElement.ownerDocument) ? this.activeElement.ownerDocument.defaultView : window;
+    const computed = (win && this.activeElement) ? win.getComputedStyle(this.activeElement) : null;
 
-    const mt = parseFloat(this.getEffectiveFieldValue('marginTop', baseline ? baseline.marginTop : (s.marginTop || computed.marginTop))) || 0;
-    const mb = parseFloat(this.getEffectiveFieldValue('marginBottom', baseline ? baseline.marginBottom : (s.marginBottom || computed.marginBottom))) || 0;
-    const ml = parseFloat(this.getEffectiveFieldValue('marginLeft', baseline ? baseline.marginLeft : (s.marginLeft || computed.marginLeft))) || 0;
-    const mr = parseFloat(this.getEffectiveFieldValue('marginRight', baseline ? baseline.marginRight : (s.marginRight || computed.marginRight))) || 0;
+    const getSpacingValue = (key) => {
+      // 1. Check if user has an explicit override (device-scoped or universal)
+      const overrideVal = this.getEffectiveFieldValue(key, null);
+      if (overrideVal !== null && overrideVal !== undefined && overrideVal !== '') {
+        const n = parseFloat(overrideVal);
+        if (!isNaN(n)) return Math.round(n);
+      }
 
-    const pt = parseFloat(this.getEffectiveFieldValue('paddingTop', baseline ? baseline.paddingTop : (s.paddingTop || computed.paddingTop))) || 0;
-    const pb = parseFloat(this.getEffectiveFieldValue('paddingBottom', baseline ? baseline.paddingBottom : (s.paddingBottom || computed.paddingBottom))) || 0;
-    const pl = parseFloat(this.getEffectiveFieldValue('paddingLeft', baseline ? baseline.paddingLeft : (s.paddingLeft || computed.paddingLeft))) || 0;
-    const pr = parseFloat(this.getEffectiveFieldValue('paddingRight', baseline ? baseline.paddingRight : (s.paddingRight || computed.paddingRight))) || 0;
+      // 2. Check metadata styles snapshot extracted when element was inspected
+      if (s && s[key] !== undefined && s[key] !== null && s[key] !== '') {
+        const n = parseFloat(s[key]);
+        if (!isNaN(n)) return Math.round(n);
+      }
 
-    const gap = parseFloat(this.getEffectiveFieldValue('gap', baseline ? baseline.gap : (s.gap || computed.gap))) || 0;
+      // 3. Check live computed style from iframe element
+      if (computed) {
+        const compVal = computed[key];
+        if (compVal !== undefined && compVal !== null && compVal !== '' && compVal !== 'normal' && compVal !== 'auto') {
+          const n = parseFloat(compVal);
+          if (!isNaN(n)) return Math.round(n);
+        }
+      }
+
+      // 4. Check baseline computed property
+      if (baseline) {
+        const baseKey = `computed${key.charAt(0).toUpperCase() + key.slice(1)}`;
+        if (baseline[baseKey] !== undefined && baseline[baseKey] !== '' && baseline[baseKey] !== 'normal' && baseline[baseKey] !== 'auto') {
+          const n = parseFloat(baseline[baseKey]);
+          if (!isNaN(n)) return Math.round(n);
+        }
+      }
+
+      return 0;
+    };
+
+    const mt = getSpacingValue('marginTop');
+    const mb = getSpacingValue('marginBottom');
+    const ml = getSpacingValue('marginLeft');
+    const mr = getSpacingValue('marginRight');
+
+    const pt = getSpacingValue('paddingTop');
+    const pb = getSpacingValue('paddingBottom');
+    const pl = getSpacingValue('paddingLeft');
+    const pr = getSpacingValue('paddingRight');
+
+    const gap = getSpacingValue('gap');
 
     const hasMarginChanged = this.isFieldChanged('marginTop') || this.isFieldChanged('marginBottom') || this.isFieldChanged('marginLeft') || this.isFieldChanged('marginRight');
     const hasPaddingChanged = this.isFieldChanged('paddingTop') || this.isFieldChanged('paddingBottom') || this.isFieldChanged('paddingLeft') || this.isFieldChanged('paddingRight');
