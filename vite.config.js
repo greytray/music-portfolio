@@ -64,6 +64,198 @@ function readRequestBody(req) {
   });
 }
 
+function camelToKebab(str) {
+  return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+}
+
+/**
+ * Compiles a visual schema object into full CSS stylesheet with universal and responsive breakpoint media queries.
+ */
+function generateCssFromSchema(schema) {
+  if (!schema || !schema.elements) return '';
+
+  const elements = schema.elements;
+  const universalCssRules = [];
+  const desktopCssRules = [];
+  const tabletCssRules = [];
+  const mobileCssRules = [];
+
+  Object.keys(elements).forEach(key => {
+    const item = elements[key];
+    if (!item) return;
+    const selector = item.selector || (key.startsWith('#') || key.startsWith('.') ? key : `#${key}`);
+
+    // Universal styles
+    if (item.styles && typeof item.styles === 'object') {
+      const declarations = Object.entries(item.styles)
+        .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+        .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
+        .join(' ');
+      if (declarations) {
+        universalCssRules.push(`    ${selector} { ${declarations} }`);
+      }
+    }
+
+    // Breakpoint styles
+    if (item.breakpoints) {
+      if (item.breakpoints.desktop && typeof item.breakpoints.desktop === 'object') {
+        const dDec = Object.entries(item.breakpoints.desktop)
+          .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+          .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
+          .join(' ');
+        if (dDec) desktopCssRules.push(`    ${selector} { ${dDec} }`);
+      }
+
+      if (item.breakpoints.tablet && typeof item.breakpoints.tablet === 'object') {
+        const tDec = Object.entries(item.breakpoints.tablet)
+          .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+          .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
+          .join(' ');
+        if (tDec) tabletCssRules.push(`    ${selector} { ${tDec} }`);
+      }
+
+      if (item.breakpoints.mobile && typeof item.breakpoints.mobile === 'object') {
+        const mDec = Object.entries(item.breakpoints.mobile)
+          .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+          .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
+          .join(' ');
+        if (mDec) mobileCssRules.push(`    ${selector} { ${mDec} }`);
+      }
+    }
+  });
+
+  const sections = [];
+  if (universalCssRules.length > 0) {
+    sections.push(`  /* Universal Overrides */\n${universalCssRules.join('\n')}`);
+  }
+  if (desktopCssRules.length > 0) {
+    sections.push(`  /* Desktop Overrides */\n  @media (min-width: 1024px) {\n${desktopCssRules.join('\n')}\n  }`);
+  }
+  if (tabletCssRules.length > 0) {
+    sections.push(`  /* Tablet Overrides */\n  @media (min-width: 768px) and (max-width: 1023px) {\n${tabletCssRules.join('\n')}\n  }`);
+  }
+  if (mobileCssRules.length > 0) {
+    sections.push(`  /* Mobile Overrides (margin, padding, sizing) */\n  @media (max-width: 767px) {\n${mobileCssRules.join('\n')}\n  }`);
+  }
+
+  return sections.join('\n\n');
+}
+
+/**
+ * Persists visual schema changes into internal source files (index.html, JSON schemas),
+ * recompiles production assets with `npm run build` so shared & deployed sites are updated,
+ * and records git commits.
+ */
+function applyAndDeploySchema(publishedSchema) {
+  // 1. Permanent repository storage in src/data/publishedSchema.json
+  const dataDir = path.resolve(process.cwd(), 'src', 'data');
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+  const publishedPath = path.join(dataDir, 'publishedSchema.json');
+  fs.writeFileSync(publishedPath, JSON.stringify(publishedSchema, null, 2), 'utf8');
+
+  // 2. Mirror to public/publishedSchema.json for instant static availability on any device
+  const publicDir = path.resolve(process.cwd(), 'public');
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
+  }
+  fs.writeFileSync(path.join(publicDir, 'publishedSchema.json'), JSON.stringify(publishedSchema, null, 2), 'utf8');
+
+  // 3. Platform metadata.json update + public mirror
+  const metaPath = path.resolve(process.cwd(), 'metadata.json');
+  let currentMeta = {
+    name: "Eko — Producer & Audio Engineer",
+    description: "Eko — premium music production, custom beats, mixing, mastering, audio editing, and production lessons.",
+    requestFramePermissions: [],
+    majorCapabilities: ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  };
+  if (fs.existsSync(metaPath)) {
+    try {
+      currentMeta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+    } catch (_) {}
+  }
+  currentMeta.designModeSchema = publishedSchema;
+  fs.writeFileSync(metaPath, JSON.stringify(currentMeta, null, 2), 'utf8');
+  fs.writeFileSync(path.join(publicDir, 'metadata.json'), JSON.stringify(currentMeta, null, 2), 'utf8');
+
+  // 4. Directly update internal code file: index.html (both responsive CSS and content overrides)
+  const indexHtmlPath = path.resolve(process.cwd(), 'index.html');
+  if (fs.existsSync(indexHtmlPath)) {
+    try {
+      let htmlContent = fs.readFileSync(indexHtmlPath, 'utf8');
+
+      // 4a. Compile schema styles (universal + mobile/tablet/desktop breakpoints) into <style id="eko-design-schema-styles">
+      const compiledCss = generateCssFromSchema(publishedSchema);
+      const styleTag = `  <style id="eko-design-schema-styles">\n${compiledCss}\n  </style>`;
+      if (htmlContent.includes('id="eko-design-schema-styles"')) {
+        htmlContent = htmlContent.replace(/<style id="eko-design-schema-styles"[^>]*>[\s\S]*?<\/style>/, styleTag.trim());
+      } else {
+        htmlContent = htmlContent.replace('</head>', `${styleTag}\n</head>`);
+      }
+
+      // 4b. Patch text and media overrides directly into HTML markup
+      if (publishedSchema.elements) {
+        Object.entries(publishedSchema.elements).forEach(([selectorKey, item]) => {
+          if (!item) return;
+          const selector = item.selector || selectorKey;
+
+          // Text override
+          if (typeof item.text === 'string' && item.text.trim() !== '') {
+            const newText = item.text.trim();
+            // Class match
+            const classMatches = selector.match(/\.([a-zA-Z0-9_-]+)/g);
+            if (classMatches && classMatches.length > 0) {
+              const targetClass = classMatches[classMatches.length - 1].replace('.', '');
+              const tagRegex = new RegExp(`(<[^>]*class=["'][^"']*\\b${targetClass}\\b[^"']*["'][^>]*>)(.*?)(<\\/[a-zA-Z0-9]+>)`, 'gs');
+              if (tagRegex.test(htmlContent)) {
+                htmlContent = htmlContent.replace(tagRegex, `$1${newText}$3`);
+              }
+            }
+            // ID match
+            const idMatches = selector.match(/#([a-zA-Z0-9_-]+)/g);
+            if (idMatches && idMatches.length > 0) {
+              const targetId = idMatches[idMatches.length - 1].replace('#', '');
+              const idRegex = new RegExp(`(<[^>]*id=["']${targetId}["'][^>]*>)(.*?)(<\\/[a-zA-Z0-9]+>)`, 'gs');
+              if (idRegex.test(htmlContent)) {
+                htmlContent = htmlContent.replace(idRegex, `$1${newText}$3`);
+              }
+            }
+          }
+
+          // Media override
+          if (item.media && item.media.src) {
+            const newSrc = item.media.src;
+            const idMatches = selector.match(/#([a-zA-Z0-9_-]+)/g);
+            if (idMatches && idMatches.length > 0) {
+              const targetId = idMatches[idMatches.length - 1].replace('#', '');
+              const srcRegex = new RegExp(`(<[^>]*id=["']${targetId}["'][^>]*?)src=["'][^"']*["']`, 'gs');
+              if (srcRegex.test(htmlContent)) {
+                htmlContent = htmlContent.replace(srcRegex, `$1src="${newSrc}"`);
+              }
+            }
+          }
+        });
+      }
+
+      fs.writeFileSync(indexHtmlPath, htmlContent, 'utf8');
+    } catch (htmlErr) {
+      console.warn('[Admin API] Source code html patching notice:', htmlErr.message);
+    }
+  }
+
+  // 5. Automatically recompile production bundle (npm run build) so deployed & shared instances are updated immediately
+  let buildSuccess = false;
+  try {
+    execSync('npm run build', { stdio: 'pipe' });
+    buildSuccess = true;
+  } catch (buildErr) {
+    console.warn('[Admin API] Automatic build warning:', buildErr.message);
+  }
+
+  return { buildSuccess };
+}
+
 function adminDesignModePlugin() {
   const makeHandler = (server) => async (req, res, next) => {
     const rawUrl = req.url || '';
@@ -212,78 +404,11 @@ function adminDesignModePlugin() {
           version: json.schema.version || '1.0.0'
         };
 
-        // 1. Permanent repository storage in src/data/publishedSchema.json
+        // Persist to internal source files, schemas, public assets, and compile production build for deployment
+        const deployResult = applyAndDeploySchema(publishedSchema);
+
+        // Append to publish checkpoints history (Publish History)
         const dataDir = path.resolve(process.cwd(), 'src', 'data');
-        if (!fs.existsSync(dataDir)) {
-          fs.mkdirSync(dataDir, { recursive: true });
-        }
-        const publishedPath = path.join(dataDir, 'publishedSchema.json');
-        fs.writeFileSync(publishedPath, JSON.stringify(publishedSchema, null, 2), 'utf8');
-
-        // 2. Platform metadata.json update
-        const metaPath = path.resolve(process.cwd(), 'metadata.json');
-        let currentMeta = {
-          name: "Eko — Producer & Audio Engineer",
-          description: "Eko — premium music production, custom beats, mixing, mastering, audio editing, and production lessons.",
-          requestFramePermissions: [],
-          majorCapabilities: ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-        };
-
-        if (fs.existsSync(metaPath)) {
-          try {
-            currentMeta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
-          } catch (e) {
-            console.warn('[Admin API] Error parsing existing metadata.json, resetting with defaults', e);
-          }
-        }
-        currentMeta.designModeSchema = publishedSchema;
-        fs.writeFileSync(metaPath, JSON.stringify(currentMeta, null, 2), 'utf8');
-
-        // 2b. Directly patch published text changes into internal source files (index.html)
-        const indexHtmlPath = path.resolve(process.cwd(), 'index.html');
-        if (fs.existsSync(indexHtmlPath) && publishedSchema.elements) {
-          try {
-            let htmlContent = fs.readFileSync(indexHtmlPath, 'utf8');
-            let htmlModified = false;
-
-            Object.entries(publishedSchema.elements).forEach(([selectorKey, item]) => {
-              if (item && typeof item.text === 'string' && item.text.trim() !== '') {
-                const selector = item.selector || selectorKey;
-                const newText = item.text.trim();
-
-                // 1) Match by class name if selector is .className or contains .className
-                const classMatches = selector.match(/\.([a-zA-Z0-9_-]+)/g);
-                if (classMatches && classMatches.length > 0) {
-                  const targetClass = classMatches[classMatches.length - 1].replace('.', '');
-                  const tagRegex = new RegExp(`(<[^>]*class=["'][^"']*\\b${targetClass}\\b[^"']*["'][^>]*>)(.*?)(<\\/[a-zA-Z0-9]+>)`, 'gs');
-                  if (tagRegex.test(htmlContent)) {
-                    htmlContent = htmlContent.replace(tagRegex, `$1${newText}$3`);
-                    htmlModified = true;
-                  }
-                }
-
-                // 2) Match by ID if selector is #id or contains #id
-                const idMatches = selector.match(/#([a-zA-Z0-9_-]+)/g);
-                if (idMatches && idMatches.length > 0) {
-                  const targetId = idMatches[idMatches.length - 1].replace('#', '');
-                  const idRegex = new RegExp(`(<[^>]*id=["']${targetId}["'][^>]*>)(.*?)(<\\/[a-zA-Z0-9]+>)`, 'gs');
-                  if (idRegex.test(htmlContent)) {
-                    htmlContent = htmlContent.replace(idRegex, `$1${newText}$3`);
-                    htmlModified = true;
-                  }
-                }
-              }
-            });
-
-            if (htmlModified) {
-              fs.writeFileSync(indexHtmlPath, htmlContent, 'utf8');
-            }
-          } catch (htmlErr) {
-            console.warn('[Admin API] Source code html patching notice:', htmlErr.message);
-          }
-        }
-
-        // 3. Append to publish checkpoints history (Publish History)
         const historyPath = path.join(dataDir, 'publishHistory.json');
         let history = [];
         if (fs.existsSync(historyPath)) {
@@ -311,20 +436,21 @@ function adminDesignModePlugin() {
         let gitCommitted = false;
         let gitMessage = '';
         try {
-          execSync('git add index.html src/data/publishedSchema.json src/data/publishHistory.json metadata.json', { stdio: 'pipe' });
+          execSync('git add index.html src/data/publishedSchema.json public/publishedSchema.json src/data/publishHistory.json metadata.json public/metadata.json dist/', { stdio: 'pipe' });
           execSync(`git commit -m "chore(design-mode): publish checkpoint ${checkpointId} (${elementsCount} elements)"`, { stdio: 'pipe' });
           gitCommitted = true;
-          gitMessage = 'Git commit created successfully';
+          gitMessage = 'Git commit and production build created successfully';
         } catch (gitErr) {
-          gitMessage = 'Saved permanently to disk (git status: ' + (gitErr.message || 'not a git repo') + ')';
+          gitMessage = 'Saved permanently to source files and built for deployment (' + (gitErr.message || '') + ')';
         }
 
         res.setHeader('Content-Type', 'application/json');
         return res.end(JSON.stringify({
           success: true,
-          message: 'Visual design schema permanently published to frontend and history created',
+          message: 'Visual design schema permanently published to internal files and deployed',
           gitCommitted,
           gitMessage,
+          buildSuccess: deployResult.buildSuccess,
           checkpoint: newCheckpoint,
           timestamp: publishedSchema.lastPublished,
           schema: publishedSchema
@@ -395,23 +521,14 @@ function adminDesignModePlugin() {
           lastPublished: new Date().toISOString()
         };
 
-        // Write restored schema to publishedSchema.json & metadata.json
-        const publishedPath = path.resolve(process.cwd(), 'src', 'data', 'publishedSchema.json');
-        fs.writeFileSync(publishedPath, JSON.stringify(restoredSchema, null, 2), 'utf8');
-
-        const metaPath = path.resolve(process.cwd(), 'metadata.json');
-        if (fs.existsSync(metaPath)) {
-          try {
-            const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
-            meta.designModeSchema = restoredSchema;
-            fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2), 'utf8');
-          } catch (_) {}
-        }
+        // Write restored schema to internal source files, schemas, and rebuild for deployment
+        const deployResult = applyAndDeploySchema(restoredSchema);
 
         res.setHeader('Content-Type', 'application/json');
         return res.end(JSON.stringify({
           success: true,
-          message: `Successfully restored checkpoint "${target.label}"`,
+          message: `Successfully restored checkpoint "${target.label}" and rebuilt website`,
+          buildSuccess: deployResult.buildSuccess,
           restoredCheckpoint: target,
           schema: restoredSchema
         }));

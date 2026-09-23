@@ -4,10 +4,87 @@
  * directly to storefront elements without requiring the heavy administrative editing suite.
  */
 
+import bundledSchema from '../data/publishedSchema.json';
+
 const STORAGE_KEY = 'eko_published_design_schema';
 
 function camelToKebab(str) {
   return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+}
+
+/**
+ * Compiles a schema object into pure CSS stylesheet text with universal and responsive breakpoint media queries.
+ * @param {Object} schema
+ * @returns {string}
+ */
+export function generateCssFromSchema(schema) {
+  if (!schema || !schema.elements) return '';
+
+  const elements = schema.elements;
+  const universalCssRules = [];
+  const desktopCssRules = [];
+  const tabletCssRules = [];
+  const mobileCssRules = [];
+
+  Object.keys(elements).forEach(key => {
+    const item = elements[key];
+    if (!item) return;
+    const selector = item.selector || (key.startsWith('#') || key.startsWith('.') ? key : `#${key}`);
+
+    // Universal styles
+    if (item.styles && typeof item.styles === 'object') {
+      const declarations = Object.entries(item.styles)
+        .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+        .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
+        .join(' ');
+      if (declarations) {
+        universalCssRules.push(`  ${selector} { ${declarations} }`);
+      }
+    }
+
+    // Breakpoint styles
+    if (item.breakpoints) {
+      if (item.breakpoints.desktop && typeof item.breakpoints.desktop === 'object') {
+        const dDec = Object.entries(item.breakpoints.desktop)
+          .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+          .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
+          .join(' ');
+        if (dDec) desktopCssRules.push(`    ${selector} { ${dDec} }`);
+      }
+
+      if (item.breakpoints.tablet && typeof item.breakpoints.tablet === 'object') {
+        const tDec = Object.entries(item.breakpoints.tablet)
+          .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+          .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
+          .join(' ');
+        if (tDec) tabletCssRules.push(`    ${selector} { ${tDec} }`);
+      }
+
+      if (item.breakpoints.mobile && typeof item.breakpoints.mobile === 'object') {
+        const mDec = Object.entries(item.breakpoints.mobile)
+          .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+          .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
+          .join(' ');
+        if (mDec) mobileCssRules.push(`    ${selector} { ${mDec} }`);
+      }
+    }
+  });
+
+  const sections = [];
+  if (universalCssRules.length > 0) {
+    sections.push(`  /* Universal Overrides */\n${universalCssRules.join('\n')}`);
+  }
+  if (desktopCssRules.length > 0) {
+    sections.push(`  /* Desktop Overrides */\n  @media (min-width: 1024px) {\n${desktopCssRules.join('\n')}\n  }`);
+  }
+  if (tabletCssRules.length > 0) {
+    sections.push(`  /* Tablet Overrides */\n  @media (min-width: 768px) and (max-width: 1023px) {\n${tabletCssRules.join('\n')}\n  }`);
+  }
+  if (mobileCssRules.length > 0) {
+    sections.push(`  /* Mobile Overrides (margin, padding, sizing) */\n  @media (max-width: 767px) {\n${mobileCssRules.join('\n')}\n  }`);
+  }
+
+  return sections.join('\n\n');
 }
 
 /**
@@ -148,29 +225,36 @@ export function applyDesignSchema(schema, doc = document) {
 
 /**
  * Fetches and initializes the published visual schema on page load.
- * Checks local cache first for instant 0ms render, then verifies with /metadata.json.
+ * 1. Immediately applies compile-time bundled schema (0ms guarantee across all devices).
+ * 2. Checks local cache if newer changes exist on this device.
+ * 3. Checks /api/admin/schema, /publishedSchema.json, and /metadata.json for fresh updates.
  */
 export async function initPublishedDesignSchema(doc = document) {
-  let hasApplied = false;
+  const countElements = (s) => (s && s.elements ? Object.keys(s.elements).length : 0);
 
-  // 1. Immediate local cache application (instant 0ms render without flash)
+  // 1. Instant compile-time bundled schema application (0ms render on ANY device)
+  if (bundledSchema && countElements(bundledSchema) > 0) {
+    applyDesignSchema(bundledSchema, doc);
+  }
+
+  // 2. Check local storage in case device has unsynced local changes
   try {
     const cached = localStorage.getItem(STORAGE_KEY);
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (parsed && parsed.elements && Object.keys(parsed.elements).length > 0) {
-        applyDesignSchema(parsed, doc);
-        hasApplied = true;
+      if (parsed && countElements(parsed) > 0) {
+        const cachedTime = new Date(parsed.lastUpdated || 0).getTime();
+        const bundledTime = new Date(bundledSchema.lastUpdated || 0).getTime();
+        if (cachedTime > bundledTime) {
+          applyDesignSchema(parsed, doc);
+        }
       }
     }
   } catch (err) {
     // Ignore storage errors in restricted contexts
   }
 
-  // Helper to count valid elements
-  const countElements = (s) => (s && s.elements ? Object.keys(s.elements).length : 0);
-
-  // 2. Fetch authoritative schema from backend API with timestamp cache-busting
+  // 3. Fetch authoritative schema from backend API with timestamp cache-busting
   try {
     const res = await fetch(`/api/admin/schema?t=${Date.now()}`, { cache: 'no-store' });
     if (res.ok) {
@@ -190,37 +274,46 @@ export async function initPublishedDesignSchema(doc = document) {
     // API unavailable (static host or offline)
   }
 
-  // 3. Fallback: Check publishedSchema.json static file
+  // 4. Fallback: Check /publishedSchema.json static file
   try {
-    const fileRes = await fetch(`/src/data/publishedSchema.json?t=${Date.now()}`, { cache: 'no-store' });
+    const fileRes = await fetch(`/publishedSchema.json?t=${Date.now()}`, { cache: 'no-store' });
     if (fileRes.ok) {
       const fileSchema = await fileRes.json();
-      if (fileSchema) {
-        const count = countElements(fileSchema);
-        if (count > 0) {
-          applyDesignSchema(fileSchema, doc);
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(fileSchema));
-          } catch {}
-          return;
-        }
+      if (fileSchema && countElements(fileSchema) > 0) {
+        applyDesignSchema(fileSchema, doc);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(fileSchema));
+        } catch {}
+        return;
       }
     }
   } catch {}
 
-  // 4. Fallback: check metadata.json
+  // 5. Fallback: Check /src/data/publishedSchema.json
+  try {
+    const fileRes = await fetch(`/src/data/publishedSchema.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (fileRes.ok) {
+      const fileSchema = await fileRes.json();
+      if (fileSchema && countElements(fileSchema) > 0) {
+        applyDesignSchema(fileSchema, doc);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(fileSchema));
+        } catch {}
+        return;
+      }
+    }
+  } catch {}
+
+  // 6. Fallback: check /metadata.json
   try {
     const metaRes = await fetch(`/metadata.json?t=${Date.now()}`, { cache: 'no-store' });
     if (metaRes.ok) {
       const meta = await metaRes.json();
-      if (meta && meta.designModeSchema) {
-        const count = countElements(meta.designModeSchema);
-        if (count > 0) {
-          applyDesignSchema(meta.designModeSchema, doc);
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(meta.designModeSchema));
-          } catch {}
-        }
+      if (meta && meta.designModeSchema && countElements(meta.designModeSchema) > 0) {
+        applyDesignSchema(meta.designModeSchema, doc);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(meta.designModeSchema));
+        } catch {}
       }
     }
   } catch {}

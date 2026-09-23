@@ -49,6 +49,21 @@ export async function onRequest(context) {
 
       // 3. Try fetching static publishedSchema.json from origin asset
       try {
+        const pubUrl = new URL('/publishedSchema.json', request.url);
+        const pubRes = await fetch(pubUrl.toString());
+        if (pubRes.ok) {
+          const pubSchema = await pubRes.json();
+          if (pubSchema && pubSchema.elements && Object.keys(pubSchema.elements).length > 0) {
+            return new Response(JSON.stringify({ success: true, schema: pubSchema }), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          }
+        }
+      } catch (_) {}
+
+      // 4. Try fetching /src/data/publishedSchema.json from origin asset
+      try {
         const originUrl = new URL('/src/data/publishedSchema.json', request.url);
         const staticRes = await fetch(originUrl.toString());
         if (staticRes.ok) {
