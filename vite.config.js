@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
+import { JSDOM } from "jsdom";
 import {
   createSessionToken,
   verifySessionToken,
@@ -106,6 +107,14 @@ function generateCssFromSchema(schema) {
   const tabletCssRules = [];
   const mobileCssRules = [];
 
+  // Responsive Device Text Rules
+  universalCssRules.push(`
+  .eko-device-text { display: none !important; }
+  @media (min-width: 1024px) { .eko-text-desktop { display: inline !important; } }
+  @media (min-width: 768px) and (max-width: 1023px) { .eko-text-tablet { display: inline !important; } }
+  @media (max-width: 767px) { .eko-text-mobile { display: inline !important; } }
+  `.trim());
+
   Object.keys(elements).forEach(key => {
     const item = elements[key];
     if (!item) return;
@@ -177,78 +186,83 @@ function generateCssFromSchema(schema) {
 function patchHtmlWithSchema(htmlContent, schema) {
   if (!schema || !schema.elements) return htmlContent;
 
-  // 1. Compile schema styles (universal + mobile/tablet/desktop breakpoints) into <style id="eko-design-schema-styles">
-  const compiledCss = generateCssFromSchema(schema);
-  const styleTag = `  <style id="eko-design-schema-styles">\n${compiledCss}\n  </style>`;
-  if (htmlContent.includes('id="eko-design-schema-styles"')) {
-    htmlContent = htmlContent.replace(/<style id="eko-design-schema-styles"[^>]*>[\s\S]*?<\/style>/, styleTag.trim());
-  } else {
-    htmlContent = htmlContent.replace('</head>', `${styleTag}\n</head>`);
+  try {
+    const dom = new JSDOM(htmlContent);
+    const doc = dom.window.document;
+
+    // 1. Inject or update style tag with compiled CSS rules
+    let styleTag = doc.getElementById('eko-design-schema-styles');
+    if (!styleTag) {
+      styleTag = doc.createElement('style');
+      styleTag.id = 'eko-design-schema-styles';
+      doc.head.appendChild(styleTag);
+    }
+    styleTag.textContent = generateCssFromSchema(schema);
+
+    // 2. Direct DOM mutation for each element in schema
+    Object.keys(schema.elements).forEach(key => {
+      const item = schema.elements[key];
+      if (!item) return;
+
+      const rawSelector = item.selector || (key.startsWith('#') || key.startsWith('.') ? key : `#${key}`);
+
+      try {
+        const el = doc.querySelector(rawSelector);
+        if (!el) return;
+
+        // --- TEXT OVERRIDES ---
+        const hasUniversalText = item.text !== undefined && typeof item.text === 'string';
+        const hasMobileText = item.breakpoints?.mobile?.text !== undefined;
+        const hasTabletText = item.breakpoints?.tablet?.text !== undefined;
+        const hasDesktopText = item.breakpoints?.desktop?.text !== undefined;
+
+        if (hasMobileText || hasTabletText || hasDesktopText) {
+          // Device-specific text override: embed responsive text wrappers directly in source HTML
+          const baseText = hasUniversalText ? item.text : (item.html || el.textContent || '');
+          const desktopText = hasDesktopText ? item.breakpoints.desktop.text : baseText;
+          const tabletText = hasTabletText ? item.breakpoints.tablet.text : baseText;
+          const mobileText = hasMobileText ? item.breakpoints.mobile.text : baseText;
+
+          el.innerHTML = `
+            <span class="eko-device-text eko-text-desktop">${desktopText}</span>
+            <span class="eko-device-text eko-text-tablet">${tabletText}</span>
+            <span class="eko-device-text eko-text-mobile">${mobileText}</span>
+          `.trim();
+        } else if (hasUniversalText) {
+          if (item.html) {
+            el.innerHTML = item.html;
+          } else {
+            el.textContent = item.text;
+          }
+        }
+
+        // --- MEDIA OVERRIDES ---
+        if (item.media && item.media.src) {
+          if (el.tagName === 'IMG') {
+            el.setAttribute('src', item.media.src);
+          } else if (el.tagName === 'AUDIO' || el.tagName === 'SOURCE') {
+            el.setAttribute('src', item.media.src);
+          } else {
+            el.style.backgroundImage = `url("${item.media.src}")`;
+          }
+        }
+
+        // --- DATA ATTRIBUTES ---
+        if (item.dataAttributes && typeof item.dataAttributes === 'object') {
+          Object.entries(item.dataAttributes).forEach(([attr, val]) => {
+            el.setAttribute(`data-${attr}`, val);
+          });
+        }
+      } catch (err) {
+        console.warn(`[Direct Source Patch Notice] Selector '${rawSelector}':`, err.message);
+      }
+    });
+
+    return dom.serialize();
+  } catch (err) {
+    console.error('[Direct Source Patch Error]', err);
+    return htmlContent;
   }
-
-  // 2. Direct internal HTML content / attribute updates for elements matching IDs or Classes
-  Object.keys(schema.elements).forEach(key => {
-    const item = schema.elements[key];
-    if (!item) return;
-    const selector = item.selector || key;
-
-    // Extract the LAST ID and LAST Class in the selector so we target the actual element, not ancestor containers
-    const idMatches = selector.match(/#([a-zA-Z0-9_-]+)/g);
-    const classMatches = selector.match(/\.([a-zA-Z0-9_-]+)/g);
-    const elId = idMatches ? idMatches[idMatches.length - 1].substring(1) : null;
-    const elClass = classMatches ? classMatches[classMatches.length - 1].substring(1) : null;
-
-    const effectiveText = item.text !== undefined
-      ? item.text
-      : (item.breakpoints?.mobile?.text || item.breakpoints?.desktop?.text || item.breakpoints?.tablet?.text);
-
-    if (effectiveText !== undefined && typeof effectiveText === 'string') {
-      const targetContent = item.html || effectiveText;
-      if (elId) {
-        const idRegex = new RegExp(`(<([a-zA-Z0-9]+)[^>]*\\bid=["']${elId}["'][^>]*>)([\\s\\S]*?)(<\\/\\2>)`, 'i');
-        if (idRegex.test(htmlContent)) {
-          htmlContent = htmlContent.replace(idRegex, (match, openTag, tagName, oldInner, closeTag) => `${openTag}${targetContent}${closeTag}`);
-        }
-      } else if (elClass) {
-        const classRegex = new RegExp(`(<([a-zA-Z0-9]+)[^>]*\\bclass=["'][^"']*\\b${elClass}\\b[^"']*["'][^>]*>)([\\s\\S]*?)(<\\/\\2>)`, 'i');
-        if (classRegex.test(htmlContent)) {
-          htmlContent = htmlContent.replace(classRegex, (match, openTag, tagName, oldInner, closeTag) => `${openTag}${targetContent}${closeTag}`);
-        }
-      }
-    }
-
-    if (item.media && item.media.src) {
-      if (elId) {
-        const imgRegex = new RegExp(`(<img[^>]*\\bid=["']${elId}["'][^>]*\\bsrc=["'])[^"']*`, 'i');
-        if (imgRegex.test(htmlContent)) {
-          htmlContent = htmlContent.replace(imgRegex, `$1${item.media.src}`);
-        }
-      } else if (elClass) {
-        const imgRegex = new RegExp(`(<img[^>]*\\bclass=["'][^"']*\\b${elClass}\\b[^"']*["'][^>]*\\bsrc=["'])[^"']*`, 'i');
-        if (imgRegex.test(htmlContent)) {
-          htmlContent = htmlContent.replace(imgRegex, `$1${item.media.src}`);
-        }
-      }
-    }
-
-    if (item.dataAttributes && typeof item.dataAttributes === 'object') {
-      Object.entries(item.dataAttributes).forEach(([attrName, attrVal]) => {
-        if (elId) {
-          const attrRegex = new RegExp(`(<[a-zA-Z0-9]+[^>]*\\bid=["']${elId}["'][^>]*\\bdata-${attrName}=["'])[^"']*`, 'i');
-          if (attrRegex.test(htmlContent)) {
-            htmlContent = htmlContent.replace(attrRegex, `$1${attrVal}`);
-          }
-        } else if (elClass) {
-          const attrRegex = new RegExp(`(<[a-zA-Z0-9]+[^>]*\\bclass=["'][^"']*\\b${elClass}\\b[^"']*["'][^>]*\\bdata-${attrName}=["'])[^"']*`, 'i');
-          if (attrRegex.test(htmlContent)) {
-            htmlContent = htmlContent.replace(attrRegex, `$1${attrVal}`);
-          }
-        }
-      });
-    }
-  });
-
-  return htmlContent;
 }
 
 /**
