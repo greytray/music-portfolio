@@ -1,0 +1,9 @@
+/* ==========================================================================
+   PUBLISHED DESIGN STYLESHEET
+   Automatically generated from Admin Studio
+   ========================================================================== */
+
+.eko-device-text { display: none !important; }
+@media (min-width: 1024px) { .eko-text-desktop { display: inline !important; } }
+@media (min-width: 768px) and (max-width: 1023px) { .eko-text-tablet { display: inline !important; } }
+@media (max-width: 767px) { .eko-text-mobile { display: inline !important; } }

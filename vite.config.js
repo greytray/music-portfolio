@@ -271,19 +271,31 @@ function patchHtmlWithSchema(htmlContent, schema) {
  * and records git commits.
  */
 function applyAndDeploySchema(publishedSchema) {
-  // 1. Permanent repository storage in src/data/publishedSchema.json
+  // 1. Write compiled CSS directly into physical source file: src/styles/custom-design.css + public mirror
+  const stylesDir = path.resolve(process.cwd(), 'src', 'styles');
+  if (!fs.existsSync(stylesDir)) {
+    fs.mkdirSync(stylesDir, { recursive: true });
+  }
+  const publicDir = path.resolve(process.cwd(), 'public');
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
+  }
+  const publicStylesDir = path.resolve(publicDir, 'styles');
+  if (!fs.existsSync(publicStylesDir)) {
+    fs.mkdirSync(publicStylesDir, { recursive: true });
+  }
+
+  const compiledCss = generateCssFromSchema(publishedSchema);
+  fs.writeFileSync(path.join(stylesDir, 'custom-design.css'), compiledCss, 'utf8');
+  fs.writeFileSync(path.join(publicStylesDir, 'custom-design.css'), compiledCss, 'utf8');
+
+  // 2. Permanent repository storage in src/data/publishedSchema.json
   const dataDir = path.resolve(process.cwd(), 'src', 'data');
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
   }
   const publishedPath = path.join(dataDir, 'publishedSchema.json');
   fs.writeFileSync(publishedPath, JSON.stringify(publishedSchema, null, 2), 'utf8');
-
-  // 2. Mirror to public/publishedSchema.json for instant static availability on any device
-  const publicDir = path.resolve(process.cwd(), 'public');
-  if (!fs.existsSync(publicDir)) {
-    fs.mkdirSync(publicDir, { recursive: true });
-  }
   fs.writeFileSync(path.join(publicDir, 'publishedSchema.json'), JSON.stringify(publishedSchema, null, 2), 'utf8');
 
   // 3. Platform metadata.json update + public mirror
@@ -303,7 +315,7 @@ function applyAndDeploySchema(publishedSchema) {
   fs.writeFileSync(metaPath, JSON.stringify(currentMeta, null, 2), 'utf8');
   fs.writeFileSync(path.join(publicDir, 'metadata.json'), JSON.stringify(currentMeta, null, 2), 'utf8');
 
-  // 4. Directly update internal code file: index.html (both responsive CSS and content overrides)
+  // 4. Directly update internal code file: index.html (both responsive CSS link and content overrides)
   const indexHtmlPath = path.resolve(process.cwd(), 'index.html');
   if (fs.existsSync(indexHtmlPath)) {
     try {

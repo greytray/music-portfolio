@@ -1,3 +1,4 @@
+import './styles/custom-design.css';
 import './utils/perf.js';
 import { cartStore } from './store/cartStore.js';
 import { fastSmoothScrollTo } from './utils/scroll.js';
@@ -316,17 +317,19 @@ try {
 
 // Auto-run storefront initialization when DOM is ready
 function startApp() {
-  initPublishedDesignSchema();
+  const isDesignModePreview = Boolean(
+    document.documentElement.hasAttribute('data-preview-mode') ||
+    window.location.search.includes('admin_preview') ||
+    window.self !== window.top
+  );
+  if (isDesignModePreview) {
+    initPublishedDesignSchema();
+  }
   initHiddenPageArchitecture();
   initSectionIridescence();
   initAllCardTilts();
   initLiquidGlassButtons();
   initServicesCatalog();
-  setTimeout(() => {
-    if (document.__ekoLastActiveSchema) {
-      applyDesignSchema(document.__ekoLastActiveSchema, document);
-    }
-  }, 60);
 }
 
 if (document.readyState === 'loading') {
