@@ -60,7 +60,9 @@ export function generateCssFromSchema(schema) {
           .filter(isValidStyleEntry)
           .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
           .join(' ');
-        if (dDec) desktopCssRules.push(`    ${selector} { ${dDec} }`);
+        if (dDec) {
+          desktopCssRules.push(`  @media (min-width: 1024px) {\n    ${selector} { ${dDec} }\n  }\n  html[data-preview-mode="desktop"] ${selector} { ${dDec} }`);
+        }
       }
 
       if (item.breakpoints.tablet && typeof item.breakpoints.tablet === 'object') {
@@ -68,7 +70,9 @@ export function generateCssFromSchema(schema) {
           .filter(isValidStyleEntry)
           .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
           .join(' ');
-        if (tDec) tabletCssRules.push(`    ${selector} { ${tDec} }`);
+        if (tDec) {
+          tabletCssRules.push(`  @media (min-width: 768px) and (max-width: 1023px) {\n    ${selector} { ${tDec} }\n  }\n  html[data-preview-mode="tablet"] ${selector} { ${tDec} }`);
+        }
       }
 
       if (item.breakpoints.mobile && typeof item.breakpoints.mobile === 'object') {
@@ -76,7 +80,9 @@ export function generateCssFromSchema(schema) {
           .filter(isValidStyleEntry)
           .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
           .join(' ');
-        if (mDec) mobileCssRules.push(`    ${selector} { ${mDec} }`);
+        if (mDec) {
+          mobileCssRules.push(`  @media (max-width: 767px) {\n    ${selector} { ${mDec} }\n  }\n  html[data-preview-mode="mobile"] ${selector} { ${mDec} }`);
+        }
       }
     }
   });
@@ -86,13 +92,13 @@ export function generateCssFromSchema(schema) {
     sections.push(`  /* Universal Overrides */\n${universalCssRules.join('\n')}`);
   }
   if (desktopCssRules.length > 0) {
-    sections.push(`  /* Desktop Overrides */\n  @media (min-width: 1024px) {\n${desktopCssRules.join('\n')}\n  }`);
+    sections.push(`  /* Desktop Overrides */\n${desktopCssRules.join('\n')}`);
   }
   if (tabletCssRules.length > 0) {
-    sections.push(`  /* Tablet Overrides */\n  @media (min-width: 768px) and (max-width: 1023px) {\n${tabletCssRules.join('\n')}\n  }`);
+    sections.push(`  /* Tablet Overrides */\n${tabletCssRules.join('\n')}`);
   }
   if (mobileCssRules.length > 0) {
-    sections.push(`  /* Mobile Overrides (margin, padding, sizing) */\n  @media (max-width: 767px) {\n${mobileCssRules.join('\n')}\n  }`);
+    sections.push(`  /* Mobile Overrides (margin, padding, sizing) */\n${mobileCssRules.join('\n')}`);
   }
 
   return sections.join('\n\n');
@@ -109,11 +115,17 @@ export function applyDesignSchema(schema, doc = document) {
 
   const win = doc.defaultView || (typeof window !== 'undefined' ? window : null);
   const width = win ? win.innerWidth : 1280;
-  let activeBreakpoint = 'desktop';
-  if (width <= 767) {
-    activeBreakpoint = 'mobile';
-  } else if (width <= 1023) {
-    activeBreakpoint = 'tablet';
+
+  const explicitPreviewMode = doc.documentElement ? doc.documentElement.getAttribute('data-preview-mode') : null;
+  let activeBreakpoint = (explicitPreviewMode && explicitPreviewMode !== 'universal') ? explicitPreviewMode : 'desktop';
+  if (!explicitPreviewMode || explicitPreviewMode === 'universal') {
+    if (width <= 767) {
+      activeBreakpoint = 'mobile';
+    } else if (width <= 1023) {
+      activeBreakpoint = 'tablet';
+    } else {
+      activeBreakpoint = 'desktop';
+    }
   }
 
   // Save active schema for responsive recalculation on resize

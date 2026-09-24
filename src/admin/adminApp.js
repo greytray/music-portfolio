@@ -315,11 +315,14 @@ export class AdminApp {
         this.sidePanel.setBreakpoint('universal');
       }
 
-      // Reapply schema to iframe doc so universal text and media are active
+      // Reapply schema to iframe doc with universal preview mode
       const iframe = this.rootElement.querySelector('#admin-preview-frame');
       if (iframe) {
         try {
           const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+          if (iDoc && iDoc.documentElement) {
+            iDoc.documentElement.setAttribute('data-preview-mode', 'universal');
+          }
           applyDesignSchema(this.exportSystem.serializeSchema(), iDoc);
         } catch (_) {}
       }
@@ -351,11 +354,14 @@ export class AdminApp {
         this.sidePanel.setBreakpoint(this.currentBreakpoint);
       }
 
-      // Reapply schema to iframe doc so device-scoped text and media are active
+      // Reapply schema to iframe doc with active device preview mode
       const iframe = this.rootElement.querySelector('#admin-preview-frame');
       if (iframe) {
         try {
           const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+          if (iDoc && iDoc.documentElement) {
+            iDoc.documentElement.setAttribute('data-preview-mode', this.currentBreakpoint);
+          }
           applyDesignSchema(this.exportSystem.serializeSchema(), iDoc);
         } catch (_) {}
       }
@@ -491,7 +497,7 @@ export class AdminApp {
     const updateHistoryCount = async () => {
       try {
         const history = await this.exportSystem.getHistory();
-        const published = (history || []).filter(cp => cp.id !== 'cp_v0' && !cp.isV0);
+        const published = (history || []).filter(cp => cp.id !== 'cp_session_v0' && cp.id !== 'cp_v0' && !cp.isV0);
         if (historyCountBadge) {
           if (published.length > 0) {
             historyCountBadge.textContent = published.length;
@@ -514,7 +520,7 @@ export class AdminApp {
         return;
       }
 
-      const publishedCheckpoints = history.filter(cp => cp.id !== 'cp_v0' && !cp.isV0);
+      const publishedCheckpoints = history.filter(cp => cp.id !== 'cp_session_v0' && cp.id !== 'cp_v0' && !cp.isV0);
       if (historyCountBadge) {
         if (publishedCheckpoints.length > 0) {
           historyCountBadge.textContent = publishedCheckpoints.length;
@@ -528,25 +534,25 @@ export class AdminApp {
       const activeSerialized = JSON.stringify(this.exportSystem.serializeSchema());
 
       historyListContainer.innerHTML = history.map((cp, idx) => {
-        const isLatest = idx === 0 && cp.id !== 'cp_v0' && !cp.isV0;
-        const isV0 = cp.id === 'cp_v0' || cp.isV0;
+        const isV0 = cp.id === 'cp_session_v0' || cp.id === 'cp_v0' || cp.isV0;
+        const isLatest = idx === 0 && !isV0;
         const cpSerialized = cp.schema ? JSON.stringify(cp.schema) : '';
         const isCurrentActive = cpSerialized && (cpSerialized === activeSerialized);
-        const dateStr = cp.timestamp ? new Date(cp.timestamp).toLocaleString() : 'Default Baseline';
+        const dateStr = cp.timestamp ? new Date(cp.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Session Start';
         const elemCount = cp.elementsCount !== undefined ? cp.elementsCount : (cp.schema && cp.schema.elements ? Object.keys(cp.schema.elements).length : 0);
 
         return `
           <div class="history-item-card ${isCurrentActive ? 'is-active-checkpoint' : ''} ${isV0 ? 'is-v0-checkpoint' : ''}" data-cp-id="${cp.id}">
             <div class="history-item-left">
               <div class="history-item-top">
-                <span class="history-item-label">${cp.label || (isV0 ? 'Checkpoint v0 (Default Baseline)' : `Checkpoint #${publishedCheckpoints.length - idx}`)}</span>
-                ${isV0 ? '<span class="history-item-badge is-v0" style="background: rgba(16, 185, 129, 0.16); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35);">Default v0</span>' : ''}
+                <span class="history-item-label">${cp.label || (isV0 ? 'Checkpoint v0 (Session Baseline)' : `Checkpoint #${publishedCheckpoints.length - idx}`)}</span>
+                ${isV0 ? '<span class="history-item-badge is-v0" style="background: rgba(255, 255, 255, 0.08); color: var(--admin-text-muted); border: 1px solid rgba(255, 255, 255, 0.12);">Baseline v0</span>' : ''}
                 ${isLatest ? '<span class="history-item-badge is-live">Latest</span>' : ''}
                 ${isCurrentActive ? '<span class="history-item-badge is-live">Active on Canvas</span>' : ''}
                 <span class="history-item-badge">${elemCount} element${elemCount === 1 ? '' : 's'}</span>
               </div>
-              <div class="history-item-date">${isV0 ? 'Baseline initial state' : `Published: ${dateStr}`}</div>
-              <div class="history-item-desc">${cp.description || (isV0 ? 'Initial unedited site baseline (v0)' : 'Saved design checkpoint')}</div>
+              <div class="history-item-date">${isV0 ? 'Starting baseline for this session' : `Published in this session: ${dateStr}`}</div>
+              <div class="history-item-desc">${cp.description || (isV0 ? 'Session initial baseline state (v0)' : 'Saved design checkpoint')}</div>
             </div>
             <div class="history-item-right">
               <button type="button" class="btn-restore-checkpoint ${isCurrentActive ? 'is-active-btn' : ''}" data-restore-id="${cp.id}" ${isCurrentActive ? 'disabled' : ''}>
@@ -571,6 +577,9 @@ export class AdminApp {
             const iframe = this.rootElement.querySelector('#admin-preview-frame');
             if (iframe) {
               const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+              if (iDoc && iDoc.documentElement) {
+                iDoc.documentElement.setAttribute('data-preview-mode', this.currentBreakpoint);
+              }
               applyDesignSchema(restored.schema, iDoc);
             }
 
@@ -665,14 +674,25 @@ export class AdminApp {
 
     this.sidePanel.setBreakpoint(this.currentBreakpoint);
 
+    this.exportSystem.initPromise.then(() => {
+      try {
+        const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+        if (iDoc && iDoc.documentElement) {
+          iDoc.documentElement.setAttribute('data-preview-mode', this.currentBreakpoint);
+        }
+        applyDesignSchema(this.exportSystem.serializeSchema(), iDoc);
+      } catch (_) {}
+    });
+
     iframe.addEventListener('load', () => {
       try {
         const iDoc = iframe.contentDocument || iframe.contentWindow.document;
 
-        // Apply published schema on canvas preview
-        if (this.exportSystem.initialSchema) {
-          applyDesignSchema(this.exportSystem.initialSchema, iDoc);
+        // Apply published schema and preview mode on canvas preview
+        if (iDoc && iDoc.documentElement) {
+          iDoc.documentElement.setAttribute('data-preview-mode', this.currentBreakpoint);
         }
+        applyDesignSchema(this.exportSystem.serializeSchema(), iDoc);
 
         // Initialize Selection Engine starting in Normal (interactive) mode
         this.selectionEngine = new SelectionEngine(iframe, {

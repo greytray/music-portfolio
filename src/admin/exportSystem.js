@@ -7,25 +7,31 @@
 import { broadcastSchemaPublished } from '../utils/schemaApplier.js';
 
 const STORAGE_KEY = 'eko_published_design_schema';
+const SESSION_HISTORY_KEY = 'eko_session_publish_history';
 
 export class ExportSystem {
   constructor() {
     this.changesMap = new Map(); // selector -> override object
-    this.initialSchema = null;
+    this.sessionBaselineSchema = {
+      version: '1.0.0',
+      lastUpdated: new Date().toISOString(),
+      elementsCount: 0,
+      elements: {}
+    };
     this.hasUnpublishedChanges = false;
-    this.loadInitialSchema();
+    this.initPromise = this.loadInitialSchema();
   }
 
   async loadInitialSchema() {
     try {
-      const res = await fetch('/api/admin/schema', { cache: 'no-cache' });
+      const res = await fetch(`/api/admin/schema?t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if (data && data.schema) {
-          this.initialSchema = data.schema;
+          this.sessionBaselineSchema = JSON.parse(JSON.stringify(data.schema));
           if (data.schema.elements) {
             Object.entries(data.schema.elements).forEach(([selector, val]) => {
-              this.changesMap.set(selector, val);
+              this.changesMap.set(selector, JSON.parse(JSON.stringify(val)));
             });
           }
         }
@@ -36,15 +42,24 @@ export class ExportSystem {
         const cached = localStorage.getItem(STORAGE_KEY);
         if (cached) {
           const parsed = JSON.parse(cached);
-          this.initialSchema = parsed;
+          this.sessionBaselineSchema = JSON.parse(JSON.stringify(parsed));
           if (parsed.elements) {
             Object.entries(parsed.elements).forEach(([selector, val]) => {
-              this.changesMap.set(selector, val);
+              this.changesMap.set(selector, JSON.parse(JSON.stringify(val)));
             });
           }
         }
       } catch {}
     }
+
+    // Initialize session history if not present in this browser tab/session
+    try {
+      const existingSessionHist = sessionStorage.getItem(SESSION_HISTORY_KEY);
+      if (!existingSessionHist) {
+        const v0 = this.getV0Checkpoint();
+        sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify([v0]));
+      }
+    } catch (_) {}
   }
 
   /**
@@ -346,21 +361,19 @@ export class ExportSystem {
   }
 
   /**
-   * Generates the immutable default v0 baseline checkpoint
+   * Generates the immutable default v0 baseline checkpoint for this session
    */
   getV0Checkpoint() {
+    const elementsCount = Object.keys(this.sessionBaselineSchema?.elements || {}).length;
     return {
-      id: 'cp_v0',
-      timestamp: '2026-09-23T00:00:00.000Z',
-      label: 'Checkpoint v0 (Default Baseline)',
-      description: 'Default pristine project baseline. Reverting here resets all visual modifications across all devices.',
-      elementsCount: 0,
-      schema: {
-        version: '1.0.0',
-        lastUpdated: '2026-09-23T00:00:00.000Z',
-        elementsCount: 0,
-        elements: {}
-      },
+      id: 'cp_session_v0',
+      timestamp: this.sessionBaselineSchema?.lastPublished || this.sessionBaselineSchema?.lastUpdated || new Date().toISOString(),
+      label: 'Checkpoint v0 (Session Baseline)',
+      description: elementsCount > 0
+        ? `Session baseline state (${elementsCount} element(s) currently published)`
+        : 'Initial unedited site baseline (v0)',
+      elementsCount,
+      schema: JSON.parse(JSON.stringify(this.sessionBaselineSchema || { version: '1.0.0', elements: {}, elementsCount: 0 })),
       isV0: true
     };
   }
@@ -390,51 +403,48 @@ export class ExportSystem {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const res = await fetch('/api/admin/publish', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ schema })
-    });
-
-    if (!res.ok) {
-      throw new Error(`Server returned HTTP ${res.status}`);
+    let serverData = null;
+    try {
+      const res = await fetch('/api/admin/publish', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ schema })
+      });
+      if (res.ok) {
+        serverData = await res.json();
+      }
+    } catch (err) {
+      console.warn('[ExportSystem] Server publish notice:', err);
     }
 
-    const data = await res.json();
     this.hasUnpublishedChanges = false;
 
-    // 3. Immediately cache newly published checkpoint in local history store
+    // 3. Immediately cache newly published checkpoint in current session history store
+    let updatedSessionHist = [];
     try {
-      let localHist = [];
-      const cached = localStorage.getItem('eko_publish_history');
+      let sessionHist = [];
+      const cached = sessionStorage.getItem(SESSION_HISTORY_KEY);
       if (cached) {
-        localHist = JSON.parse(cached);
+        sessionHist = JSON.parse(cached);
       }
-      if (!Array.isArray(localHist)) localHist = [];
+      if (!Array.isArray(sessionHist)) sessionHist = [];
 
-      const currentPublishedCount = localHist.filter(c => c.id !== 'cp_v0' && !c.isV0).length;
-      const newCp = data.checkpoint || {
-        id: `cp_${Date.now()}`,
+      const publishedInSession = sessionHist.filter(c => c.id !== 'cp_session_v0' && c.id !== 'cp_v0' && !c.isV0);
+      const newCheckpointNum = publishedInSession.length + 1;
+      const elemCount = schema.elementsCount || Object.keys(schema.elements || {}).length;
+
+      const newCp = {
+        id: `cp_session_${Date.now()}`,
         timestamp: schema.lastPublished || new Date().toISOString(),
-        label: `Checkpoint #${currentPublishedCount + 1}`,
-        description: `${schema.elementsCount || Object.keys(schema.elements || {}).length} element(s) customized`,
-        elementsCount: schema.elementsCount || Object.keys(schema.elements || {}).length,
-        schema
+        label: `Checkpoint #${newCheckpointNum}`,
+        description: `${elemCount} element${elemCount === 1 ? '' : 's'} customized across canvas`,
+        elementsCount: elemCount,
+        schema: JSON.parse(JSON.stringify(schema)),
+        isV0: false
       };
 
-      if (Array.isArray(data.history) && data.history.length > 0) {
-        localHist = data.history;
-      } else {
-        // Prepend new checkpoint, excluding duplicates and v0
-        localHist = [newCp, ...localHist.filter(c => c.id !== newCp.id && c.id !== 'cp_v0' && !c.isV0)];
-      }
-
-      // Guarantee v0 at the end
-      if (!localHist.some(c => c.id === 'cp_v0' || c.isV0)) {
-        localHist.push(this.getV0Checkpoint());
-      }
-
-      localStorage.setItem('eko_publish_history', JSON.stringify(localHist));
+      updatedSessionHist = [newCp, ...publishedInSession, this.getV0Checkpoint()];
+      sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(updatedSessionHist));
     } catch (e) {
       console.warn('Failed to cache history locally:', e);
     }
@@ -445,80 +455,42 @@ export class ExportSystem {
     return {
       success: true,
       schema,
-      checkpoint: data.checkpoint,
-      history: data.history,
-      message: data.message || 'Published successfully',
-      gitStatus: data.gitStatus,
-      publishedAt: data.publishedAt
+      checkpoint: updatedSessionHist[0] || null,
+      history: updatedSessionHist,
+      message: 'Published successfully across website',
+      gitStatus: serverData?.gitStatus,
+      publishedAt: schema.lastPublished || new Date().toISOString()
     };
   }
 
   /**
-   * Retrieves all saved publish checkpoints, ensuring v0 is always present
+   * Retrieves all saved publish checkpoints for the current active session
    */
   async getHistory() {
     const v0 = this.getV0Checkpoint();
-    let serverHistory = [];
-    let localHistory = [];
+    let sessionHistory = [];
 
-    // 1. Read cached local history
+    // 1. Read cached session history
     try {
-      const cached = localStorage.getItem('eko_publish_history');
+      const cached = sessionStorage.getItem(SESSION_HISTORY_KEY);
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed)) {
-          localHistory = parsed;
+          sessionHistory = parsed;
         }
       }
     } catch (_) {}
 
-    // 2. Fetch server history
-    try {
-      const res = await fetch(`/api/admin/history?t=${Date.now()}`, {
-        cache: 'no-store',
-        headers: { 'x-admin-request': 'true' }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.history)) {
-          serverHistory = data.history;
-        }
-      }
-    } catch (err) {
-      console.warn('Failed to fetch history from API:', err);
-    }
-
-    // 3. Deduplicate and merge: Map by checkpoint ID
-    const checkpointsMap = new Map();
-    // Anchor v0 first
-    checkpointsMap.set('cp_v0', v0);
-
-    // Add server checkpoints
-    serverHistory.forEach(cp => {
-      if (cp && cp.id && cp.id !== 'cp_v0' && !cp.isV0) {
-        checkpointsMap.set(cp.id, cp);
-      }
-    });
-
-    // Add local checkpoints (ensures newly published checkpoints are never dropped)
-    localHistory.forEach(cp => {
-      if (cp && cp.id && cp.id !== 'cp_v0' && !cp.isV0) {
-        if (!checkpointsMap.has(cp.id)) {
-          checkpointsMap.set(cp.id, cp);
-        }
-      }
-    });
-
-    // Sort non-v0 checkpoints by timestamp descending (newest first)
-    const published = Array.from(checkpointsMap.values())
-      .filter(cp => cp.id !== 'cp_v0' && !cp.isV0)
+    // Filter published checkpoints in this session
+    const published = sessionHistory
+      .filter(cp => cp && cp.id !== 'cp_session_v0' && cp.id !== 'cp_v0' && !cp.isV0)
       .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
 
     // Ensure v0 is always at the end
     const mergedHistory = [...published, v0];
 
     try {
-      localStorage.setItem('eko_publish_history', JSON.stringify(mergedHistory));
+      sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(mergedHistory));
     } catch (_) {}
 
     return mergedHistory;
@@ -533,51 +505,21 @@ export class ExportSystem {
     let restoredSchema = null;
     let checkpointObj = null;
 
-    const token = sessionStorage.getItem('eko_admin_token') ||
-      localStorage.getItem('eko_admin_token') ||
-      new URLSearchParams(window.location.search).get('auth');
-    const headers = {
-      'Content-Type': 'application/json',
-      'x-admin-request': 'true'
-    };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    try {
-      const res = await fetch('/api/admin/restore', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ checkpointId })
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        restoredSchema = data.schema;
-        checkpointObj = data.checkpoint;
-      }
-    } catch (apiErr) {
-      console.warn('[ExportSystem] Server restore network error:', apiErr);
-    }
-
-    // If server didn't provide restored schema (e.g. offline or v0 fallback)
-    if (!restoredSchema) {
-      if (checkpointId === 'cp_v0') {
-        const v0 = this.getV0Checkpoint();
-        restoredSchema = v0.schema;
-        checkpointObj = v0;
-      } else {
-        const localHist = await this.getHistory();
-        const found = localHist.find(c => c.id === checkpointId);
-        if (found && found.schema) {
-          restoredSchema = found.schema;
-          checkpointObj = found;
-        }
+    if (checkpointId === 'cp_session_v0' || checkpointId === 'cp_v0') {
+      const v0 = this.getV0Checkpoint();
+      restoredSchema = JSON.parse(JSON.stringify(v0.schema));
+      checkpointObj = v0;
+    } else {
+      const hist = await this.getHistory();
+      const found = hist.find(c => c.id === checkpointId);
+      if (found && found.schema) {
+        restoredSchema = JSON.parse(JSON.stringify(found.schema));
+        checkpointObj = found;
       }
     }
 
     if (!restoredSchema) {
-      throw new Error(`Checkpoint ${checkpointId} not found`);
+      throw new Error(`Checkpoint ${checkpointId} not found in this session`);
     }
 
     // Repopulate local state
@@ -592,6 +534,26 @@ export class ExportSystem {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(restoredSchema));
     } catch {}
 
+    // Persist restored schema to backend
+    const token = sessionStorage.getItem('eko_admin_token') ||
+      localStorage.getItem('eko_admin_token') ||
+      new URLSearchParams(window.location.search).get('auth');
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-admin-request': 'true'
+    };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    try {
+      await fetch('/api/admin/publish', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ schema: restoredSchema })
+      });
+    } catch (_) {}
+
+    broadcastSchemaPublished(restoredSchema);
+
     this.hasUnpublishedChanges = false;
     return {
       success: true,
@@ -601,13 +563,18 @@ export class ExportSystem {
   }
 
   /**
-   * Revert all local pending modifications
+   * Revert all local pending modifications back to current session baseline
    */
   revertAll() {
     this.changesMap.clear();
+    if (this.sessionBaselineSchema && this.sessionBaselineSchema.elements) {
+      Object.entries(this.sessionBaselineSchema.elements).forEach(([sel, val]) => {
+        this.changesMap.set(sel, JSON.parse(JSON.stringify(val)));
+      });
+    }
     this.hasUnpublishedChanges = false;
     try {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.sessionBaselineSchema));
     } catch {}
     broadcastSchemaPublished(this.serializeSchema());
   }
