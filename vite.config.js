@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import fs from "node:fs";
 import path from "node:path";
-import { execSync } from "node:child_process";
+import { exec, execSync } from "node:child_process";
 import { JSDOM } from "jsdom";
 import {
   createSessionToken,
@@ -276,6 +276,25 @@ function patchHtmlWithSchema(htmlContent, schema) {
  * recompiles production assets with `npm run build` so shared & deployed sites are updated,
  * and records git commits.
  */
+// Non-blocking background build queue manager
+let isBackgroundBuilding = false;
+let needsFollowupBuild = false;
+
+function triggerBackgroundBuild() {
+  if (isBackgroundBuilding) {
+    needsFollowupBuild = true;
+    return;
+  }
+  isBackgroundBuilding = true;
+  exec('npm run build', (err) => {
+    isBackgroundBuilding = false;
+    if (needsFollowupBuild) {
+      needsFollowupBuild = false;
+      setTimeout(triggerBackgroundBuild, 500);
+    }
+  });
+}
+
 function applyAndDeploySchema(publishedSchema) {
   // 1. Write compiled CSS directly into physical source file: src/styles/custom-design.css + public mirror
   const stylesDir = path.resolve(process.cwd(), 'src', 'styles');
@@ -333,16 +352,10 @@ function applyAndDeploySchema(publishedSchema) {
     }
   }
 
-  // 5. Automatically recompile production bundle (npm run build) so deployed & shared instances are updated immediately
-  let buildSuccess = false;
-  try {
-    execSync('npm run build', { stdio: 'pipe' });
-    buildSuccess = true;
-  } catch (buildErr) {
-    console.warn('[Admin API] Automatic build warning:', buildErr.message);
-  }
+  // 5. Trigger non-blocking async background build so API request never hangs
+  triggerBackgroundBuild();
 
-  return { buildSuccess };
+  return { buildSuccess: true };
 }
 
 function adminDesignModePlugin() {
