@@ -153,7 +153,7 @@ export class AdminApp {
       <div class="admin-modal-backdrop" id="admin-schema-modal">
         <div class="admin-modal">
           <div class="admin-modal-header">
-            <h3>Published Design Schema (metadata.json)</h3>
+            <h3>Published Design Schema</h3>
             <button type="button" class="admin-btn admin-btn-ghost" id="btn-close-schema-modal">✕</button>
           </div>
           <div class="admin-modal-body">
@@ -399,9 +399,8 @@ export class AdminApp {
       try {
         const result = await this.exportSystem.publish();
         publishBtn.classList.remove('has-changes');
-        publishLabel.textContent = 'Published!';
-        const gitMsg = result.gitStatus ? ` [${result.gitStatus}]` : '';
-        this._showToast(`✓ Published checkpoint!${gitMsg}`);
+        publishLabel.textContent = 'Published Live!';
+        this._showToast('✓ Published live across website! All devices updated.');
         await updateHistoryCount();
         if (historyModalBackdrop && historyModalBackdrop.classList.contains('is-open')) {
           await renderHistoryModal();

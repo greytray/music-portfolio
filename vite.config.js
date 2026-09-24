@@ -173,6 +173,61 @@ function generateCssFromSchema(schema) {
   return sections.join('\n\n');
 }
 
+function patchHtmlWithSchema(htmlContent, schema) {
+  if (!schema || !schema.elements) return htmlContent;
+
+  // 1. Compile schema styles (universal + mobile/tablet/desktop breakpoints) into <style id="eko-design-schema-styles">
+  const compiledCss = generateCssFromSchema(schema);
+  const styleTag = `  <style id="eko-design-schema-styles">\n${compiledCss}\n  </style>`;
+  if (htmlContent.includes('id="eko-design-schema-styles"')) {
+    htmlContent = htmlContent.replace(/<style id="eko-design-schema-styles"[^>]*>[\s\S]*?<\/style>/, styleTag.trim());
+  } else {
+    htmlContent = htmlContent.replace('</head>', `${styleTag}\n</head>`);
+  }
+
+  // 2. Direct internal HTML content / attribute updates for elements with IDs
+  Object.keys(schema.elements).forEach(key => {
+    const item = schema.elements[key];
+    if (!item) return;
+    const selector = item.selector || key;
+    if (selector.startsWith('#')) {
+      const elId = selector.substring(1).replace(/[^a-zA-Z0-9_-]/g, '');
+      if (!elId) return;
+
+      // Update text/html if universal text is defined
+      if (item.text !== undefined && typeof item.text === 'string') {
+        const targetContent = item.html || item.text;
+        const tagRegex = new RegExp(`(<([a-zA-Z0-9]+)[^>]*\\bid=["']${elId}["'][^>]*>)([\\s\\S]*?)(<\\/\\2>)`, 'i');
+        if (tagRegex.test(htmlContent)) {
+          htmlContent = htmlContent.replace(tagRegex, (match, openTag, tagName, oldInner, closeTag) => {
+            return `${openTag}${targetContent}${closeTag}`;
+          });
+        }
+      }
+
+      // Update image src if universal media is defined
+      if (item.media && item.media.src) {
+        const imgRegex = new RegExp(`(<img[^>]*\\bid=["']${elId}["'][^>]*\\bsrc=["'])[^"']*`, 'i');
+        if (imgRegex.test(htmlContent)) {
+          htmlContent = htmlContent.replace(imgRegex, `$1${item.media.src}`);
+        }
+      }
+
+      // Update data-attributes if defined
+      if (item.dataAttributes && typeof item.dataAttributes === 'object') {
+        Object.entries(item.dataAttributes).forEach(([attrName, attrVal]) => {
+          const attrRegex = new RegExp(`(<[a-zA-Z0-9]+[^>]*\\bid=["']${elId}["'][^>]*\\bdata-${attrName}=["'])[^"']*`, 'i');
+          if (attrRegex.test(htmlContent)) {
+            htmlContent = htmlContent.replace(attrRegex, `$1${attrVal}`);
+          }
+        });
+      }
+    }
+  });
+
+  return htmlContent;
+}
+
 /**
  * Persists visual schema changes into internal source files (index.html, JSON schemas),
  * recompiles production assets with `npm run build` so shared & deployed sites are updated,
@@ -216,16 +271,7 @@ function applyAndDeploySchema(publishedSchema) {
   if (fs.existsSync(indexHtmlPath)) {
     try {
       let htmlContent = fs.readFileSync(indexHtmlPath, 'utf8');
-
-      // 4a. Compile schema styles (universal + mobile/tablet/desktop breakpoints) into <style id="eko-design-schema-styles">
-      const compiledCss = generateCssFromSchema(publishedSchema);
-      const styleTag = `  <style id="eko-design-schema-styles">\n${compiledCss}\n  </style>`;
-      if (htmlContent.includes('id="eko-design-schema-styles"')) {
-        htmlContent = htmlContent.replace(/<style id="eko-design-schema-styles"[^>]*>[\s\S]*?<\/style>/, styleTag.trim());
-      } else {
-        htmlContent = htmlContent.replace('</head>', `${styleTag}\n</head>`);
-      }
-
+      htmlContent = patchHtmlWithSchema(htmlContent, publishedSchema);
       fs.writeFileSync(indexHtmlPath, htmlContent, 'utf8');
     } catch (htmlErr) {
       console.warn('[Admin API] Source code html patching notice:', htmlErr.message);
