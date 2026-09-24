@@ -192,10 +192,11 @@ function patchHtmlWithSchema(htmlContent, schema) {
     if (!item) return;
     const selector = item.selector || key;
 
-    const idMatch = selector.match(/#([a-zA-Z0-9_-]+)/);
-    const classMatch = selector.match(/\.([a-zA-Z0-9_-]+)/);
-    const elId = idMatch ? idMatch[1] : null;
-    const elClass = classMatch ? classMatch[1] : null;
+    // Extract the LAST ID and LAST Class in the selector so we target the actual element, not ancestor containers
+    const idMatches = selector.match(/#([a-zA-Z0-9_-]+)/g);
+    const classMatches = selector.match(/\.([a-zA-Z0-9_-]+)/g);
+    const elId = idMatches ? idMatches[idMatches.length - 1].substring(1) : null;
+    const elClass = classMatches ? classMatches[classMatches.length - 1].substring(1) : null;
 
     const effectiveText = item.text !== undefined
       ? item.text

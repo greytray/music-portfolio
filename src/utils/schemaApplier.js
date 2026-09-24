@@ -215,7 +215,7 @@ export function applyDesignSchema(schema, doc = document) {
       }
 
       // --- TEXT OVERRIDE ---
-      // Determine device-specific text first, then universal text, or fallback to original
+      // Determine device-specific text first, then universal text, or fallback to any breakpoint
       let targetText = null;
       let targetHtml = null;
 
@@ -225,6 +225,12 @@ export function applyDesignSchema(schema, doc = document) {
       } else if (item.text !== undefined && typeof item.text === 'string') {
         targetText = item.text;
         targetHtml = item.html;
+      } else if (item.breakpoints) {
+        const fallbackBp = ['mobile', 'desktop', 'tablet'].find(bp => item.breakpoints[bp] && item.breakpoints[bp].text !== undefined);
+        if (fallbackBp) {
+          targetText = item.breakpoints[fallbackBp].text;
+          targetHtml = item.breakpoints[fallbackBp].html;
+        }
       }
 
       if (targetText !== null) {
@@ -254,6 +260,11 @@ export function applyDesignSchema(schema, doc = document) {
         targetMedia = item.breakpoints[activeBreakpoint].media;
       } else if (item.media && item.media.src) {
         targetMedia = item.media;
+      } else if (item.breakpoints) {
+        const fallbackBp = ['mobile', 'desktop', 'tablet'].find(bp => item.breakpoints[bp] && item.breakpoints[bp].media);
+        if (fallbackBp) {
+          targetMedia = item.breakpoints[fallbackBp].media;
+        }
       }
 
       if (targetMedia && targetMedia.src) {
