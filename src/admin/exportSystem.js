@@ -93,6 +93,9 @@ export class ExportSystem {
     if (changeData.text !== undefined) {
       if (breakpoint === 'universal') {
         existing.text = changeData.text;
+        if (existing.breakpoints.desktop) delete existing.breakpoints.desktop.text;
+        if (existing.breakpoints.tablet) delete existing.breakpoints.tablet.text;
+        if (existing.breakpoints.mobile) delete existing.breakpoints.mobile.text;
       } else {
         if (!existing.breakpoints[breakpoint]) existing.breakpoints[breakpoint] = {};
         existing.breakpoints[breakpoint].text = changeData.text;
@@ -102,6 +105,9 @@ export class ExportSystem {
     if (changeData.styleKey && changeData.val !== undefined) {
       if (breakpoint === 'universal') {
         existing.styles[changeData.styleKey] = changeData.val;
+        if (existing.breakpoints.desktop) delete existing.breakpoints.desktop[changeData.styleKey];
+        if (existing.breakpoints.tablet) delete existing.breakpoints.tablet[changeData.styleKey];
+        if (existing.breakpoints.mobile) delete existing.breakpoints.mobile[changeData.styleKey];
       } else {
         if (!existing.breakpoints[breakpoint]) existing.breakpoints[breakpoint] = {};
         existing.breakpoints[breakpoint][changeData.styleKey] = changeData.val;
@@ -111,6 +117,11 @@ export class ExportSystem {
     if (changeData.styles) {
       if (breakpoint === 'universal') {
         existing.styles = { ...existing.styles, ...changeData.styles };
+        Object.keys(changeData.styles).forEach(k => {
+          if (existing.breakpoints.desktop) delete existing.breakpoints.desktop[k];
+          if (existing.breakpoints.tablet) delete existing.breakpoints.tablet[k];
+          if (existing.breakpoints.mobile) delete existing.breakpoints.mobile[k];
+        });
       } else {
         if (!existing.breakpoints[breakpoint]) existing.breakpoints[breakpoint] = {};
         existing.breakpoints[breakpoint] = { ...existing.breakpoints[breakpoint], ...changeData.styles };
@@ -128,6 +139,9 @@ export class ExportSystem {
     if (changeData.media) {
       if (breakpoint === 'universal') {
         existing.media = changeData.media;
+        if (existing.breakpoints.desktop) delete existing.breakpoints.desktop.media;
+        if (existing.breakpoints.tablet) delete existing.breakpoints.tablet.media;
+        if (existing.breakpoints.mobile) delete existing.breakpoints.mobile.media;
       } else {
         if (!existing.breakpoints[breakpoint]) existing.breakpoints[breakpoint] = {};
         existing.breakpoints[breakpoint].media = changeData.media;

@@ -185,43 +185,60 @@ function patchHtmlWithSchema(htmlContent, schema) {
     htmlContent = htmlContent.replace('</head>', `${styleTag}\n</head>`);
   }
 
-  // 2. Direct internal HTML content / attribute updates for elements with IDs
+  // 2. Direct internal HTML content / attribute updates for elements matching IDs or Classes
   Object.keys(schema.elements).forEach(key => {
     const item = schema.elements[key];
     if (!item) return;
     const selector = item.selector || key;
-    if (selector.startsWith('#')) {
-      const elId = selector.substring(1).replace(/[^a-zA-Z0-9_-]/g, '');
-      if (!elId) return;
 
-      // Update text/html if universal text is defined
-      if (item.text !== undefined && typeof item.text === 'string') {
-        const targetContent = item.html || item.text;
-        const tagRegex = new RegExp(`(<([a-zA-Z0-9]+)[^>]*\\bid=["']${elId}["'][^>]*>)([\\s\\S]*?)(<\\/\\2>)`, 'i');
-        if (tagRegex.test(htmlContent)) {
-          htmlContent = htmlContent.replace(tagRegex, (match, openTag, tagName, oldInner, closeTag) => {
-            return `${openTag}${targetContent}${closeTag}`;
-          });
+    const idMatch = selector.match(/#([a-zA-Z0-9_-]+)/);
+    const classMatch = selector.match(/\.([a-zA-Z0-9_-]+)/);
+    const elId = idMatch ? idMatch[1] : null;
+    const elClass = classMatch ? classMatch[1] : null;
+
+    if (item.text !== undefined && typeof item.text === 'string') {
+      const targetContent = item.html || item.text;
+      if (elId) {
+        const idRegex = new RegExp(`(<([a-zA-Z0-9]+)[^>]*\\bid=["']${elId}["'][^>]*>)([\\s\\S]*?)(<\\/\\2>)`, 'i');
+        if (idRegex.test(htmlContent)) {
+          htmlContent = htmlContent.replace(idRegex, (match, openTag, tagName, oldInner, closeTag) => `${openTag}${targetContent}${closeTag}`);
+        }
+      } else if (elClass) {
+        const classRegex = new RegExp(`(<([a-zA-Z0-9]+)[^>]*\\bclass=["'][^"']*\\b${elClass}\\b[^"']*["'][^>]*>)([\\s\\S]*?)(<\\/\\2>)`, 'i');
+        if (classRegex.test(htmlContent)) {
+          htmlContent = htmlContent.replace(classRegex, (match, openTag, tagName, oldInner, closeTag) => `${openTag}${targetContent}${closeTag}`);
         }
       }
+    }
 
-      // Update image src if universal media is defined
-      if (item.media && item.media.src) {
+    if (item.media && item.media.src) {
+      if (elId) {
         const imgRegex = new RegExp(`(<img[^>]*\\bid=["']${elId}["'][^>]*\\bsrc=["'])[^"']*`, 'i');
         if (imgRegex.test(htmlContent)) {
           htmlContent = htmlContent.replace(imgRegex, `$1${item.media.src}`);
         }
+      } else if (elClass) {
+        const imgRegex = new RegExp(`(<img[^>]*\\bclass=["'][^"']*\\b${elClass}\\b[^"']*["'][^>]*\\bsrc=["'])[^"']*`, 'i');
+        if (imgRegex.test(htmlContent)) {
+          htmlContent = htmlContent.replace(imgRegex, `$1${item.media.src}`);
+        }
       }
+    }
 
-      // Update data-attributes if defined
-      if (item.dataAttributes && typeof item.dataAttributes === 'object') {
-        Object.entries(item.dataAttributes).forEach(([attrName, attrVal]) => {
+    if (item.dataAttributes && typeof item.dataAttributes === 'object') {
+      Object.entries(item.dataAttributes).forEach(([attrName, attrVal]) => {
+        if (elId) {
           const attrRegex = new RegExp(`(<[a-zA-Z0-9]+[^>]*\\bid=["']${elId}["'][^>]*\\bdata-${attrName}=["'])[^"']*`, 'i');
           if (attrRegex.test(htmlContent)) {
             htmlContent = htmlContent.replace(attrRegex, `$1${attrVal}`);
           }
-        });
-      }
+        } else if (elClass) {
+          const attrRegex = new RegExp(`(<[a-zA-Z0-9]+[^>]*\\bclass=["'][^"']*\\b${elClass}\\b[^"']*["'][^>]*\\bdata-${attrName}=["'])[^"']*`, 'i');
+          if (attrRegex.test(htmlContent)) {
+            htmlContent = htmlContent.replace(attrRegex, `$1${attrVal}`);
+          }
+        }
+      });
     }
   });
 
