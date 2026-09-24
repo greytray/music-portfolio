@@ -193,25 +193,27 @@ export function applyDesignSchema(schema, doc = document) {
   }
 
   if (!schema || !schema.elements || Object.keys(schema.elements).length === 0) {
-    if (styleTag) styleTag.textContent = '';
-    // Restore elements that had text/media overrides if resetting/restoring to v0
-    if (doc.__ekoOverriddenElements) {
-      doc.__ekoOverriddenElements.forEach(el => {
-        if (el.__ekoOriginalText !== undefined) {
-          if (el.children.length === 0) {
-            el.textContent = el.__ekoOriginalText;
-          } else {
-            el.innerHTML = el.__ekoOriginalHtml !== undefined ? el.__ekoOriginalHtml : el.__ekoOriginalText;
+    // Only wipe styleTag if explicitly requested by a reset operation (e.g. restoring v0 checkpoint)
+    if (schema && schema.isExplicitReset) {
+      if (styleTag) styleTag.textContent = '';
+      if (doc.__ekoOverriddenElements) {
+        doc.__ekoOverriddenElements.forEach(el => {
+          if (el.__ekoOriginalText !== undefined) {
+            if (el.children.length === 0) {
+              el.textContent = el.__ekoOriginalText;
+            } else {
+              el.innerHTML = el.__ekoOriginalHtml !== undefined ? el.__ekoOriginalHtml : el.__ekoOriginalText;
+            }
           }
-        }
-        if (el.__ekoOriginalSrc !== undefined) {
-          el.src = el.__ekoOriginalSrc;
-        }
-        if (el.__ekoOriginalBg !== undefined) {
-          el.style.backgroundImage = el.__ekoOriginalBg;
-        }
-      });
-      doc.__ekoOverriddenElements.clear();
+          if (el.__ekoOriginalSrc !== undefined) {
+            el.src = el.__ekoOriginalSrc;
+          }
+          if (el.__ekoOriginalBg !== undefined) {
+            el.style.backgroundImage = el.__ekoOriginalBg;
+          }
+        });
+        doc.__ekoOverriddenElements.clear();
+      }
     }
     return;
   }
@@ -330,7 +332,7 @@ export async function initPublishedDesignSchema(doc = document) {
   const countElements = (s) => (s && s.elements ? Object.keys(s.elements).length : 0);
 
   // 1. Instant compile-time bundled schema application (0ms render on ANY device)
-  if (bundledSchema) {
+  if (bundledSchema && countElements(bundledSchema) > 0) {
     applyDesignSchema(bundledSchema, doc);
   }
 

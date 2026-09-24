@@ -19,7 +19,17 @@ export class ExportSystem {
       elements: {}
     };
     this.hasUnpublishedChanges = false;
+    this.autoPublishTimer = null;
     this.initPromise = this.loadInitialSchema();
+  }
+
+  _scheduleAutoPublish() {
+    if (this.autoPublishTimer) {
+      clearTimeout(this.autoPublishTimer);
+    }
+    this.autoPublishTimer = setTimeout(() => {
+      this.publish().catch(err => console.warn('[Auto-Publish] Notice:', err));
+    }, 800);
   }
 
   async loadInitialSchema() {
@@ -167,6 +177,7 @@ export class ExportSystem {
     try {
       localStorage.setItem('eko_draft_design_schema', JSON.stringify(this.serializeSchema()));
     } catch (_) {}
+    this._scheduleAutoPublish();
   }
 
   /**
@@ -233,6 +244,7 @@ export class ExportSystem {
       this.changesMap.set(selector, existing);
     }
     this.hasUnpublishedChanges = this.changesMap.size > 0;
+    this._scheduleAutoPublish();
   }
 
   /**
@@ -242,6 +254,7 @@ export class ExportSystem {
     if (!selector) return;
     this.changesMap.delete(selector);
     this.hasUnpublishedChanges = this.changesMap.size > 0;
+    this._scheduleAutoPublish();
   }
 
   /**
@@ -308,6 +321,7 @@ export class ExportSystem {
     });
 
     this.hasUnpublishedChanges = this.changesMap.size > 0;
+    this._scheduleAutoPublish();
   }
 
   getElementData(selector) {
