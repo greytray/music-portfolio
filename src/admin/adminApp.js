@@ -423,35 +423,9 @@ export class AdminApp {
       this.exportSystem.revertAll();
       try {
         localStorage.removeItem('eko_published_design_schema');
+        sessionStorage.removeItem('eko_session_publish_history');
       } catch (_) {}
-      publishBtn.classList.remove('has-changes');
-
-      // Clear element baselines and sidepanel state
-      if (this.sidePanel) {
-        this.sidePanel.elementBaselines.clear();
-        this.sidePanel.clear();
-        this.sidePanel.updateTabCounters();
-        this.sidePanel._updateResetButtonVisibility();
-      }
-
-      if (this.selectionEngine) {
-        this.selectionEngine.deselect();
-      }
-
-      const breadcrumbTarget = this.rootElement.querySelector('#breadcrumb-target');
-      if (breadcrumbTarget) {
-        breadcrumbTarget.textContent = 'None (Click any component)';
-      }
-
-      // Completely refresh preview frame as if hard-refreshed
-      const iframe = this.rootElement.querySelector('#admin-preview-frame');
-      if (iframe) {
-        try {
-          iframe.src = `/?admin_preview=1&_t=${Date.now()}`;
-        } catch (_) {}
-      }
-
-      this._showToast('Master reset complete — preview reverted to original state');
+      window.location.reload();
     });
 
     // 7. Schema Modal

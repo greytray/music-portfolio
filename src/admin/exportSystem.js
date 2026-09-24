@@ -23,6 +23,12 @@ export class ExportSystem {
   }
 
   async loadInitialSchema() {
+    // Hard refresh reset: clear any uncommitted draft edits and session history
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(SESSION_HISTORY_KEY);
+    } catch (_) {}
+
     try {
       const res = await fetch(`/api/admin/schema?t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
@@ -36,29 +42,12 @@ export class ExportSystem {
           }
         }
       }
-    } catch {
-      // Try local storage fallback
-      try {
-        const cached = localStorage.getItem(STORAGE_KEY);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          this.sessionBaselineSchema = JSON.parse(JSON.stringify(parsed));
-          if (parsed.elements) {
-            Object.entries(parsed.elements).forEach(([selector, val]) => {
-              this.changesMap.set(selector, JSON.parse(JSON.stringify(val)));
-            });
-          }
-        }
-      } catch {}
-    }
+    } catch (_) {}
 
-    // Initialize session history if not present in this browser tab/session
+    // Initialize session history starting completely fresh with v0
     try {
-      const existingSessionHist = sessionStorage.getItem(SESSION_HISTORY_KEY);
-      if (!existingSessionHist) {
-        const v0 = this.getV0Checkpoint();
-        sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify([v0]));
-      }
+      const v0 = this.getV0Checkpoint();
+      sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify([v0]));
     } catch (_) {}
   }
 
@@ -588,8 +577,11 @@ export class ExportSystem {
     }
     this.hasUnpublishedChanges = false;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.sessionBaselineSchema));
-    } catch {}
+      localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(SESSION_HISTORY_KEY);
+      const v0 = this.getV0Checkpoint();
+      sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify([v0]));
+    } catch (_) {}
     broadcastSchemaPublished(this.serializeSchema());
   }
 }
