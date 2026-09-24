@@ -23,12 +23,6 @@ export class ExportSystem {
   }
 
   async loadInitialSchema() {
-    // Hard refresh reset: clear any uncommitted draft edits and session history
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-      sessionStorage.removeItem(SESSION_HISTORY_KEY);
-    } catch (_) {}
-
     try {
       const res = await fetch(`/api/admin/schema?t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
@@ -44,10 +38,41 @@ export class ExportSystem {
       }
     } catch (_) {}
 
-    // Initialize session history starting completely fresh with v0
+    // Check if published schema is cached locally
     try {
-      const v0 = this.getV0Checkpoint();
-      sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify([v0]));
+      const cachedPublished = localStorage.getItem(STORAGE_KEY);
+      if (cachedPublished) {
+        const parsed = JSON.parse(cachedPublished);
+        if (parsed && parsed.elements) {
+          this.sessionBaselineSchema = JSON.parse(JSON.stringify(parsed));
+          Object.entries(parsed.elements).forEach(([selector, val]) => {
+            this.changesMap.set(selector, JSON.parse(JSON.stringify(val)));
+          });
+        }
+      }
+    } catch (_) {}
+
+    // Check for uncommitted draft edits
+    try {
+      const cachedDraft = localStorage.getItem('eko_draft_design_schema');
+      if (cachedDraft) {
+        const parsedDraft = JSON.parse(cachedDraft);
+        if (parsedDraft && parsedDraft.elements) {
+          Object.entries(parsedDraft.elements).forEach(([selector, val]) => {
+            this.changesMap.set(selector, JSON.parse(JSON.stringify(val)));
+          });
+          this.hasUnpublishedChanges = true;
+        }
+      }
+    } catch (_) {}
+
+    // Initialize session history starting with baseline v0
+    try {
+      const existingSessionHist = sessionStorage.getItem(SESSION_HISTORY_KEY);
+      if (!existingSessionHist) {
+        const v0 = this.getV0Checkpoint();
+        sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify([v0]));
+      }
     } catch (_) {}
   }
 
@@ -139,6 +164,9 @@ export class ExportSystem {
 
     this.changesMap.set(selector, existing);
     this.hasUnpublishedChanges = true;
+    try {
+      localStorage.setItem('eko_draft_design_schema', JSON.stringify(this.serializeSchema()));
+    } catch (_) {}
   }
 
   /**
@@ -390,9 +418,11 @@ export class ExportSystem {
     // 1. Instant local storage cache
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(schema));
+      localStorage.removeItem('eko_draft_design_schema');
     } catch (err) {
       console.warn('LocalStorage error:', err);
     }
+    this.sessionBaselineSchema = JSON.parse(JSON.stringify(schema));
 
     // 2. Server API publish with multi-vector session authentication
     const token = sessionStorage.getItem('eko_admin_token') ||
@@ -578,6 +608,7 @@ export class ExportSystem {
     this.hasUnpublishedChanges = false;
     try {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('eko_draft_design_schema');
       sessionStorage.removeItem(SESSION_HISTORY_KEY);
       const v0 = this.getV0Checkpoint();
       sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify([v0]));
