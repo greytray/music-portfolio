@@ -5,7 +5,7 @@ import { mountIridescence } from './components/Iridescence.js';
 import { initAllCardTilts } from './utils/tilt.js';
 import { initLiquidGlassButtons } from './utils/liquidButton.js';
 import { initServicesCatalog } from './components/servicesCatalog.js';
-import { initPublishedDesignSchema } from './utils/schemaApplier.js';
+import { initPublishedDesignSchema, applyDesignSchema } from './utils/schemaApplier.js';
 
 // Dynamic modules registry for on-demand lazy loading
 const VIEW_LOADERS = {
@@ -184,6 +184,9 @@ export function initHiddenPageArchitecture() {
       // Attach 3D cursor weight tilt to cards within the newly rendered view
       setTimeout(() => {
         initAllCardTilts(viewElement);
+        if (document.__ekoLastActiveSchema) {
+          applyDesignSchema(document.__ekoLastActiveSchema, document);
+        }
       }, 50);
 
     } catch (err) {
@@ -319,6 +322,11 @@ function startApp() {
   initAllCardTilts();
   initLiquidGlassButtons();
   initServicesCatalog();
+  setTimeout(() => {
+    if (document.__ekoLastActiveSchema) {
+      applyDesignSchema(document.__ekoLastActiveSchema, document);
+    }
+  }, 60);
 }
 
 if (document.readyState === 'loading') {

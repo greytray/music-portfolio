@@ -4,6 +4,8 @@
  * triggers git commit operations, and manages local fast-cache storage.
  */
 
+import { broadcastSchemaPublished } from '../utils/schemaApplier.js';
+
 const STORAGE_KEY = 'eko_published_design_schema';
 
 export class ExportSystem {
@@ -437,6 +439,9 @@ export class ExportSystem {
       console.warn('Failed to cache history locally:', e);
     }
 
+    // 4. Broadcast live update to all storefront tabs and windows
+    broadcastSchemaPublished(schema);
+
     return {
       success: true,
       schema,
@@ -604,5 +609,6 @@ export class ExportSystem {
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {}
+    broadcastSchemaPublished(this.serializeSchema());
   }
 }
