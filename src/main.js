@@ -317,14 +317,7 @@ try {
 
 // Auto-run storefront initialization when DOM is ready
 function startApp() {
-  const isDesignModePreview = Boolean(
-    document.documentElement.hasAttribute('data-preview-mode') ||
-    window.location.search.includes('admin_preview') ||
-    window.self !== window.top
-  );
-  if (isDesignModePreview) {
-    initPublishedDesignSchema();
-  }
+  initPublishedDesignSchema();
   initHiddenPageArchitecture();
   initSectionIridescence();
   initAllCardTilts();

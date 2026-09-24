@@ -106,6 +106,52 @@ export function generateCssFromSchema(schema) {
 }
 
 /**
+  * Smart multi-vector mobile device detector
+  * Detects mobile phones, mobile browsers, tablets, and touch devices via User Agent, touch points, coarse pointer, hover capability, and viewport width.
+  */
+export function detectDeviceBreakpoint(win = (typeof window !== 'undefined' ? window : null), doc = document) {
+  if (!win && !doc) return 'desktop';
+  const targetDoc = doc || (win ? win.document : null);
+
+  const explicitPreviewMode = targetDoc && targetDoc.documentElement ? targetDoc.documentElement.getAttribute('data-preview-mode') : null;
+  if (explicitPreviewMode && explicitPreviewMode !== 'universal') {
+    return explicitPreviewMode;
+  }
+
+  const ua = (win && win.navigator && win.navigator.userAgent) ? win.navigator.userAgent : '';
+  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(ua);
+  const isTouchScreen = win ? (('ontouchstart' in win) || (win.navigator && win.navigator.maxTouchPoints > 0)) : false;
+  const isCoarsePointer = Boolean(win && win.matchMedia && win.matchMedia('(pointer: coarse)').matches);
+  const isNoHover = Boolean(win && win.matchMedia && win.matchMedia('(hover: none)').matches);
+  const width = win ? (win.innerWidth || 1280) : 1280;
+
+  // Mobile device if user-agent is mobile phone/tablet OR touch screen with width <= 1024 OR width <= 768
+  const isMobileDevice = isMobileUA || ((isTouchScreen || isCoarsePointer || isNoHover) && width <= 1024) || width <= 768;
+
+  if (isMobileDevice) {
+    if (targetDoc && targetDoc.documentElement) {
+      targetDoc.documentElement.classList.add('is-mobile-device');
+      targetDoc.documentElement.classList.remove('is-desktop-device', 'is-tablet-device');
+    }
+    return 'mobile';
+  }
+
+  if (width <= 1180) {
+    if (targetDoc && targetDoc.documentElement) {
+      targetDoc.documentElement.classList.add('is-tablet-device');
+      targetDoc.documentElement.classList.remove('is-mobile-device', 'is-desktop-device');
+    }
+    return 'tablet';
+  }
+
+  if (targetDoc && targetDoc.documentElement) {
+    targetDoc.documentElement.classList.add('is-desktop-device');
+    targetDoc.documentElement.classList.remove('is-mobile-device', 'is-tablet-device');
+  }
+  return 'desktop';
+}
+
+/**
  * Applies visual overrides from a schema object onto the current DOM.
  * Supports universal styles and device-specific breakpoints (desktop, tablet, mobile).
  * @param {Object} schema
@@ -115,19 +161,7 @@ export function applyDesignSchema(schema, doc = document) {
   if (!doc) return;
 
   const win = doc.defaultView || (typeof window !== 'undefined' ? window : null);
-  const width = win ? win.innerWidth : 1280;
-
-  const explicitPreviewMode = doc.documentElement ? doc.documentElement.getAttribute('data-preview-mode') : null;
-  let activeBreakpoint = (explicitPreviewMode && explicitPreviewMode !== 'universal') ? explicitPreviewMode : 'desktop';
-  if (!explicitPreviewMode || explicitPreviewMode === 'universal') {
-    if (width <= 767) {
-      activeBreakpoint = 'mobile';
-    } else if (width <= 1023) {
-      activeBreakpoint = 'tablet';
-    } else {
-      activeBreakpoint = 'desktop';
-    }
-  }
+  const activeBreakpoint = detectDeviceBreakpoint(win, doc);
 
   // Save active schema for responsive recalculation on resize
   doc.__ekoLastActiveSchema = schema;

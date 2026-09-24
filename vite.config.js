@@ -110,9 +110,15 @@ function generateCssFromSchema(schema) {
   // Responsive Device Text Rules
   universalCssRules.push(`
   .eko-device-text { display: none !important; }
-  @media (min-width: 1024px) { .eko-text-desktop { display: inline !important; } }
-  @media (min-width: 768px) and (max-width: 1023px) { .eko-text-tablet { display: inline !important; } }
-  @media (max-width: 767px) { .eko-text-mobile { display: inline !important; } }
+  @media (min-width: 1025px) {
+    html:not(.is-mobile-device) .eko-text-desktop { display: inline !important; }
+  }
+  @media (max-width: 1024px), (pointer: coarse) {
+    html.is-mobile-device .eko-text-mobile,
+    .eko-text-mobile { display: inline !important; }
+  }
+  html.is-mobile-device .eko-text-desktop { display: none !important; }
+  html.is-mobile-device .eko-text-mobile { display: inline !important; }
   `.trim());
 
   Object.keys(elements).forEach(key => {
@@ -140,7 +146,7 @@ function generateCssFromSchema(schema) {
           .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
           .join(' ');
         if (dDec) {
-          desktopCssRules.push(`  @media (min-width: 1024px) {\n    ${selector} { ${dDec} }\n  }\n  html[data-preview-mode="desktop"] body ${rawSelector} { ${dDec} }`);
+          desktopCssRules.push(`  @media (min-width: 1025px) {\n    ${selector} { ${dDec} }\n  }\n  html[data-preview-mode="desktop"] body ${rawSelector} { ${dDec} }`);
         }
       }
 
@@ -150,7 +156,7 @@ function generateCssFromSchema(schema) {
           .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
           .join(' ');
         if (tDec) {
-          tabletCssRules.push(`  @media (min-width: 768px) and (max-width: 1023px) {\n    ${selector} { ${tDec} }\n  }\n  html[data-preview-mode="tablet"] body ${rawSelector} { ${tDec} }`);
+          tabletCssRules.push(`  @media (min-width: 769px) and (max-width: 1024px) {\n    ${selector} { ${tDec} }\n  }\n  html[data-preview-mode="tablet"] body ${rawSelector} { ${tDec} }`);
         }
       }
 
@@ -160,7 +166,7 @@ function generateCssFromSchema(schema) {
           .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
           .join(' ');
         if (mDec) {
-          mobileCssRules.push(`  @media (max-width: 767px) {\n    ${selector} { ${mDec} }\n  }\n  html[data-preview-mode="mobile"] body ${rawSelector} { ${mDec} }`);
+          mobileCssRules.push(`  @media (max-width: 768px), (max-width: 1024px) and (pointer: coarse) {\n    ${selector} { ${mDec} }\n  }\n  html.is-mobile-device body ${rawSelector},\n  html[data-preview-mode="mobile"] body ${rawSelector} { ${mDec} }`);
         }
       }
     }
