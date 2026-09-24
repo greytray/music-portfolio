@@ -562,16 +562,21 @@ function adminDesignModePlugin() {
           fs.writeFileSync(publicHistoryPath, JSON.stringify(history, null, 2), 'utf8');
         } catch (_) {}
 
-        // Attempt git commit if active
+        // Attempt git commit if git repository exists
         let gitCommitted = false;
         let gitMessage = '';
-        try {
-          execSync('git add index.html src/data/publishedSchema.json public/publishedSchema.json src/data/publishHistory.json public/publishHistory.json metadata.json public/metadata.json dist/', { stdio: 'pipe' });
-          execSync(`git commit -m "chore(design-mode): publish checkpoint ${checkpointId} (${elementsCount} elements)"`, { stdio: 'pipe' });
-          gitCommitted = true;
-          gitMessage = 'Git commit and production build created successfully';
-        } catch (gitErr) {
-          gitMessage = 'Saved permanently to source files and built for deployment (' + (gitErr.message || '') + ')';
+        const gitDirExists = fs.existsSync(path.resolve(process.cwd(), '.git'));
+        if (gitDirExists) {
+          try {
+            execSync('git add -A', { stdio: 'pipe' });
+            execSync(`git commit -m "chore(design-mode): publish checkpoint ${checkpointId} (${elementsCount} elements)"`, { stdio: 'pipe' });
+            gitCommitted = true;
+            gitMessage = 'Git commit and production build created successfully';
+          } catch (gitErr) {
+            gitMessage = 'Saved permanently to source files and built for deployment (' + (gitErr.message || '') + ')';
+          }
+        } else {
+          gitMessage = 'Saved permanently to source files and built for deployment';
         }
 
         res.setHeader('Content-Type', 'application/json');
