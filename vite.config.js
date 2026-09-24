@@ -109,7 +109,8 @@ function generateCssFromSchema(schema) {
   Object.keys(elements).forEach(key => {
     const item = elements[key];
     if (!item) return;
-    const selector = item.selector || (key.startsWith('#') || key.startsWith('.') ? key : `#${key}`);
+    const rawSelector = item.selector || (key.startsWith('#') || key.startsWith('.') ? key : `#${key}`);
+    const selector = `html body ${rawSelector}`;
 
     // Universal styles
     if (item.styles && typeof item.styles === 'object') {
@@ -130,7 +131,7 @@ function generateCssFromSchema(schema) {
           .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
           .join(' ');
         if (dDec) {
-          desktopCssRules.push(`  @media (min-width: 1024px) {\n    ${selector} { ${dDec} }\n  }\n  html[data-preview-mode="desktop"] ${selector} { ${dDec} }`);
+          desktopCssRules.push(`  @media (min-width: 1024px) {\n    ${selector} { ${dDec} }\n  }\n  html[data-preview-mode="desktop"] body ${rawSelector} { ${dDec} }`);
         }
       }
 
@@ -140,7 +141,7 @@ function generateCssFromSchema(schema) {
           .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
           .join(' ');
         if (tDec) {
-          tabletCssRules.push(`  @media (min-width: 768px) and (max-width: 1023px) {\n    ${selector} { ${tDec} }\n  }\n  html[data-preview-mode="tablet"] ${selector} { ${tDec} }`);
+          tabletCssRules.push(`  @media (min-width: 768px) and (max-width: 1023px) {\n    ${selector} { ${tDec} }\n  }\n  html[data-preview-mode="tablet"] body ${rawSelector} { ${tDec} }`);
         }
       }
 
@@ -150,7 +151,7 @@ function generateCssFromSchema(schema) {
           .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
           .join(' ');
         if (mDec) {
-          mobileCssRules.push(`  @media (max-width: 767px) {\n    ${selector} { ${mDec} }\n  }\n  html[data-preview-mode="mobile"] ${selector} { ${mDec} }`);
+          mobileCssRules.push(`  @media (max-width: 767px) {\n    ${selector} { ${mDec} }\n  }\n  html[data-preview-mode="mobile"] body ${rawSelector} { ${mDec} }`);
         }
       }
     }
@@ -196,8 +197,12 @@ function patchHtmlWithSchema(htmlContent, schema) {
     const elId = idMatch ? idMatch[1] : null;
     const elClass = classMatch ? classMatch[1] : null;
 
-    if (item.text !== undefined && typeof item.text === 'string') {
-      const targetContent = item.html || item.text;
+    const effectiveText = item.text !== undefined
+      ? item.text
+      : (item.breakpoints?.mobile?.text || item.breakpoints?.desktop?.text || item.breakpoints?.tablet?.text);
+
+    if (effectiveText !== undefined && typeof effectiveText === 'string') {
+      const targetContent = item.html || effectiveText;
       if (elId) {
         const idRegex = new RegExp(`(<([a-zA-Z0-9]+)[^>]*\\bid=["']${elId}["'][^>]*>)([\\s\\S]*?)(<\\/\\2>)`, 'i');
         if (idRegex.test(htmlContent)) {

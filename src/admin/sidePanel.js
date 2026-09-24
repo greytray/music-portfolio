@@ -1326,18 +1326,7 @@ export class SidePanel {
     if (textInput) {
       textInput.addEventListener('input', () => {
         const newVal = textInput.value;
-        const textNodes = Array.from(this.activeElement.childNodes).filter(node => node.nodeType === Node.TEXT_NODE);
-        if (textNodes.length > 0) {
-          textNodes[0].textContent = newVal;
-          for (let i = 1; i < textNodes.length; i++) {
-            textNodes[i].textContent = '';
-          }
-        } else if (this.activeElement.children.length === 0) {
-          this.activeElement.textContent = newVal;
-        } else {
-          const newTextNode = this.activeElement.ownerDocument.createTextNode(newVal);
-          this.activeElement.insertBefore(newTextNode, this.activeElement.firstChild);
-        }
+        this.activeElement.textContent = newVal;
         this._notifyChange({ text: newVal });
         this.updateTabCounters();
       });

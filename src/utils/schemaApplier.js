@@ -40,7 +40,8 @@ export function generateCssFromSchema(schema) {
   Object.keys(elements).forEach(key => {
     const item = elements[key];
     if (!item) return;
-    const selector = item.selector || (key.startsWith('#') || key.startsWith('.') ? key : `#${key}`);
+    const rawSelector = item.selector || (key.startsWith('#') || key.startsWith('.') ? key : `#${key}`);
+    const selector = `html body ${rawSelector}`;
 
     // Universal styles
     if (item.styles && typeof item.styles === 'object') {
@@ -61,7 +62,7 @@ export function generateCssFromSchema(schema) {
           .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
           .join(' ');
         if (dDec) {
-          desktopCssRules.push(`  @media (min-width: 1024px) {\n    ${selector} { ${dDec} }\n  }\n  html[data-preview-mode="desktop"] ${selector} { ${dDec} }`);
+          desktopCssRules.push(`  @media (min-width: 1024px) {\n    ${selector} { ${dDec} }\n  }\n  html[data-preview-mode="desktop"] body ${rawSelector} { ${dDec} }`);
         }
       }
 
@@ -71,7 +72,7 @@ export function generateCssFromSchema(schema) {
           .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
           .join(' ');
         if (tDec) {
-          tabletCssRules.push(`  @media (min-width: 768px) and (max-width: 1023px) {\n    ${selector} { ${tDec} }\n  }\n  html[data-preview-mode="tablet"] ${selector} { ${tDec} }`);
+          tabletCssRules.push(`  @media (min-width: 768px) and (max-width: 1023px) {\n    ${selector} { ${tDec} }\n  }\n  html[data-preview-mode="tablet"] body ${rawSelector} { ${tDec} }`);
         }
       }
 
@@ -81,7 +82,7 @@ export function generateCssFromSchema(schema) {
           .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
           .join(' ');
         if (mDec) {
-          mobileCssRules.push(`  @media (max-width: 767px) {\n    ${selector} { ${mDec} }\n  }\n  html[data-preview-mode="mobile"] ${selector} { ${mDec} }`);
+          mobileCssRules.push(`  @media (max-width: 767px) {\n    ${selector} { ${mDec} }\n  }\n  html[data-preview-mode="mobile"] body ${rawSelector} { ${mDec} }`);
         }
       }
     }
@@ -229,25 +230,14 @@ export function applyDesignSchema(schema, doc = document) {
       if (targetText !== null) {
         if (targetHtml) {
           el.innerHTML = targetHtml;
-        } else if (el.children.length === 0) {
-          el.textContent = targetText;
         } else {
-          const textNodes = Array.from(el.childNodes).filter(node => node.nodeType === Node.TEXT_NODE);
-          if (textNodes.length > 0) {
-            textNodes[0].textContent = targetText;
-            for (let i = 1; i < textNodes.length; i++) {
-              textNodes[i].textContent = '';
-            }
-          } else {
-            const newTextNode = el.ownerDocument ? el.ownerDocument.createTextNode(targetText) : doc.createTextNode(targetText);
-            el.insertBefore(newTextNode, el.firstChild);
-          }
+          el.textContent = targetText;
         }
       } else if (el.__ekoOriginalText !== undefined) {
-        if (el.children.length === 0) {
-          el.textContent = el.__ekoOriginalText;
-        } else if (el.__ekoOriginalHtml !== undefined) {
+        if (el.__ekoOriginalHtml !== undefined && el.__ekoOriginalHtml.includes('<')) {
           el.innerHTML = el.__ekoOriginalHtml;
+        } else {
+          el.textContent = el.__ekoOriginalText;
         }
       }
 
