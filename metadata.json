@@ -7,9 +7,23 @@
   ],
   "designModeSchema": {
     "version": "1.0.0",
-    "lastUpdated": "2026-09-25T13:29:56.566Z",
-    "elementsCount": 0,
-    "elements": {},
-    "lastPublished": "2026-09-25T13:29:56.689Z"
+    "lastUpdated": "2026-09-25T20:54:00.997Z",
+    "elementsCount": 1,
+    "elements": {
+      "#playlist > button.track:nth-of-type(1) > span.track-name:nth-of-type(2) > small": {
+        "selector": "#playlist > button.track:nth-of-type(1) > span.track-name:nth-of-type(2) > small",
+        "styles": {
+          "fontVariant": "normal",
+          "textTransform": "capitalize"
+        },
+        "breakpoints": {
+          "desktop": {},
+          "tablet": {},
+          "mobile": {}
+        },
+        "dataAttributes": {}
+      }
+    },
+    "lastPublished": "2026-09-25T20:54:01.314Z"
   }
 }
