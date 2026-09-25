@@ -1,13 +1,11 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-25T14:38:50.389Z",
+  "lastUpdated": "2026-09-25T14:40:42.871Z",
   "elementsCount": 1,
   "elements": {
     "#beats-title > em": {
       "selector": "#beats-title > em",
-      "styles": {
-        "lineHeight": "1"
-      },
+      "styles": {},
       "breakpoints": {
         "desktop": {},
         "tablet": {},
@@ -18,5 +16,5 @@
       "dataAttributes": {}
     }
   },
-  "lastPublished": "2026-09-25T14:38:55.732Z"
+  "lastPublished": "2026-09-25T14:40:42.527Z"
 }
