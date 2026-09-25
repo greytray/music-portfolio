@@ -1,14 +1,14 @@
 [
   {
-    "id": "cp_1790369642083",
-    "timestamp": "2026-09-25T20:54:01.314Z",
+    "id": "cp_1790371270071",
+    "timestamp": "2026-09-25T21:21:10.071Z",
     "label": "Checkpoint #1",
-    "description": "1 element customized across canvas",
-    "elementsCount": 1,
+    "description": "6 elements customized across canvas",
+    "elementsCount": 6,
     "schema": {
       "version": "1.0.0",
-      "lastUpdated": "2026-09-25T20:54:00.997Z",
-      "elementsCount": 1,
+      "lastUpdated": "2026-09-25T21:21:11.164Z",
+      "elementsCount": 6,
       "elements": {
         "#playlist > button.track:nth-of-type(1) > span.track-name:nth-of-type(2) > small": {
           "selector": "#playlist > button.track:nth-of-type(1) > span.track-name:nth-of-type(2) > small",
@@ -21,10 +21,76 @@
             "tablet": {},
             "mobile": {}
           },
-          "dataAttributes": {}
+          "dataAttributes": {},
+          "text": "Original Production"
+        },
+        "#playlist > button.track:nth-of-type(2) > span.track-name:nth-of-type(2) > small": {
+          "selector": "#playlist > button.track:nth-of-type(2) > span.track-name:nth-of-type(2) > small",
+          "styles": {
+            "textTransform": "capitalize"
+          },
+          "breakpoints": {
+            "desktop": {},
+            "tablet": {},
+            "mobile": {}
+          },
+          "dataAttributes": {},
+          "text": "Original Production"
+        },
+        "#playlist > button.track:nth-of-type(3) > span.track-name:nth-of-type(2) > small": {
+          "selector": "#playlist > button.track:nth-of-type(3) > span.track-name:nth-of-type(2) > small",
+          "styles": {
+            "textTransform": "capitalize"
+          },
+          "breakpoints": {
+            "desktop": {},
+            "tablet": {},
+            "mobile": {}
+          },
+          "dataAttributes": {},
+          "text": "Original Production"
+        },
+        "#playlist > button.track:nth-of-type(4) > span.track-name:nth-of-type(2) > small": {
+          "selector": "#playlist > button.track:nth-of-type(4) > span.track-name:nth-of-type(2) > small",
+          "styles": {
+            "textTransform": "capitalize"
+          },
+          "breakpoints": {
+            "desktop": {},
+            "tablet": {},
+            "mobile": {}
+          },
+          "dataAttributes": {},
+          "text": "Original Production"
+        },
+        "#playlist > button.track:nth-of-type(6) > span.track-name:nth-of-type(2) > small": {
+          "selector": "#playlist > button.track:nth-of-type(6) > span.track-name:nth-of-type(2) > small",
+          "styles": {
+            "textTransform": "capitalize"
+          },
+          "breakpoints": {
+            "desktop": {},
+            "tablet": {},
+            "mobile": {}
+          },
+          "dataAttributes": {},
+          "text": "Original Production"
+        },
+        "#playlist > button.track:nth-of-type(5) > span.track-name:nth-of-type(2) > small": {
+          "selector": "#playlist > button.track:nth-of-type(5) > span.track-name:nth-of-type(2) > small",
+          "styles": {
+            "textTransform": "capitalize"
+          },
+          "breakpoints": {
+            "desktop": {},
+            "tablet": {},
+            "mobile": {}
+          },
+          "dataAttributes": {},
+          "text": "Original Production"
         }
       },
-      "lastPublished": "2026-09-25T20:54:01.314Z"
+      "lastPublished": "2026-09-25T21:21:10.071Z"
     }
   },
   {
