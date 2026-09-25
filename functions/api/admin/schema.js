@@ -28,7 +28,27 @@ export async function onRequest(context) {
         }
       }
 
-      // 2. Try fetching from Hugging Face if dataset repository has a saved schema
+      // 2. Try fetching from GitHub raw content (instant real-time authoritative source)
+      try {
+        const ghRes = await fetch(`https://raw.githubusercontent.com/greytray/music-portfolio/main/public/publishedSchema.json?t=${Date.now()}`, {
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+        if (ghRes.ok) {
+          const ghSchema = await ghRes.json();
+          if (ghSchema && ghSchema.elements && Object.keys(ghSchema.elements).length > 0) {
+            return new Response(JSON.stringify({ success: true, schema: ghSchema }), {
+              status: 200,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Cache-Control': 'no-store, no-cache, must-revalidate'
+              }
+            });
+          }
+        }
+      } catch (_) {}
+
+      // 3. Try fetching from Hugging Face if dataset repository has a saved schema
       const hfToken = (env && env.HF_ACCESS_TOKEN) || '';
       if (hfToken) {
         try {
