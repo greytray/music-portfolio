@@ -438,8 +438,11 @@ export class AdminApp {
     // 5. Publish button
     const publishBtn = this.rootElement.querySelector('#btn-publish-changes');
     const publishLabel = this.rootElement.querySelector('#btn-publish-label');
+    let isPublishing = false;
 
     publishBtn.addEventListener('click', async () => {
+      if (isPublishing) return;
+      isPublishing = true;
       publishBtn.classList.add('is-publishing');
       publishLabel.textContent = 'Publishing...';
 
@@ -456,10 +459,12 @@ export class AdminApp {
         setTimeout(() => {
           publishLabel.textContent = 'Publish';
           publishBtn.classList.remove('is-publishing');
-        }, 2000);
+          isPublishing = false;
+        }, 1500);
       } catch (err) {
         publishLabel.textContent = 'Error';
         publishBtn.classList.remove('is-publishing');
+        isPublishing = false;
         this._showToast(`Failed to publish: ${err.message}`, true);
       }
     });

@@ -284,9 +284,10 @@ export class SidePanel {
    */
   _handleResetSection(sectionName) {
     const currentTab = sectionName || this.activeTab || 'text';
+    const targetSelector = this.activeMeta ? this.activeMeta.selector : null;
 
     if (this.exportSystem) {
-      this.exportSystem.resetSection(currentTab);
+      this.exportSystem.resetSection(currentTab, targetSelector);
     }
 
     if (this.activeElement && this.activeMeta) {
@@ -659,22 +660,28 @@ export class SidePanel {
       return { text: 0, spacing: 0, media: 0, props: 0, total: 0 };
     }
 
-    const textStyleList = [
-      'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing',
-      'textAlign', 'fontStyle', 'textTransform', 'fontVariant', 'textShadow',
-      'boxShadow', 'color', 'backgroundColor', 'borderColor', 'borderWidth',
-      'borderRadius', 'opacity'
-    ];
+    let textCount = 0;
+    if (this.isFieldChanged('text')) textCount++;
+    if (this.isFieldChanged('fontFamily')) textCount++;
+    if (this.isFieldChanged('fontSize')) textCount++;
+    if (this.isFieldChanged('fontWeight')) textCount++;
+    if (this.isFieldChanged('lineHeight')) textCount++;
+    if (this.isFieldChanged('letterSpacing')) textCount++;
+    if (this.isFieldChanged('textTransform') || this.isFieldChanged('fontVariant')) textCount++;
+    if (this.isFieldChanged('textAlign')) textCount++;
+    if (this.isFieldChanged('fontStyle')) textCount++;
+    if (this.isFieldChanged('textShadow') || this.isFieldChanged('boxShadow')) textCount++;
+    if (this.isFieldChanged('color')) textCount++;
+    if (this.isFieldChanged('backgroundColor')) textCount++;
+    if (this.isFieldChanged('borderColor')) textCount++;
+    if (this.isFieldChanged('borderWidth')) textCount++;
+    if (this.isFieldChanged('borderRadius')) textCount++;
+    if (this.isFieldChanged('opacity')) textCount++;
+
     const spacingStyleList = [
       'marginTop', 'marginBottom', 'marginLeft', 'marginRight',
       'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'gap'
     ];
-
-    let textCount = 0;
-    if (this.isFieldChanged('text')) textCount++;
-    textStyleList.forEach(k => {
-      if (this.isFieldChanged(k)) textCount++;
-    });
 
     let spacingCount = 0;
     spacingStyleList.forEach(k => {
@@ -1471,12 +1478,18 @@ export class SidePanel {
         const caseVal = btn.dataset.case;
         this.activeElement.style.removeProperty('font-variant');
         this.activeElement.style.removeProperty('text-transform');
+
+        if (this.exportSystem && this.activeMeta) {
+          this.exportSystem.removeChange(this.activeMeta.selector, 'style', 'fontVariant', this.currentBreakpoint);
+          this.exportSystem.removeChange(this.activeMeta.selector, 'style', 'textTransform', this.currentBreakpoint);
+        }
+
         if (caseVal === 'small-caps') {
           this._notifyChange({ styleKey: 'fontVariant', val: 'small-caps' });
+        } else if (caseVal === 'normal') {
           this._notifyChange({ styleKey: 'textTransform', val: 'none' });
         } else {
-          this._notifyChange({ styleKey: 'fontVariant', val: 'normal' });
-          this._notifyChange({ styleKey: 'textTransform', val: caseVal === 'normal' ? 'none' : caseVal });
+          this._notifyChange({ styleKey: 'textTransform', val: caseVal });
         }
         this.updateTabCounters();
       });

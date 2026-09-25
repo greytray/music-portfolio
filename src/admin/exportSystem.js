@@ -20,17 +20,7 @@ export class ExportSystem {
     };
     this.sessionCheckpoints = []; // in-memory session checkpoints for the current tab
     this.hasUnpublishedChanges = false;
-    this.autoPublishTimer = null;
     this.initPromise = this.loadInitialSchema();
-  }
-
-  _scheduleAutoPublish() {
-    if (this.autoPublishTimer) {
-      clearTimeout(this.autoPublishTimer);
-    }
-    this.autoPublishTimer = setTimeout(() => {
-      this.publish().catch(err => console.warn('[Auto-Publish] Notice:', err));
-    }, 800);
   }
 
   async loadInitialSchema() {
@@ -148,7 +138,6 @@ export class ExportSystem {
     try {
       localStorage.setItem('eko_draft_design_schema', JSON.stringify(this.serializeSchema()));
     } catch (_) {}
-    this._scheduleAutoPublish();
   }
 
   /**
@@ -215,7 +204,6 @@ export class ExportSystem {
       this.changesMap.set(selector, existing);
     }
     this.hasUnpublishedChanges = this.changesMap.size > 0;
-    this._scheduleAutoPublish();
   }
 
   /**
@@ -225,7 +213,6 @@ export class ExportSystem {
     if (!selector) return;
     this.changesMap.delete(selector);
     this.hasUnpublishedChanges = this.changesMap.size > 0;
-    this._scheduleAutoPublish();
   }
 
   /**
@@ -292,7 +279,6 @@ export class ExportSystem {
     });
 
     this.hasUnpublishedChanges = this.changesMap.size > 0;
-    this._scheduleAutoPublish();
   }
 
   getElementData(selector) {
@@ -310,12 +296,6 @@ export class ExportSystem {
     let mediaCount = 0;
     let propsCount = 0;
 
-    const textStyleList = [
-      'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing',
-      'textAlign', 'fontStyle', 'textTransform', 'fontVariant', 'textShadow',
-      'boxShadow', 'color', 'backgroundColor', 'borderColor', 'borderWidth',
-      'borderRadius', 'opacity'
-    ];
     const spacingStyleList = [
       'marginTop', 'marginBottom', 'marginLeft', 'marginRight',
       'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'gap'
@@ -332,17 +312,27 @@ export class ExportSystem {
         ...Object.keys((elData.breakpoints && elData.breakpoints.mobile) || {})
       ]);
 
-      allStyleKeys.forEach(k => {
-        if (textStyleList.includes(k)) {
-          textCount++;
-        } else if (spacingStyleList.includes(k)) {
-          spacingCount++;
-        } else if (k === 'backgroundImage') {
-          mediaCount++;
-        }
+      if (allStyleKeys.has('fontFamily')) textCount++;
+      if (allStyleKeys.has('fontSize')) textCount++;
+      if (allStyleKeys.has('fontWeight')) textCount++;
+      if (allStyleKeys.has('lineHeight')) textCount++;
+      if (allStyleKeys.has('letterSpacing')) textCount++;
+      if (allStyleKeys.has('textTransform') || allStyleKeys.has('fontVariant')) textCount++;
+      if (allStyleKeys.has('textAlign')) textCount++;
+      if (allStyleKeys.has('fontStyle')) textCount++;
+      if (allStyleKeys.has('textShadow') || allStyleKeys.has('boxShadow')) textCount++;
+      if (allStyleKeys.has('color')) textCount++;
+      if (allStyleKeys.has('backgroundColor')) textCount++;
+      if (allStyleKeys.has('borderColor')) textCount++;
+      if (allStyleKeys.has('borderWidth')) textCount++;
+      if (allStyleKeys.has('borderRadius')) textCount++;
+      if (allStyleKeys.has('opacity')) textCount++;
+
+      spacingStyleList.forEach(k => {
+        if (allStyleKeys.has(k)) spacingCount++;
       });
 
-      if (elData.media !== undefined) {
+      if (allStyleKeys.has('backgroundImage') || elData.media !== undefined) {
         mediaCount++;
       }
 
