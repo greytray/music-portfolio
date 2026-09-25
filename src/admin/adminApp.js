@@ -360,14 +360,13 @@ export class AdminApp {
         this.sidePanel.setBreakpoint('universal');
       }
 
-      // Reapply schema to iframe doc with universal preview mode
+      // Update preview mode attribute on iframe doc without thrashing stylesheet
       if (iframe) {
         try {
           const iDoc = iframe.contentDocument || iframe.contentWindow.document;
           if (iDoc && iDoc.documentElement) {
             iDoc.documentElement.setAttribute('data-preview-mode', 'universal');
           }
-          applyDesignSchema(this.exportSystem.serializeSchema(), iDoc);
         } catch (_) {}
       }
 
@@ -376,7 +375,7 @@ export class AdminApp {
         if (this.selectionEngine) {
           this.selectionEngine._updateBoxes();
         }
-      }, 320);
+      }, 280);
     });
 
     cycleBtn.addEventListener('click', () => {
@@ -402,14 +401,13 @@ export class AdminApp {
         this.sidePanel.setBreakpoint(this.currentBreakpoint);
       }
 
-      // Reapply schema to iframe doc with active device preview mode
+      // Update preview mode attribute on iframe doc without thrashing stylesheet
       if (iframe) {
         try {
           const iDoc = iframe.contentDocument || iframe.contentWindow.document;
           if (iDoc && iDoc.documentElement) {
             iDoc.documentElement.setAttribute('data-preview-mode', this.currentBreakpoint);
           }
-          applyDesignSchema(this.exportSystem.serializeSchema(), iDoc);
         } catch (_) {}
       }
 
@@ -418,7 +416,7 @@ export class AdminApp {
         if (this.selectionEngine) {
           this.selectionEngine._updateBoxes();
         }
-      }, 320);
+      }, 280);
     });
 
     // 3. Sidebar Dock Switch

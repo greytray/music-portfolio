@@ -114,8 +114,28 @@ export function detectDeviceBreakpoint(win = (typeof window !== 'undefined' ? wi
   const targetDoc = doc || (win ? win.document : null);
 
   const explicitPreviewMode = targetDoc && targetDoc.documentElement ? targetDoc.documentElement.getAttribute('data-preview-mode') : null;
-  if (explicitPreviewMode && explicitPreviewMode !== 'universal') {
-    return explicitPreviewMode;
+  if (explicitPreviewMode) {
+    if (explicitPreviewMode === 'mobile') {
+      if (targetDoc && targetDoc.documentElement) {
+        targetDoc.documentElement.classList.add('is-mobile-device');
+        targetDoc.documentElement.classList.remove('is-desktop-device', 'is-tablet-device');
+      }
+      return 'mobile';
+    }
+    if (explicitPreviewMode === 'tablet') {
+      if (targetDoc && targetDoc.documentElement) {
+        targetDoc.documentElement.classList.add('is-tablet-device');
+        targetDoc.documentElement.classList.remove('is-mobile-device', 'is-desktop-device');
+      }
+      return 'tablet';
+    }
+    if (explicitPreviewMode === 'desktop' || explicitPreviewMode === 'universal') {
+      if (targetDoc && targetDoc.documentElement) {
+        targetDoc.documentElement.classList.add('is-desktop-device');
+        targetDoc.documentElement.classList.remove('is-mobile-device', 'is-tablet-device');
+      }
+      return explicitPreviewMode === 'universal' ? 'universal' : 'desktop';
+    }
   }
 
   const ua = (win && win.navigator && win.navigator.userAgent) ? win.navigator.userAgent : '';
@@ -176,7 +196,7 @@ export function applyDesignSchema(schema, doc = document) {
         if (doc && doc.__ekoLastActiveSchema) {
           applyDesignSchema(doc.__ekoLastActiveSchema, doc);
         }
-      }, 50);
+      }, 250);
     });
   }
 
@@ -226,7 +246,7 @@ export function applyDesignSchema(schema, doc = document) {
 
   // 1. Compile CSS Media Queries (Universal, Desktop, Tablet, Mobile)
   const compiledCss = generateCssFromSchema(schema);
-  if (styleTag) {
+  if (styleTag && styleTag.textContent !== compiledCss) {
     styleTag.textContent = compiledCss;
   }
 
