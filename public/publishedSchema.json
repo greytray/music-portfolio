@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-25T20:48:22.722Z",
+  "lastUpdated": "2026-09-25T20:48:25.585Z",
   "elementsCount": 2,
   "elements": {
     "#contact": {
@@ -26,9 +26,8 @@
         "tablet": {},
         "mobile": {}
       },
-      "dataAttributes": {},
-      "text": "Original Production"
+      "dataAttributes": {}
     }
   },
-  "lastPublished": "2026-09-25T20:48:21.437Z"
+  "lastPublished": "2026-09-25T20:48:24.282Z"
 }
