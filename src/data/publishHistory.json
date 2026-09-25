@@ -1,5 +1,19 @@
 [
   {
+    "id": "cp_1790342997772",
+    "timestamp": "2026-09-25T13:29:56.689Z",
+    "label": "Checkpoint #2",
+    "description": "0 elements customized across canvas",
+    "elementsCount": 0,
+    "schema": {
+      "version": "1.0.0",
+      "lastUpdated": "2026-09-25T13:29:56.566Z",
+      "elementsCount": 0,
+      "elements": {},
+      "lastPublished": "2026-09-25T13:29:56.689Z"
+    }
+  },
+  {
     "id": "cp_1790342162981",
     "timestamp": "2026-09-25T13:16:01.320Z",
     "label": "Checkpoint #1",
