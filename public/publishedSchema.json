@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-25T15:52:39.885Z",
+  "lastUpdated": "2026-09-25T15:52:52.854Z",
   "elementsCount": 2,
   "elements": {
     "#beats-title > em": {
@@ -28,5 +28,5 @@
       "dataAttributes": {}
     }
   },
-  "lastPublished": "2026-09-25T15:52:39.559Z"
+  "lastPublished": "2026-09-25T15:52:52.528Z"
 }
