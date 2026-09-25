@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-25T15:52:22.677Z",
-  "elementsCount": 1,
+  "lastUpdated": "2026-09-25T15:52:39.885Z",
+  "elementsCount": 2,
   "elements": {
     "#beats-title > em": {
       "selector": "#beats-title > em",
@@ -14,7 +14,19 @@
         }
       },
       "dataAttributes": {}
+    },
+    "#contact": {
+      "selector": "#contact",
+      "styles": {},
+      "breakpoints": {
+        "desktop": {},
+        "tablet": {},
+        "mobile": {
+          "marginBottom": "0px"
+        }
+      },
+      "dataAttributes": {}
     }
   },
-  "lastPublished": "2026-09-25T15:52:22.350Z"
+  "lastPublished": "2026-09-25T15:52:39.559Z"
 }

@@ -1,0 +1,5 @@
+  /* Mobile Overrides */
+  @media (max-width: 767px) {
+    html body #contact { margin-bottom: 0px !important; }
+  }
+  html[data-preview-mode="mobile"] body #contact { margin-bottom: 0px !important; }
