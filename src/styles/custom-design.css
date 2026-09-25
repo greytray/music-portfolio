@@ -1,5 +1,11 @@
-  /* Mobile Overrides */
-  @media (max-width: 767px) {
-    html body #contact { margin-bottom: 0px !important; }
-  }
-  html[data-preview-mode="mobile"] body #contact { margin-bottom: 0px !important; }
+  /* Universal Overrides */
+.eko-device-text { display: none !important; }
+@media (min-width: 1025px) {
+  html:not(.is-mobile-device) .eko-text-desktop { display: inline !important; }
+}
+@media (max-width: 1024px), (pointer: coarse) {
+  html.is-mobile-device .eko-text-mobile,
+  .eko-text-mobile { display: inline !important; }
+}
+html.is-mobile-device .eko-text-desktop { display: none !important; }
+html.is-mobile-device .eko-text-mobile { display: inline !important; }

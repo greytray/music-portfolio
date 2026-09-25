@@ -230,24 +230,21 @@ export class SidePanel {
   _updateResetButtonVisibility() {
     const footer = this.container.querySelector('#admin-panel-footer');
     const resetBtn = this.container.querySelector('#btn-reset-element');
-    const counts = this.exportSystem ? this.exportSystem.getSectionCounts() : { text: 0, spacing: 0, media: 0, props: 0, total: 0 };
-    
-    const sectionLabels = {
-      text: 'Text Section',
-      spacing: 'Spacing Section',
-      media: 'Media Section',
-      props: 'Props Section'
-    };
 
     const currentTab = this.activeTab || 'text';
-    const sectionCount = counts[currentTab] || 0;
-    const hasSectionChanges = sectionCount > 0 || this._hasActiveElementSectionChanges(currentTab);
+    const hasSectionChanges = this._hasActiveElementSectionChanges(currentTab);
 
     if (footer) {
-      footer.style.display = (this.activeElement || counts.total > 0) ? 'flex' : 'none';
+      footer.style.display = this.activeElement ? 'flex' : 'none';
     }
 
     if (resetBtn) {
+      const sectionLabels = {
+        text: 'Text Section',
+        spacing: 'Spacing Section',
+        media: 'Media Section',
+        props: 'Props Section'
+      };
       const label = sectionLabels[currentTab] || 'Section';
       resetBtn.style.display = hasSectionChanges ? 'inline-flex' : 'none';
       resetBtn.textContent = `Reset ${label}`;
@@ -275,7 +272,7 @@ export class SidePanel {
     } else if (sectionName === 'spacing') {
       return spacingStyleList.some(k => this.isFieldChanged(k));
     } else if (sectionName === 'media') {
-      return this.isFieldChanged('src') || this.isFieldChanged('audio') || this.isFieldChanged('backgroundImage');
+      return this.isFieldChanged('src') || this.isFieldChanged('audio') || this.isFieldChanged('backgroundImage') || this.isFieldChanged('media');
     } else if (sectionName === 'props') {
       return this.isFieldChanged('dataAttributes');
     }
@@ -655,7 +652,57 @@ export class SidePanel {
   }
 
   /**
-   * Calculate collective change counts per section across all elements and update tab bar badges
+   * Calculate change counts per section for the currently active inspected element
+   */
+  getActiveElementSectionCounts() {
+    if (!this.activeMeta || !this.exportSystem) {
+      return { text: 0, spacing: 0, media: 0, props: 0, total: 0 };
+    }
+
+    const textStyleList = [
+      'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing',
+      'textAlign', 'fontStyle', 'textTransform', 'fontVariant', 'textShadow',
+      'boxShadow', 'color', 'backgroundColor', 'borderColor', 'borderWidth',
+      'borderRadius', 'opacity'
+    ];
+    const spacingStyleList = [
+      'marginTop', 'marginBottom', 'marginLeft', 'marginRight',
+      'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'gap'
+    ];
+
+    let textCount = 0;
+    if (this.isFieldChanged('text')) textCount++;
+    textStyleList.forEach(k => {
+      if (this.isFieldChanged(k)) textCount++;
+    });
+
+    let spacingCount = 0;
+    spacingStyleList.forEach(k => {
+      if (this.isFieldChanged(k)) spacingCount++;
+    });
+
+    let mediaCount = 0;
+    if (this.isFieldChanged('media') || this.isFieldChanged('src') || this.isFieldChanged('audio') || this.isFieldChanged('backgroundImage')) {
+      mediaCount++;
+    }
+
+    let propsCount = 0;
+    const data = this.exportSystem.getElementData(this.activeMeta.selector);
+    if (data && data.dataAttributes) {
+      propsCount = Object.keys(data.dataAttributes).length;
+    }
+
+    return {
+      text: textCount,
+      spacing: spacingCount,
+      media: mediaCount,
+      props: propsCount,
+      total: textCount + spacingCount + mediaCount + propsCount
+    };
+  }
+
+  /**
+   * Calculate change counts for the currently active element and update tab bar badges
    */
   updateTabCounters() {
     const textBadge = this.container.querySelector('#badge-tab-text');
@@ -663,7 +710,7 @@ export class SidePanel {
     const mediaBadge = this.container.querySelector('#badge-tab-media');
     const propsBadge = this.container.querySelector('#badge-tab-props');
 
-    if (!this.exportSystem) {
+    if (!this.exportSystem || !this.activeElement) {
       if (textBadge) textBadge.style.display = 'none';
       if (spacingBadge) spacingBadge.style.display = 'none';
       if (mediaBadge) mediaBadge.style.display = 'none';
@@ -672,7 +719,7 @@ export class SidePanel {
       return;
     }
 
-    const counts = this.exportSystem.getSectionCounts();
+    const counts = this.getActiveElementSectionCounts();
 
     this._updateBadge(textBadge, counts.text);
     this._updateBadge(spacingBadge, counts.spacing);

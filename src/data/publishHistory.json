@@ -1,44 +1,5 @@
 [
   {
-    "id": "cp_1790351572528",
-    "timestamp": "2026-09-25T15:52:52.528Z",
-    "label": "Checkpoint #1",
-    "description": "2 elements customized across canvas",
-    "elementsCount": 2,
-    "schema": {
-      "version": "1.0.0",
-      "lastUpdated": "2026-09-25T15:52:52.854Z",
-      "elementsCount": 2,
-      "elements": {
-        "#beats-title > em": {
-          "selector": "#beats-title > em",
-          "styles": {},
-          "breakpoints": {
-            "desktop": {},
-            "tablet": {},
-            "mobile": {
-              "text": "Work"
-            }
-          },
-          "dataAttributes": {}
-        },
-        "#contact": {
-          "selector": "#contact",
-          "styles": {},
-          "breakpoints": {
-            "desktop": {},
-            "tablet": {},
-            "mobile": {
-              "marginBottom": "0px"
-            }
-          },
-          "dataAttributes": {}
-        }
-      },
-      "lastPublished": "2026-09-25T15:52:52.528Z"
-    }
-  },
-  {
     "id": "cp_v0",
     "timestamp": "2026-09-23T00:00:00.000Z",
     "label": "Checkpoint v0 (Default Baseline)",

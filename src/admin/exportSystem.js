@@ -18,6 +18,7 @@ export class ExportSystem {
       elementsCount: 0,
       elements: {}
     };
+    this.sessionCheckpoints = []; // in-memory session checkpoints for the current tab
     this.hasUnpublishedChanges = false;
     this.autoPublishTimer = null;
     this.initPromise = this.loadInitialSchema();
@@ -33,55 +34,25 @@ export class ExportSystem {
   }
 
   async loadInitialSchema() {
+    // Clear any stale local/session storage keys from past sessions
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('eko_draft_design_schema');
+      sessionStorage.removeItem(SESSION_HISTORY_KEY);
+    } catch (_) {}
+
     try {
       const res = await fetch(`/api/admin/schema?t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if (data && data.schema) {
           this.sessionBaselineSchema = JSON.parse(JSON.stringify(data.schema));
-          if (data.schema.elements) {
+          if (data.schema.elements && Object.keys(data.schema.elements).length > 0) {
             Object.entries(data.schema.elements).forEach(([selector, val]) => {
               this.changesMap.set(selector, JSON.parse(JSON.stringify(val)));
             });
           }
         }
-      }
-    } catch (_) {}
-
-    // Check if published schema is cached locally
-    try {
-      const cachedPublished = localStorage.getItem(STORAGE_KEY);
-      if (cachedPublished) {
-        const parsed = JSON.parse(cachedPublished);
-        if (parsed && parsed.elements) {
-          this.sessionBaselineSchema = JSON.parse(JSON.stringify(parsed));
-          Object.entries(parsed.elements).forEach(([selector, val]) => {
-            this.changesMap.set(selector, JSON.parse(JSON.stringify(val)));
-          });
-        }
-      }
-    } catch (_) {}
-
-    // Check for uncommitted draft edits
-    try {
-      const cachedDraft = localStorage.getItem('eko_draft_design_schema');
-      if (cachedDraft) {
-        const parsedDraft = JSON.parse(cachedDraft);
-        if (parsedDraft && parsedDraft.elements) {
-          Object.entries(parsedDraft.elements).forEach(([selector, val]) => {
-            this.changesMap.set(selector, JSON.parse(JSON.stringify(val)));
-          });
-          this.hasUnpublishedChanges = true;
-        }
-      }
-    } catch (_) {}
-
-    // Initialize session history starting with baseline v0
-    try {
-      const existingSessionHist = sessionStorage.getItem(SESSION_HISTORY_KEY);
-      if (!existingSessionHist) {
-        const v0 = this.getV0Checkpoint();
-        sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify([v0]));
       }
     } catch (_) {}
   }
@@ -478,35 +449,21 @@ export class ExportSystem {
 
     this.hasUnpublishedChanges = false;
 
-    // 3. Immediately cache newly published checkpoint in current session history store
-    let updatedSessionHist = [];
-    try {
-      let sessionHist = [];
-      const cached = sessionStorage.getItem(SESSION_HISTORY_KEY);
-      if (cached) {
-        sessionHist = JSON.parse(cached);
-      }
-      if (!Array.isArray(sessionHist)) sessionHist = [];
+    // 3. Immediately add newly published checkpoint to session checkpoints
+    const publishedCount = this.sessionCheckpoints.length;
+    const elemCount = schema.elementsCount || Object.keys(schema.elements || {}).length;
 
-      const publishedInSession = sessionHist.filter(c => c.id !== 'cp_session_v0' && c.id !== 'cp_v0' && !c.isV0);
-      const newCheckpointNum = publishedInSession.length + 1;
-      const elemCount = schema.elementsCount || Object.keys(schema.elements || {}).length;
+    const newCp = {
+      id: `cp_session_${Date.now()}`,
+      timestamp: schema.lastPublished || new Date().toISOString(),
+      label: `Checkpoint #${publishedCount + 1}`,
+      description: `${elemCount} element${elemCount === 1 ? '' : 's'} customized across canvas`,
+      elementsCount: elemCount,
+      schema: JSON.parse(JSON.stringify(schema)),
+      isV0: false
+    };
 
-      const newCp = {
-        id: `cp_session_${Date.now()}`,
-        timestamp: schema.lastPublished || new Date().toISOString(),
-        label: `Checkpoint #${newCheckpointNum}`,
-        description: `${elemCount} element${elemCount === 1 ? '' : 's'} customized across canvas`,
-        elementsCount: elemCount,
-        schema: JSON.parse(JSON.stringify(schema)),
-        isV0: false
-      };
-
-      updatedSessionHist = [newCp, ...publishedInSession, this.getV0Checkpoint()];
-      sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(updatedSessionHist));
-    } catch (e) {
-      console.warn('Failed to cache history locally:', e);
-    }
+    this.sessionCheckpoints = [newCp, ...this.sessionCheckpoints];
 
     // 4. Broadcast live update to all storefront tabs and windows
     broadcastSchemaPublished(schema);
@@ -514,8 +471,8 @@ export class ExportSystem {
     return {
       success: true,
       schema,
-      checkpoint: updatedSessionHist[0] || null,
-      history: updatedSessionHist,
+      checkpoint: newCp,
+      history: [...this.sessionCheckpoints, this.getV0Checkpoint()],
       message: 'Published successfully across website',
       gitStatus: serverData?.gitStatus,
       githubPush: serverData?.githubPush,
@@ -524,36 +481,11 @@ export class ExportSystem {
   }
 
   /**
-   * Retrieves all saved publish checkpoints for the current active session
+   * Retrieves all saved publish checkpoints for the current active tab session
    */
   async getHistory() {
     const v0 = this.getV0Checkpoint();
-    let sessionHistory = [];
-
-    // 1. Read cached session history
-    try {
-      const cached = sessionStorage.getItem(SESSION_HISTORY_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed)) {
-          sessionHistory = parsed;
-        }
-      }
-    } catch (_) {}
-
-    // Filter published checkpoints in this session
-    const published = sessionHistory
-      .filter(cp => cp && cp.id !== 'cp_session_v0' && cp.id !== 'cp_v0' && !cp.isV0)
-      .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
-
-    // Ensure v0 is always at the end
-    const mergedHistory = [...published, v0];
-
-    try {
-      sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(mergedHistory));
-    } catch (_) {}
-
-    return mergedHistory;
+    return [...this.sessionCheckpoints, v0];
   }
 
   /**
@@ -570,8 +502,7 @@ export class ExportSystem {
       restoredSchema = JSON.parse(JSON.stringify(v0.schema));
       checkpointObj = v0;
     } else {
-      const hist = await this.getHistory();
-      const found = hist.find(c => c.id === checkpointId);
+      const found = this.sessionCheckpoints.find(c => c.id === checkpointId);
       if (found && found.schema) {
         restoredSchema = JSON.parse(JSON.stringify(found.schema));
         checkpointObj = found;
@@ -589,10 +520,6 @@ export class ExportSystem {
         this.changesMap.set(selector, JSON.parse(JSON.stringify(val)));
       });
     }
-
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(restoredSchema));
-    } catch {}
 
     // Persist restored schema to backend
     const token = sessionStorage.getItem('eko_admin_token') ||
@@ -627,18 +554,12 @@ export class ExportSystem {
    */
   revertAll() {
     this.changesMap.clear();
-    if (this.sessionBaselineSchema && this.sessionBaselineSchema.elements) {
-      Object.entries(this.sessionBaselineSchema.elements).forEach(([sel, val]) => {
-        this.changesMap.set(sel, JSON.parse(JSON.stringify(val)));
-      });
-    }
+    this.sessionCheckpoints = [];
     this.hasUnpublishedChanges = false;
     try {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem('eko_draft_design_schema');
       sessionStorage.removeItem(SESSION_HISTORY_KEY);
-      const v0 = this.getV0Checkpoint();
-      sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify([v0]));
     } catch (_) {}
     broadcastSchemaPublished(this.serializeSchema());
   }
