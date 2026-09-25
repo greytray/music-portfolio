@@ -1,6 +1,8 @@
   /* Universal Overrides */
   html body #playlist > button.track:nth-of-type(1) > span.track-name:nth-of-type(2) > small { font-variant: normal !important; text-transform: capitalize !important; }
   html body #playlist > button.track:nth-of-type(2) > span.track-name:nth-of-type(2) > small { font-variant: normal !important; text-transform: capitalize !important; }
+  html body #playlist > button.track:nth-of-type(3) > span.track-name:nth-of-type(2) > small { font-variant: normal !important; text-transform: capitalize !important; }
+  html body #playlist > button.track:nth-of-type(4) > span.track-name:nth-of-type(2) > small { font-variant: normal !important; text-transform: capitalize !important; }
 
   /* Mobile Overrides */
   @media (max-width: 767px) {
