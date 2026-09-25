@@ -2,6 +2,7 @@
 // Handles schema publish operations on Cloudflare Pages (protected by session token)
 
 import { verifySessionToken, extractToken } from '../../_auth.js';
+import { getGitHubConfig, commitAndPushFilesToGitHub } from '../../_github.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -146,12 +147,52 @@ export async function onRequest(context) {
         }
       }
 
+      // 3. Automated Git commit directly to GitHub repository (triggers live deployment)
+      let githubPush = null;
+      try {
+        const ghConfig = getGitHubConfig(env);
+        if (ghConfig.isConfigured && ghConfig.autoPush) {
+          const files = [
+            {
+              path: 'src/data/publishedSchema.json',
+              content: JSON.stringify(publishedSchema, null, 2)
+            },
+            {
+              path: 'public/publishedSchema.json',
+              content: JSON.stringify(publishedSchema, null, 2)
+            },
+            {
+              path: 'src/data/publishHistory.json',
+              content: JSON.stringify(history, null, 2)
+            },
+            {
+              path: 'public/publishHistory.json',
+              content: JSON.stringify(history, null, 2)
+            }
+          ];
+
+          githubPush = await commitAndPushFilesToGitHub({
+            repo: ghConfig.repo,
+            branch: ghConfig.branch,
+            token: ghConfig.token,
+            message: `chore(admin): publish checkpoint ${checkpointId} (${elementsCount} elements) [deploy]`,
+            files,
+            authorName: ghConfig.authorName,
+            authorEmail: ghConfig.authorEmail
+          });
+        }
+      } catch (ghErr) {
+        console.warn('[Cloudflare Publish] GitHub push notice:', ghErr.message);
+        githubPush = { success: false, error: ghErr.message };
+      }
+
       return new Response(JSON.stringify({
         success: true,
         message: 'Visual schema published successfully',
         timestamp: publishedSchema.lastPublished,
         kvSaved,
         hfSaved,
+        githubPush,
         checkpoint: newCheckpoint,
         history,
         schema: publishedSchema

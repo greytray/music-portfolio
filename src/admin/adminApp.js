@@ -15,6 +15,7 @@ export class AdminApp {
     this.mountContainer = mountContainer;
     this.exportSystem = new ExportSystem();
     this.tooltipManager = new TooltipManager();
+    this.githubSyncManager = null;
     this.selectionEngine = null;
     this.sidePanel = null;
     this.currentBreakpoint = 'universal'; // 'universal' | 'desktop' | 'tablet' | 'mobile'
@@ -400,7 +401,7 @@ export class AdminApp {
         const result = await this.exportSystem.publish();
         publishBtn.classList.remove('has-changes');
         publishLabel.textContent = 'Published Live!';
-        this._showToast('✓ Published live across website! All devices updated.');
+        this._showToast('✓ Published live! Your website has been updated.');
         await updateHistoryCount();
         if (historyModalBackdrop && historyModalBackdrop.classList.contains('is-open')) {
           await renderHistoryModal();

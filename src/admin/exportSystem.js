@@ -506,6 +506,7 @@ export class ExportSystem {
       history: updatedSessionHist,
       message: 'Published successfully across website',
       gitStatus: serverData?.gitStatus,
+      githubPush: serverData?.githubPush,
       publishedAt: schema.lastPublished || new Date().toISOString()
     };
   }

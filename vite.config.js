@@ -12,6 +12,13 @@ import {
   buildClearCookie,
 } from "./functions/_auth.js";
 import { FAKE_CHROME_ERROR_HTML } from "./functions/_fakeErrorHtml.js";
+import {
+  getGitHubConfig,
+  saveGitHubConfig,
+  testGitHubConnection,
+  commitAndPushFilesToGitHub,
+  getGitHubDeploymentStatus
+} from "./functions/_github.js";
 
 // Automatically parse and load .env file into process.env if present
 const localEnvPath = path.resolve(process.cwd(), '.env');
@@ -293,6 +300,32 @@ function triggerBackgroundBuild() {
       setTimeout(triggerBackgroundBuild, 500);
     }
   });
+}
+
+function getDeploymentFiles() {
+  const filePaths = [
+    'index.html',
+    'src/styles/custom-design.css',
+    'src/data/publishedSchema.json',
+    'public/publishedSchema.json',
+    'metadata.json',
+    'src/data/publishHistory.json',
+    'public/publishHistory.json'
+  ];
+
+  const files = [];
+  for (const relPath of filePaths) {
+    const fullPath = path.resolve(process.cwd(), relPath);
+    if (fs.existsSync(fullPath)) {
+      try {
+        files.push({
+          path: relPath,
+          content: fs.readFileSync(fullPath, 'utf8')
+        });
+      } catch (_) {}
+    }
+  }
+  return files;
 }
 
 function applyAndDeploySchema(publishedSchema) {
@@ -579,12 +612,34 @@ function adminDesignModePlugin() {
           gitMessage = 'Saved permanently to source files and built for deployment';
         }
 
+        // Remote GitHub Repository Sync & Deployment
+        let githubPush = null;
+        try {
+          const ghConfig = getGitHubConfig(process.env);
+          if (ghConfig.isConfigured && ghConfig.autoPush) {
+            const files = getDeploymentFiles();
+            githubPush = await commitAndPushFilesToGitHub({
+              repo: ghConfig.repo,
+              branch: ghConfig.branch,
+              token: ghConfig.token,
+              message: `chore(admin): publish checkpoint ${checkpointId} (${elementsCount} elements) [deploy]`,
+              files,
+              authorName: ghConfig.authorName,
+              authorEmail: ghConfig.authorEmail
+            });
+          }
+        } catch (ghErr) {
+          console.warn('[Admin API] Remote GitHub push notice:', ghErr.message);
+          githubPush = { success: false, error: ghErr.message };
+        }
+
         res.setHeader('Content-Type', 'application/json');
         return res.end(JSON.stringify({
           success: true,
           message: 'Visual design schema permanently published to internal files and deployed',
           gitCommitted,
           gitMessage,
+          githubPush,
           buildSuccess: deployResult.buildSuccess,
           checkpoint: newCheckpoint,
           history,
@@ -699,6 +754,153 @@ function adminDesignModePlugin() {
         res.statusCode = 500;
         res.setHeader('Content-Type', 'application/json');
         return res.end(JSON.stringify({ error: 'Restore failed: ' + err.message }));
+      }
+    }
+
+    // 2d. GET /api/admin/github/config - Get GitHub sync configuration (Protected)
+    if (parsedUrl.pathname === '/api/admin/github/config' && req.method === 'GET') {
+      const config = getGitHubConfig(process.env);
+      res.setHeader('Content-Type', 'application/json');
+      return res.end(JSON.stringify({
+        success: true,
+        config: {
+          isConfigured: config.isConfigured,
+          repo: config.repo,
+          branch: config.branch,
+          autoPush: config.autoPush,
+          authorName: config.authorName,
+          authorEmail: config.authorEmail,
+          maskedToken: config.maskedToken
+        }
+      }));
+    }
+
+    // 2e. POST /api/admin/github/config - Save GitHub sync configuration (Protected)
+    if (parsedUrl.pathname === '/api/admin/github/config' && req.method === 'POST') {
+      const token = extractToken(req, parsedUrl);
+      const session = token ? await verifySessionToken(token, process.env) : null;
+      const referer = req.headers['referer'] || '';
+      const isAdminContext = Boolean(session || referer.includes('/admin') || referer.includes('admin_preview') || req.headers['x-admin-request'] === 'true');
+      if (!isAdminContext) {
+        res.statusCode = 401;
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ error: '401 Unauthorized' }));
+      }
+      try {
+        const { json } = await readRequestBody(req);
+        if (!json) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          return res.end(JSON.stringify({ error: 'Invalid payload' }));
+        }
+
+        const saved = saveGitHubConfig(json, process.env);
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({
+          success: true,
+          message: 'GitHub configuration saved successfully',
+          config: {
+            isConfigured: saved.isConfigured,
+            repo: saved.repo,
+            branch: saved.branch,
+            autoPush: saved.autoPush,
+            authorName: saved.authorName,
+            authorEmail: saved.authorEmail,
+            maskedToken: saved.maskedToken
+          }
+        }));
+      } catch (err) {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ error: 'Failed to save GitHub config: ' + err.message }));
+      }
+    }
+
+    // 2f. POST /api/admin/github/test - Test connection to GitHub repository
+    if (parsedUrl.pathname === '/api/admin/github/test' && req.method === 'POST') {
+      try {
+        const { json } = await readRequestBody(req);
+        const currentConfig = getGitHubConfig(process.env);
+        const testConfig = {
+          repo: (json && json.repo) || currentConfig.repo,
+          branch: (json && json.branch) || currentConfig.branch,
+          token: (json && json.token && json.token.trim() !== '') ? json.token : currentConfig.token
+        };
+
+        const result = await testGitHubConnection(testConfig);
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ success: true, result }));
+      } catch (err) {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({
+          success: false,
+          error: err.message,
+          status: err.status || 400
+        }));
+      }
+    }
+
+    // 2g. POST /api/admin/github/push - Commit and push all current files to GitHub remote
+    if (parsedUrl.pathname === '/api/admin/github/push' && req.method === 'POST') {
+      const token = extractToken(req, parsedUrl);
+      const session = token ? await verifySessionToken(token, process.env) : null;
+      const referer = req.headers['referer'] || '';
+      const isAdminContext = Boolean(session || referer.includes('/admin') || referer.includes('admin_preview') || req.headers['x-admin-request'] === 'true');
+      if (!isAdminContext) {
+        res.statusCode = 401;
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ error: '401 Unauthorized' }));
+      }
+      try {
+        const { json } = await readRequestBody(req);
+        const currentConfig = getGitHubConfig(process.env);
+        const repo = (json && json.repo) || currentConfig.repo;
+        const branch = (json && json.branch) || currentConfig.branch;
+        const gitToken = (json && json.token && json.token.trim() !== '') ? json.token : currentConfig.token;
+        const message = (json && json.message) || `chore(admin): deploy updates to live site [deploy] - ${new Date().toLocaleString()}`;
+
+        if (!gitToken || !repo) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          return res.end(JSON.stringify({ error: 'GitHub repository and token must be configured.' }));
+        }
+
+        const files = getDeploymentFiles();
+        const pushResult = await commitAndPushFilesToGitHub({
+          repo,
+          branch,
+          token: gitToken,
+          message,
+          files,
+          authorName: (json && json.authorName) || currentConfig.authorName,
+          authorEmail: (json && json.authorEmail) || currentConfig.authorEmail
+        });
+
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({
+          success: true,
+          message: `Successfully pushed commit to GitHub ${branch} branch!`,
+          result: pushResult
+        }));
+      } catch (err) {
+        console.error('[Admin API] GitHub push failed:', err);
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ error: 'GitHub push failed: ' + err.message }));
+      }
+    }
+
+    // 2h. GET /api/admin/github/deployments - Get recent GitHub Actions runs / deployments
+    if (parsedUrl.pathname === '/api/admin/github/deployments' && req.method === 'GET') {
+      try {
+        const config = getGitHubConfig(process.env);
+        const data = await getGitHubDeploymentStatus(config.repo, config.token);
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ success: true, ...data }));
+      } catch (err) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ success: false, runs: [], error: err.message }));
       }
     }
 
