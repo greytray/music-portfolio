@@ -1,20 +1,7 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-25T13:43:31.436Z",
-  "elementsCount": 1,
-  "elements": {
-    "#beats-title > em": {
-      "selector": "#beats-title > em",
-      "styles": {},
-      "breakpoints": {
-        "desktop": {},
-        "tablet": {},
-        "mobile": {
-          "text": "Works"
-        }
-      },
-      "dataAttributes": {}
-    }
-  },
-  "lastPublished": "2026-09-25T13:46:50.028Z"
+  "lastUpdated": "2026-09-25T13:47:22.512Z",
+  "elementsCount": 0,
+  "elements": {},
+  "lastPublished": "2026-09-25T13:47:22.031Z"
 }
