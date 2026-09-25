@@ -113,9 +113,24 @@ export class AdminApp {
             <span>Revert</span>
           </button>
 
+          <!-- Deployment Status Indicator (GitHub Commit/Deploy style) -->
+          <div class="admin-deploy-status" id="admin-deploy-status" style="display: none;">
+            <div class="deploy-status-indicator" id="deploy-status-indicator">
+              <span class="deploy-yellow-circle" id="deploy-yellow-circle"></span>
+              <span class="deploy-green-tick" id="deploy-green-tick" style="display: none;">
+                <svg viewBox="0 0 16 16"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
+              </span>
+            </div>
+            <span class="deploy-status-label" id="deploy-status-label">Deploying...</span>
+          </div>
+
           <!-- Publish Changes Button -->
           <button type="button" class="admin-btn admin-btn-primary admin-btn-publish" id="btn-publish-changes" data-tooltip="Publish visual changes live to website">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span class="publish-btn-icon-wrap" id="publish-btn-icon-wrap">
+              <svg class="publish-icon-default" id="publish-icon-default" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              <span class="deploy-yellow-circle" id="publish-btn-yellow-circle" style="display: none;"></span>
+              <span class="deploy-green-tick" id="publish-btn-green-tick" style="display: none;"><svg viewBox="0 0 16 16"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg></span>
+            </span>
             <span id="btn-publish-label">Publish</span>
           </button>
 
@@ -435,37 +450,120 @@ export class AdminApp {
       });
     }
 
-    // 5. Publish button
+    // 5. Publish button & Deployment Status Lifecycle (GitHub commit/push deployment indicator)
     const publishBtn = this.rootElement.querySelector('#btn-publish-changes');
     const publishLabel = this.rootElement.querySelector('#btn-publish-label');
+    const publishIconDefault = this.rootElement.querySelector('#publish-icon-default');
+    const publishBtnYellowCircle = this.rootElement.querySelector('#publish-btn-yellow-circle');
+    const publishBtnGreenTick = this.rootElement.querySelector('#publish-btn-green-tick');
+
+    const deployStatusPill = this.rootElement.querySelector('#admin-deploy-status');
+    const deployYellowCircle = this.rootElement.querySelector('#deploy-yellow-circle');
+    const deployGreenTick = this.rootElement.querySelector('#deploy-green-tick');
+    const deployStatusLabel = this.rootElement.querySelector('#deploy-status-label');
+
     let isPublishing = false;
+    let deploymentResetTimer = null;
+
+    const setDeployState = (state, customText = '') => {
+      if (deploymentResetTimer) {
+        clearTimeout(deploymentResetTimer);
+        deploymentResetTimer = null;
+      }
+
+      if (state === 'in_progress') {
+        // Deploying: shrinking/growing yellow circle active
+        if (deployStatusPill) {
+          deployStatusPill.style.display = 'inline-flex';
+          deployStatusPill.className = 'admin-deploy-status is-deploying';
+        }
+        if (deployYellowCircle) deployYellowCircle.style.display = 'inline-block';
+        if (deployGreenTick) deployGreenTick.style.display = 'none';
+        if (deployStatusLabel) deployStatusLabel.textContent = customText || 'Deploying changes...';
+
+        if (publishIconDefault) publishIconDefault.style.display = 'none';
+        if (publishBtnYellowCircle) publishBtnYellowCircle.style.display = 'inline-block';
+        if (publishBtnGreenTick) publishBtnGreenTick.style.display = 'none';
+        if (publishBtn) {
+          publishBtn.classList.add('is-publishing');
+          publishBtn.classList.remove('is-deployed-success');
+        }
+        if (publishLabel) publishLabel.textContent = 'Deploying...';
+
+      } else if (state === 'success') {
+        // Deployed: yellow circle turns to green tick mark
+        if (deployStatusPill) {
+          deployStatusPill.style.display = 'inline-flex';
+          deployStatusPill.className = 'admin-deploy-status is-deployed';
+        }
+        if (deployYellowCircle) deployYellowCircle.style.display = 'none';
+        if (deployGreenTick) deployGreenTick.style.display = 'inline-flex';
+        if (deployStatusLabel) deployStatusLabel.textContent = customText || 'Deployment finished';
+
+        if (publishIconDefault) publishIconDefault.style.display = 'none';
+        if (publishBtnYellowCircle) publishBtnYellowCircle.style.display = 'none';
+        if (publishBtnGreenTick) publishBtnGreenTick.style.display = 'inline-flex';
+        if (publishBtn) {
+          publishBtn.classList.remove('is-publishing');
+          publishBtn.classList.add('is-deployed-success');
+          publishBtn.classList.remove('has-changes');
+        }
+        if (publishLabel) publishLabel.textContent = 'Published!';
+
+        deploymentResetTimer = setTimeout(() => {
+          if (publishIconDefault) publishIconDefault.style.display = 'inline-block';
+          if (publishBtnYellowCircle) publishBtnYellowCircle.style.display = 'none';
+          if (publishBtnGreenTick) publishBtnGreenTick.style.display = 'none';
+          if (publishBtn) {
+            publishBtn.classList.remove('is-deployed-success');
+          }
+          if (publishLabel) publishLabel.textContent = 'Publish';
+        }, 2800);
+
+      } else if (state === 'error') {
+        if (deployStatusPill) {
+          deployStatusPill.style.display = 'inline-flex';
+          deployStatusPill.className = 'admin-deploy-status is-deploy-error';
+        }
+        if (deployYellowCircle) deployYellowCircle.style.display = 'none';
+        if (deployGreenTick) deployGreenTick.style.display = 'none';
+        if (deployStatusLabel) deployStatusLabel.textContent = customText || 'Deployment failed';
+
+        if (publishIconDefault) publishIconDefault.style.display = 'inline-block';
+        if (publishBtnYellowCircle) publishBtnYellowCircle.style.display = 'none';
+        if (publishBtnGreenTick) publishBtnGreenTick.style.display = 'none';
+        if (publishBtn) {
+          publishBtn.classList.remove('is-publishing');
+          publishBtn.classList.remove('is-deployed-success');
+        }
+        if (publishLabel) publishLabel.textContent = 'Error';
+
+        deploymentResetTimer = setTimeout(() => {
+          if (publishLabel) publishLabel.textContent = 'Publish';
+          if (deployStatusPill) deployStatusPill.style.display = 'none';
+        }, 3200);
+      }
+    };
 
     publishBtn.addEventListener('click', async () => {
       if (isPublishing) return;
       isPublishing = true;
-      publishBtn.classList.add('is-publishing');
-      publishLabel.textContent = 'Publishing...';
+
+      setDeployState('in_progress', 'Deploying changes...');
 
       try {
         const result = await this.exportSystem.publish();
-        publishBtn.classList.remove('has-changes');
-        publishLabel.textContent = 'Published!';
-        this._showToast('✓ Published! Your website has been updated.');
+        setDeployState('success', 'Deployment finished');
+        this._showToast('✓ Deployment finished! Your website has been updated.');
         await updateHistoryCount();
         if (historyModalBackdrop && historyModalBackdrop.classList.contains('is-open')) {
           await renderHistoryModal();
         }
-
-        setTimeout(() => {
-          publishLabel.textContent = 'Publish';
-          publishBtn.classList.remove('is-publishing');
-          isPublishing = false;
-        }, 1500);
       } catch (err) {
-        publishLabel.textContent = 'Error';
-        publishBtn.classList.remove('is-publishing');
+        setDeployState('error', 'Deployment failed');
+        this._showToast(`Failed to deploy: ${err.message}`, true);
+      } finally {
         isPublishing = false;
-        this._showToast(`Failed to publish: ${err.message}`, true);
       }
     });
 
