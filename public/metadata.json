@@ -7,45 +7,9 @@
   ],
   "designModeSchema": {
     "version": "1.0.0",
-    "lastUpdated": "2026-09-23T14:32:38.025Z",
-    "elementsCount": 3,
-    "elements": {
-      ".hero-copy-line2": {
-        "selector": ".hero-copy-line2",
-        "text": "Take your audio from basic to beautiful",
-        "styles": {},
-        "breakpoints": {
-          "desktop": {},
-          "tablet": {},
-          "mobile": {}
-        },
-        "dataAttributes": {}
-      },
-      "#contact": {
-        "selector": "#contact",
-        "styles": {},
-        "breakpoints": {
-          "desktop": {},
-          "tablet": {},
-          "mobile": {
-            "marginBottom": "0px"
-          }
-        },
-        "dataAttributes": {}
-      },
-      "#contact > form.contact-form > label.project-details-field > textarea": {
-        "selector": "#contact > form.contact-form > label.project-details-field > textarea",
-        "styles": {},
-        "breakpoints": {
-          "desktop": {},
-          "tablet": {},
-          "mobile": {
-            "marginBottom": "14px"
-          }
-        },
-        "dataAttributes": {}
-      }
-    },
-    "lastPublished": "2026-09-23T14:32:37.442Z"
+    "lastUpdated": "2026-09-25T13:29:56.566Z",
+    "elementsCount": 0,
+    "elements": {},
+    "lastPublished": "2026-09-25T13:29:56.689Z"
   }
 }
