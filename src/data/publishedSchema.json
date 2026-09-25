@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-25T20:48:37.970Z",
-  "elementsCount": 1,
+  "lastUpdated": "2026-09-25T20:49:38.870Z",
+  "elementsCount": 2,
   "elements": {
     "#contact": {
       "selector": "#contact",
@@ -14,7 +14,18 @@
         }
       },
       "dataAttributes": {}
+    },
+    "#playlist > button.track:nth-of-type(1) > span.track-name:nth-of-type(2) > small": {
+      "selector": "#playlist > button.track:nth-of-type(1) > span.track-name:nth-of-type(2) > small",
+      "styles": {},
+      "breakpoints": {
+        "desktop": {},
+        "tablet": {},
+        "mobile": {}
+      },
+      "dataAttributes": {},
+      "text": "Original Production"
     }
   },
-  "lastPublished": "2026-09-25T20:48:36.667Z"
+  "lastPublished": "2026-09-25T20:49:37.569Z"
 }

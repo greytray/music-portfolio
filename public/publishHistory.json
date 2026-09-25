@@ -1,14 +1,14 @@
 [
   {
-    "id": "cp_1790369316667",
-    "timestamp": "2026-09-25T20:48:36.667Z",
+    "id": "cp_1790369377569",
+    "timestamp": "2026-09-25T20:49:37.569Z",
     "label": "Checkpoint #1",
-    "description": "1 element customized across canvas",
-    "elementsCount": 1,
+    "description": "2 elements customized across canvas",
+    "elementsCount": 2,
     "schema": {
       "version": "1.0.0",
-      "lastUpdated": "2026-09-25T20:48:37.970Z",
-      "elementsCount": 1,
+      "lastUpdated": "2026-09-25T20:49:38.870Z",
+      "elementsCount": 2,
       "elements": {
         "#contact": {
           "selector": "#contact",
@@ -21,9 +21,20 @@
             }
           },
           "dataAttributes": {}
+        },
+        "#playlist > button.track:nth-of-type(1) > span.track-name:nth-of-type(2) > small": {
+          "selector": "#playlist > button.track:nth-of-type(1) > span.track-name:nth-of-type(2) > small",
+          "styles": {},
+          "breakpoints": {
+            "desktop": {},
+            "tablet": {},
+            "mobile": {}
+          },
+          "dataAttributes": {},
+          "text": "Original Production"
         }
       },
-      "lastPublished": "2026-09-25T20:48:36.667Z"
+      "lastPublished": "2026-09-25T20:49:37.569Z"
     }
   },
   {
