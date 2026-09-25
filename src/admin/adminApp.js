@@ -46,23 +46,23 @@ export class AdminApp {
             <span>EKO</span>
           </div>
 
-          <!-- Combined Mode Toggle (Normal vs Inspect) - Starts in Normal by default -->
+          <!-- Combined Mode Toggle (Edit On vs Edit Off) - Starts in Edit Off by default -->
           <div class="admin-mode-toggle-wrap">
-            <button type="button" class="admin-mode-toggle-btn" id="btn-toggle-mode" data-tooltip="Click to switch between Normal and Inspect mode">
+            <button type="button" class="admin-mode-toggle-btn" id="btn-toggle-mode" data-tooltip="Click to turn Edit mode ON">
               <span class="mode-status-dot" id="mode-status-dot"></span>
               <span class="mode-icon" id="mode-icon">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
               </span>
               <span class="mode-text-wrap">
-                <span class="mode-name" id="mode-name-label">Normal</span>
+                <span class="mode-name" id="mode-name-label">Edit Off</span>
               </span>
             </button>
           </div>
 
-          <!-- Active Element Breadcrumb -->
-          <div class="admin-breadcrumb" id="admin-breadcrumb" data-tooltip="Selected Element Path">
-            <span>Target:</span>
-            <span class="active-tag" id="breadcrumb-target">None (Click Inspect to select)</span>
+          <!-- Active Element Breadcrumb / Guidance Box (Shows "Click Edit to start editing" when off, Target when on) -->
+          <div class="admin-breadcrumb is-edit-off" id="admin-breadcrumb" data-tooltip="Click to turn Edit mode ON">
+            <span class="breadcrumb-prefix" id="breadcrumb-prefix" style="display: none;">Target:</span>
+            <span class="active-tag" id="breadcrumb-target">Click Edit to start editing</span>
           </div>
         </div>
 
@@ -114,9 +114,9 @@ export class AdminApp {
           </button>
 
           <!-- Publish Changes Button -->
-          <button type="button" class="admin-btn admin-btn-primary admin-btn-publish" id="btn-publish-changes" data-tooltip="Serialize visual states, write to metadata.json, and attempt git commit">
+          <button type="button" class="admin-btn admin-btn-primary admin-btn-publish" id="btn-publish-changes" data-tooltip="Publish visual changes live to website">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            <span id="btn-publish-label">Publish Changes</span>
+            <span id="btn-publish-label">Publish</span>
           </button>
 
           <!-- Exit Admin -->
@@ -202,6 +202,9 @@ export class AdminApp {
     localStorage.setItem('eko_admin_sidebar_pos', this.sidebarPosition);
 
     const mainBody = this.rootElement.querySelector('#admin-main-body');
+    const iframe = this.rootElement.querySelector('#admin-preview-frame');
+    if (iframe) iframe.style.pointerEvents = 'none';
+
     if (mainBody) {
       if (this.sidebarPosition === 'left') {
         mainBody.classList.add('sidebar-left');
@@ -215,17 +218,20 @@ export class AdminApp {
       posLabel.textContent = this.sidebarPosition === 'left' ? 'Dock Right' : 'Dock Left';
     }
 
-    if (this.selectionEngine) {
-      setTimeout(() => this.selectionEngine._updateBoxes(), 260);
-    }
-
-    this._showToast(`Sidebar docked to ${this.sidebarPosition}`);
+    setTimeout(() => {
+      if (iframe) iframe.style.pointerEvents = '';
+      if (this.selectionEngine) {
+        this.selectionEngine._updateBoxes();
+      }
+    }, 320);
   }
 
   toggleSidebarCollapse() {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;
     const mainBody = this.rootElement.querySelector('#admin-main-body');
     const sidepanelRoot = this.rootElement.querySelector('#admin-sidepanel-root');
+    const iframe = this.rootElement.querySelector('#admin-preview-frame');
+    if (iframe) iframe.style.pointerEvents = 'none';
 
     if (mainBody && sidepanelRoot) {
       if (this.isSidebarCollapsed) {
@@ -237,50 +243,90 @@ export class AdminApp {
       }
     }
 
-    if (this.selectionEngine) {
-      setTimeout(() => this.selectionEngine._updateBoxes(), 260);
-    }
-
-    this._showToast(this.isSidebarCollapsed ? 'Inspector Sidebar Collapsed' : 'Inspector Sidebar Expanded');
+    setTimeout(() => {
+      if (iframe) iframe.style.pointerEvents = '';
+      if (this.selectionEngine) {
+        this.selectionEngine._updateBoxes();
+      }
+    }, 320);
   }
 
   _bindControls() {
-    // 1. Combined Normal / Inspect Mode Toggle Button
+    // 1. Combined Edit On / Edit Off Mode Toggle Button
     const modeToggleBtn = this.rootElement.querySelector('#btn-toggle-mode');
     const modeIcon = this.rootElement.querySelector('#mode-icon');
     const modeLabel = this.rootElement.querySelector('#mode-name-label');
+    const breadcrumbBox = this.rootElement.querySelector('#admin-breadcrumb');
+    const breadcrumbPrefix = this.rootElement.querySelector('#breadcrumb-prefix');
     const breadcrumbTarget = this.rootElement.querySelector('#breadcrumb-target');
 
     const updateModeUI = () => {
       if (this.currentMode === 'select') {
         modeToggleBtn.classList.add('is-inspect');
         modeIcon.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="m13 13 6 6"/></svg>`;
-        modeLabel.textContent = 'Inspect';
-        modeToggleBtn.title = 'Current: Inspect Mode (Click to switch to Normal mode)';
+        modeLabel.textContent = 'Edit On';
+        modeToggleBtn.title = 'Edit Mode is ON (Click to turn Edit mode OFF)';
+        modeToggleBtn.setAttribute('data-tooltip', 'Click to turn Edit mode OFF');
+
+        if (breadcrumbBox) {
+          breadcrumbBox.classList.remove('is-edit-off');
+          breadcrumbBox.setAttribute('data-tooltip', 'Selected Component Path');
+        }
+        if (breadcrumbPrefix) {
+          breadcrumbPrefix.style.display = 'inline';
+        }
+        if (breadcrumbTarget) {
+          const selectedEl = this.selectionEngine?.selectedElement;
+          breadcrumbTarget.textContent = selectedEl ? getFriendlyName(selectedEl) : 'None (Click any component)';
+        }
       } else {
         modeToggleBtn.classList.remove('is-inspect');
-        modeIcon.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>`;
-        modeLabel.textContent = 'Normal';
-        modeToggleBtn.title = 'Current: Normal Mode (Click to switch to Inspect mode)';
+        modeIcon.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`;
+        modeLabel.textContent = 'Edit Off';
+        modeToggleBtn.title = 'Edit Mode is OFF (Click to turn Edit mode ON)';
+        modeToggleBtn.setAttribute('data-tooltip', 'Click to turn Edit mode ON');
+
+        if (breadcrumbBox) {
+          breadcrumbBox.classList.add('is-edit-off');
+          breadcrumbBox.setAttribute('data-tooltip', 'Click to turn Edit mode ON');
+        }
+        if (breadcrumbPrefix) {
+          breadcrumbPrefix.style.display = 'none';
+        }
+        if (breadcrumbTarget) {
+          breadcrumbTarget.textContent = 'Click Edit to start editing';
+        }
       }
     };
 
-    modeToggleBtn.addEventListener('click', () => {
+    const toggleEditMode = () => {
       if (this.currentMode === 'interactive') {
         this.currentMode = 'select';
         if (this.selectionEngine) this.selectionEngine.setMode('select');
         updateModeUI();
-        this._showToast('Inspect Mode: Click any element to select and edit');
-        if (breadcrumbTarget && breadcrumbTarget.textContent.includes('Click Inspect')) {
-          breadcrumbTarget.textContent = 'None (Click any component)';
-        }
       } else {
         this.currentMode = 'interactive';
-        if (this.selectionEngine) this.selectionEngine.setMode('interactive');
+        if (this.selectionEngine) {
+          this.selectionEngine.deselect();
+          this.selectionEngine.setMode('interactive');
+        }
+        if (this.sidePanel) {
+          this.sidePanel.clear();
+        }
         updateModeUI();
-        this._showToast('Normal Mode: Interact with the page freely');
       }
-    });
+    };
+
+    modeToggleBtn.addEventListener('click', toggleEditMode);
+
+    // Clicking the target/guidance box in Edit Off mode turns Edit mode ON
+    if (breadcrumbBox) {
+      breadcrumbBox.addEventListener('click', () => {
+        if (this.currentMode === 'interactive') {
+          toggleEditMode();
+        }
+      });
+    }
 
     // 2. Breakpoint & Universal device toggles
     const univBtn = this.rootElement.querySelector('#btn-device-universal');
@@ -288,6 +334,7 @@ export class AdminApp {
     const deviceIcon = this.rootElement.querySelector('#device-mode-icon');
     const deviceLabel = this.rootElement.querySelector('#device-mode-label');
     const viewportWrap = this.rootElement.querySelector('#admin-viewport-wrapper');
+    const iframe = this.rootElement.querySelector('#admin-preview-frame');
 
     const deviceModes = ['desktop', 'tablet', 'mobile'];
     const deviceLabels = {
@@ -300,16 +347,13 @@ export class AdminApp {
       tablet: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>`,
       mobile: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>`
     };
-    const deviceDescs = {
-      desktop: '🖥️ Desktop View (Fluid 100% — Scoped to Desktop)',
-      tablet: '📱 Tablet View (768px — Scoped to Tablet)',
-      mobile: '📱 Mobile View (390px — Scoped to Mobile)'
-    };
 
     univBtn.addEventListener('click', () => {
       this.currentBreakpoint = 'universal';
       univBtn.classList.add('is-active');
       cycleBtn.classList.remove('is-active');
+
+      if (iframe) iframe.style.pointerEvents = 'none';
       viewportWrap.className = 'admin-viewport-wrapper is-universal';
 
       if (this.sidePanel) {
@@ -317,7 +361,6 @@ export class AdminApp {
       }
 
       // Reapply schema to iframe doc with universal preview mode
-      const iframe = this.rootElement.querySelector('#admin-preview-frame');
       if (iframe) {
         try {
           const iDoc = iframe.contentDocument || iframe.contentWindow.document;
@@ -328,10 +371,12 @@ export class AdminApp {
         } catch (_) {}
       }
 
-      if (this.selectionEngine) {
-        requestAnimationFrame(() => this.selectionEngine._updateBoxes());
-      }
-      this._showToast('🌐 Universal Device: Changes apply globally to all devices');
+      setTimeout(() => {
+        if (iframe) iframe.style.pointerEvents = '';
+        if (this.selectionEngine) {
+          this.selectionEngine._updateBoxes();
+        }
+      }, 320);
     });
 
     cycleBtn.addEventListener('click', () => {
@@ -349,6 +394,8 @@ export class AdminApp {
       cycleBtn.classList.add('is-active');
       deviceIcon.innerHTML = deviceIcons[this.currentBreakpoint];
       deviceLabel.textContent = deviceLabels[this.currentBreakpoint];
+
+      if (iframe) iframe.style.pointerEvents = 'none';
       viewportWrap.className = `admin-viewport-wrapper is-${this.currentBreakpoint}`;
 
       if (this.sidePanel) {
@@ -356,7 +403,6 @@ export class AdminApp {
       }
 
       // Reapply schema to iframe doc with active device preview mode
-      const iframe = this.rootElement.querySelector('#admin-preview-frame');
       if (iframe) {
         try {
           const iDoc = iframe.contentDocument || iframe.contentWindow.document;
@@ -367,10 +413,12 @@ export class AdminApp {
         } catch (_) {}
       }
 
-      if (this.selectionEngine) {
-        requestAnimationFrame(() => this.selectionEngine._updateBoxes());
-      }
-      this._showToast(deviceDescs[this.currentBreakpoint]);
+      setTimeout(() => {
+        if (iframe) iframe.style.pointerEvents = '';
+        if (this.selectionEngine) {
+          this.selectionEngine._updateBoxes();
+        }
+      }, 320);
     });
 
     // 3. Sidebar Dock Switch
@@ -400,15 +448,15 @@ export class AdminApp {
       try {
         const result = await this.exportSystem.publish();
         publishBtn.classList.remove('has-changes');
-        publishLabel.textContent = 'Published Live!';
-        this._showToast('✓ Published live! Your website has been updated.');
+        publishLabel.textContent = 'Published!';
+        this._showToast('✓ Published! Your website has been updated.');
         await updateHistoryCount();
         if (historyModalBackdrop && historyModalBackdrop.classList.contains('is-open')) {
           await renderHistoryModal();
         }
 
         setTimeout(() => {
-          publishLabel.textContent = 'Publish Changes';
+          publishLabel.textContent = 'Publish';
           publishBtn.classList.remove('is-publishing');
         }, 2000);
       } catch (err) {
@@ -490,7 +538,7 @@ export class AdminApp {
       const history = await this.exportSystem.getHistory();
 
       if (!history || history.length === 0) {
-        historyListContainer.innerHTML = '<div class="history-loading-indicator">No saved publish checkpoints found. Click "Publish Changes" to record your first checkpoint.</div>';
+        historyListContainer.innerHTML = '<div class="history-loading-indicator">No saved publish checkpoints found. Click "Publish" to record your first checkpoint.</div>';
         return;
       }
 
@@ -638,8 +686,15 @@ export class AdminApp {
       },
       onDeselect: () => {
         if (this.selectionEngine) this.selectionEngine.deselect();
+        const breadcrumbPrefix = this.rootElement.querySelector('#breadcrumb-prefix');
         const breadcrumbTarget = this.rootElement.querySelector('#breadcrumb-target');
-        if (breadcrumbTarget) breadcrumbTarget.textContent = 'None (Click any component)';
+        if (this.currentMode === 'select') {
+          if (breadcrumbPrefix) breadcrumbPrefix.style.display = 'inline';
+          if (breadcrumbTarget) breadcrumbTarget.textContent = 'None (Click any component)';
+        } else {
+          if (breadcrumbPrefix) breadcrumbPrefix.style.display = 'none';
+          if (breadcrumbTarget) breadcrumbTarget.textContent = 'Click Edit to start editing';
+        }
       },
       onToggleCollapse: () => {
         this.toggleSidebarCollapse();
@@ -668,12 +723,14 @@ export class AdminApp {
         }
         applyDesignSchema(this.exportSystem.serializeSchema(), iDoc);
 
-        // Initialize Selection Engine starting in Normal (interactive) mode
+        // Initialize Selection Engine starting in Normal (interactive / Edit Off) mode
         this.selectionEngine = new SelectionEngine(iframe, {
           mode: this.currentMode,
           onSelect: (element, metadata) => {
             // Update Topbar breadcrumb
+            const breadcrumbPrefix = this.rootElement.querySelector('#breadcrumb-prefix');
             const breadcrumbTarget = this.rootElement.querySelector('#breadcrumb-target');
+            if (breadcrumbPrefix) breadcrumbPrefix.style.display = 'inline';
             if (breadcrumbTarget) {
               breadcrumbTarget.textContent = getFriendlyName(element);
             }
@@ -682,9 +739,14 @@ export class AdminApp {
             this.sidePanel.inspect(element, metadata);
           },
           onDeselect: () => {
+            const breadcrumbPrefix = this.rootElement.querySelector('#breadcrumb-prefix');
             const breadcrumbTarget = this.rootElement.querySelector('#breadcrumb-target');
-            if (breadcrumbTarget) {
-              breadcrumbTarget.textContent = 'None (Click any component)';
+            if (this.currentMode === 'select') {
+              if (breadcrumbPrefix) breadcrumbPrefix.style.display = 'inline';
+              if (breadcrumbTarget) breadcrumbTarget.textContent = 'None (Click any component)';
+            } else {
+              if (breadcrumbPrefix) breadcrumbPrefix.style.display = 'none';
+              if (breadcrumbTarget) breadcrumbTarget.textContent = 'Click Edit to start editing';
             }
             this.sidePanel.clear();
           }

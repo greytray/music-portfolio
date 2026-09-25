@@ -93,6 +93,13 @@
   font-family: var(--admin-mono);
   font-size: 11px;
   color: var(--admin-text-secondary);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.admin-breadcrumb .breadcrumb-prefix {
+  color: var(--admin-text-muted);
+  font-weight: 500;
 }
 
 .admin-breadcrumb .active-tag {
@@ -100,7 +107,29 @@
   font-weight: 600;
 }
 
-/* Combined Normal / Inspect Mode Switcher Button */
+/* Edit Off State - guidance styling for normal user */
+.admin-breadcrumb.is-edit-off {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+}
+
+.admin-breadcrumb.is-edit-off:hover {
+  background: rgba(0, 229, 255, 0.08);
+  border-color: rgba(0, 229, 255, 0.4);
+}
+
+.admin-breadcrumb.is-edit-off .active-tag {
+  color: var(--admin-text-secondary);
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.admin-breadcrumb.is-edit-off:hover .active-tag {
+  color: var(--admin-accent-cyan);
+}
+
+/* Combined Edit On / Edit Off Mode Switcher Button */
 .admin-mode-toggle-wrap {
   display: flex;
   align-items: center;
@@ -118,7 +147,7 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
 
@@ -132,8 +161,8 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--admin-accent-green);
-  box-shadow: 0 0 6px var(--admin-accent-green);
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: none;
   transition: all 0.2s ease;
 }
 
@@ -337,7 +366,7 @@
   background-size: 24px 24px;
   overflow: hidden;
   padding: 0;
-  transition: padding 0.2s ease;
+  transition: padding 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
   overscroll-behavior: contain;
 }
 
@@ -357,6 +386,13 @@
   display: flex;
   flex-direction: column;
   contain: layout paint;
+  transition: width 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+              height 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+              max-width 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+              margin 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 0.32s ease,
+              border-radius 0.32s ease;
+  will-change: width, height, max-width;
 }
 
 .admin-viewport-wrapper.is-universal {
@@ -392,7 +428,8 @@
   max-width: 100%;
   height: 95%;
   margin: auto 0;
-  border-radius: 0px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.14) !important;
 }
 
 .admin-viewport-wrapper.is-mobile {
@@ -400,8 +437,8 @@
   max-width: 100%;
   height: 844px;
   margin: auto 0;
-  border-radius: 0px !important;
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.16);
+  border-radius: 12px !important;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.16) !important;
 }
 
 /* Preview Iframe */
@@ -529,20 +566,32 @@
   z-index: 90;
   overflow: hidden;
   box-shadow: none;
-  transition: width 0.22s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.22s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: width, transform;
+  transition: margin 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+              transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+              opacity 0.25s ease;
+  will-change: margin, transform, opacity;
 }
 
 .admin-sidepanel.is-collapsed {
-  width: 0 !important;
-  min-width: 0 !important;
-  max-width: 0 !important;
-  border-left: none !important;
-  border-right: none !important;
+  margin-right: calc(-1 * var(--admin-sidebar-width)) !important;
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
-  transform: translateX(10px);
+  border-left-color: transparent !important;
+}
+
+.admin-body.sidebar-left .admin-sidepanel {
+  border-left: none;
+  border-right: 1px solid var(--admin-border-strong);
+}
+
+.admin-body.sidebar-left .admin-sidepanel.is-collapsed {
+  margin-right: 0 !important;
+  margin-left: calc(-1 * var(--admin-sidebar-width)) !important;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  border-right-color: transparent !important;
 }
 
 /* Floating Expand Tab when Sidebar is collapsed */
