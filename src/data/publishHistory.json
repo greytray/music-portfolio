@@ -1,5 +1,19 @@
 [
   {
+    "id": "cp_1790342162981",
+    "timestamp": "2026-09-25T13:16:01.320Z",
+    "label": "Checkpoint #1",
+    "description": "0 elements customized across canvas",
+    "elementsCount": 0,
+    "schema": {
+      "version": "1.0.0",
+      "lastUpdated": "2026-09-25T13:16:01.132Z",
+      "elementsCount": 0,
+      "elements": {},
+      "lastPublished": "2026-09-25T13:16:01.320Z"
+    }
+  },
+  {
     "id": "cp_v0",
     "timestamp": "2026-09-23T00:00:00.000Z",
     "label": "Checkpoint v0 (Default Baseline)",

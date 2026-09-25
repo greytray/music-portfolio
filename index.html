@@ -1,5 +1,4 @@
-<!doctype html>
-<html lang="en"><head>
+<!DOCTYPE html><html lang="en"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Eko — premium music production, custom beats, mixing, mastering, audio editing, and production lessons.">
@@ -8,12 +7,12 @@
   <meta name="theme-color" content="#0D0D11">
   <title>Eko — Producer &amp; Audio Engineer</title>
   <!-- High Priority Critical Font Preloads (eliminates FOIT and FOUT) -->
-  <link rel="preload" href="./assets/fonts/dela-gothic-one-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="./assets/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="./assets/fonts/work-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="./assets/fonts/dela-gothic-one-latin.woff2" as="font" type="font/woff2" crossorigin="">
+  <link rel="preload" href="./assets/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin="">
+  <link rel="preload" href="./assets/fonts/work-sans-latin.woff2" as="font" type="font/woff2" crossorigin="">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
   <!-- Non-blocking background font fallback for extended glyph coverage -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Dela+Gothic+One&amp;family=Kanit:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,700&amp;family=Work+Sans:wght@400;500;600;700&amp;display=swap" media="print" onload="this.media='all'">
   <noscript>
@@ -1052,13 +1051,17 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
   <meta property="og:image" content="https://bolt.new/static/og_default.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="https://bolt.new/static/og_default.png">
-  <style id="eko-design-schema-styles">
-  /* Mobile Overrides (margin, padding, sizing) */
-  @media (max-width: 767px) {
-    #contact { margin-bottom: 0px !important; }
-    #contact > form.contact-form > label.project-details-field > textarea { margin-bottom: 14px !important; }
+  <style id="eko-design-schema-styles">  /* Universal Overrides */
+.eko-device-text { display: none !important; }
+  @media (min-width: 1025px) {
+    html:not(.is-mobile-device) .eko-text-desktop { display: inline !important; }
   }
-  </style>
+  @media (max-width: 1024px), (pointer: coarse) {
+    html.is-mobile-device .eko-text-mobile,
+    .eko-text-mobile { display: inline !important; }
+  }
+  html.is-mobile-device .eko-text-desktop { display: none !important; }
+  html.is-mobile-device .eko-text-mobile { display: inline !important; }</style>
 </head>
 <body>
   <header class="site-header">
@@ -1119,12 +1122,12 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
               </div>
             </div>
             <div class="playlist" id="playlist" aria-label="Beat playlist">
-              <button class="track active" type="button" data-src="/api/media?file=audio/feeling mello.mp3" data-audio-file="audio/feeling mello.mp3" data-title="Feeling Mello" data-style="Original production" aria-label="Play Feeling Mello"><span class="track-number">01</span><span class="track-name">Feeling Mello<small>Original production</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:44</span></button>
-              <button class="track" type="button" data-src="/api/media?file=audio/broken jar mastered.mp3" data-audio-file="audio/broken jar mastered.mp3" data-title="Broken Jar" data-style="Mastered production" aria-label="Play Broken Jar"><span class="track-number">02</span><span class="track-name">Broken Jar<small>Mastered production</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:38</span></button>
-              <button class="track" type="button" data-src="/api/media?file=audio/Kpop beat.mp3" data-audio-file="audio/Kpop beat.mp3" data-title="Kpop Beat" data-style="K-Pop production" aria-label="Play Kpop Beat"><span class="track-number">03</span><span class="track-name">Kpop Beat<small>K-Pop production</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">1:14</span></button>
-              <button class="track" type="button" data-src="/api/media?file=audio/Kensuke.mp3" data-audio-file="audio/Kensuke.mp3" data-title="Kensuke" data-style="Original production" aria-label="Play Kensuke"><span class="track-number">04</span><span class="track-name">Kensuke<small>Original production</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:45</span></button>
-              <button class="track" type="button" data-src="/api/media?file=audio/K-Pop post fx.mp3" data-audio-file="audio/K-Pop post fx.mp3" data-title="K-Pop Post FX" data-style="Post-production mix" aria-label="Play K-Pop Post FX"><span class="track-number">05</span><span class="track-name">K-Pop Post FX<small>Post-production mix</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:14</span></button>
-              <button class="track" type="button" data-src="/api/media?file=audio/Aiobahn maybe last mix.mp3" data-audio-file="audio/Aiobahn maybe last mix.mp3" data-title="Aiobahn Maybe Last Mix" data-style="Final mix" aria-label="Play Aiobahn Maybe Last Mix"><span class="track-number">06</span><span class="track-name">Aiobahn Maybe Last Mix<small>Final mix</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:53</span></button>
+              <button class="track active" type="button" data-src="/api/media?file=audio/feeling mello.mp3" data-audio-file="audio/feeling mello.mp3" data-title="Feeling Mello" data-style="Original production" aria-label="Play Feeling Mello"><span class="track-number">01</span><span class="track-name">Feeling Mello<small>Original production</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"></path><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"></path><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"></path><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"></path></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:44</span></button>
+              <button class="track" type="button" data-src="/api/media?file=audio/broken jar mastered.mp3" data-audio-file="audio/broken jar mastered.mp3" data-title="Broken Jar" data-style="Mastered production" aria-label="Play Broken Jar"><span class="track-number">02</span><span class="track-name">Broken Jar<small>Mastered production</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"></path><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"></path><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"></path><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"></path></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:38</span></button>
+              <button class="track" type="button" data-src="/api/media?file=audio/Kpop beat.mp3" data-audio-file="audio/Kpop beat.mp3" data-title="Kpop Beat" data-style="K-Pop production" aria-label="Play Kpop Beat"><span class="track-number">03</span><span class="track-name">Kpop Beat<small>K-Pop production</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"></path><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"></path><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"></path><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"></path></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">1:14</span></button>
+              <button class="track" type="button" data-src="/api/media?file=audio/Kensuke.mp3" data-audio-file="audio/Kensuke.mp3" data-title="Kensuke" data-style="Original production" aria-label="Play Kensuke"><span class="track-number">04</span><span class="track-name">Kensuke<small>Original production</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"></path><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"></path><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"></path><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"></path></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:45</span></button>
+              <button class="track" type="button" data-src="/api/media?file=audio/K-Pop post fx.mp3" data-audio-file="audio/K-Pop post fx.mp3" data-title="K-Pop Post FX" data-style="Post-production mix" aria-label="Play K-Pop Post FX"><span class="track-number">05</span><span class="track-name">K-Pop Post FX<small>Post-production mix</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"></path><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"></path><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"></path><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"></path></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:14</span></button>
+              <button class="track" type="button" data-src="/api/media?file=audio/Aiobahn maybe last mix.mp3" data-audio-file="audio/Aiobahn maybe last mix.mp3" data-title="Aiobahn Maybe Last Mix" data-style="Final mix" aria-label="Play Aiobahn Maybe Last Mix"><span class="track-number">06</span><span class="track-name">Aiobahn Maybe Last Mix<small>Final mix</small></span><span class="track-tap-prompt" aria-hidden="true"><span class="tap-gesture-box"><svg class="tap-hand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0V12"></path><path d="M11 11.5a1.5 1.5 0 0 1 3 0V12"></path><path d="M14 11a1.5 1.5 0 0 1 3 0v1.5"></path><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.66-4L5 13.5a1.5 1.5 0 0 1 2.5-1.5L8 13"></path></svg><span class="tap-ripple-effect"></span></span><span class="tap-action-wrap"><span class="tap-action-state action-play">Play</span><span class="tap-action-state action-pause">Pause</span></span></span><span class="track-length">0:53</span></button>
             </div>
             <audio id="audio" preload="auto" crossorigin="anonymous" src="/api/media?file=audio/feeling mello.mp3"></audio>
           </div>
@@ -1173,7 +1176,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
                       <img class="catalog-photo" src="./assets/images/midi_beat_arranger_1789337019783.jpg" alt="Digital MIDI Pattern Sequencer" loading="lazy">
                     </div>
                     <div class="catalog-tile">
-                      <img class="catalog-photo" src="./assets/images/digital_reverb_dsp_1789337033441.jpg" alt="Digital Sound Design & Reverb" loading="lazy">
+                      <img class="catalog-photo" src="./assets/images/digital_reverb_dsp_1789337033441.jpg" alt="Digital Sound Design &amp; Reverb" loading="lazy">
                     </div>
                   </div>
                   <div class="catalog-hero-col">
@@ -1218,7 +1221,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
                             </button>
                             <div class="showcase-audio-meta">
                               <span class="showcase-audio-title">Full Production</span>
-                              <span class="showcase-audio-sub">Arranged drums & bass</span>
+                              <span class="showcase-audio-sub">Arranged drums &amp; bass</span>
                             </div>
                             <div class="catalog-waveform" aria-hidden="true">
                               <span class="catalog-waveform-bar"></span>
@@ -1256,7 +1259,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
                 <div class="card-catalog-layout">
                   <div class="catalog-stacked-col">
                     <div class="catalog-tile">
-                      <img class="catalog-photo" src="./assets/images/digital_eq_compressor_1789337007076.jpg" alt="Digital EQ & Multiband Compressor" loading="lazy">
+                      <img class="catalog-photo" src="./assets/images/digital_eq_compressor_1789337007076.jpg" alt="Digital EQ &amp; Multiband Compressor" loading="lazy">
                     </div>
                     <div class="catalog-tile">
                       <img class="catalog-photo" src="./assets/images/spectral_cleanup_dsp_1789336993282.jpg" alt="Master Spectrum Frequency Analyzer" loading="lazy">
@@ -1342,15 +1345,15 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
                 <div class="card-catalog-layout">
                   <div class="catalog-stacked-col">
                     <div class="catalog-tile">
-                      <img class="catalog-photo" src="./assets/images/vocal_tuning_plugin_1789336979208.jpg" alt="Vocal Pitch & Formant Tuning DSP" loading="lazy">
+                      <img class="catalog-photo" src="./assets/images/vocal_tuning_plugin_1789336979208.jpg" alt="Vocal Pitch &amp; Formant Tuning DSP" loading="lazy">
                     </div>
                     <div class="catalog-tile">
-                      <img class="catalog-photo" src="./assets/images/digital_reverb_dsp_1789337033441.jpg" alt="Vocal Plate Reverb & Spatial Width" loading="lazy">
+                      <img class="catalog-photo" src="./assets/images/digital_reverb_dsp_1789337033441.jpg" alt="Vocal Plate Reverb &amp; Spatial Width" loading="lazy">
                     </div>
                   </div>
                   <div class="catalog-hero-col">
                     <div class="catalog-hero-img-wrap">
-                      <img class="catalog-photo" src="./assets/images/vocal_tuning_plugin_1789336979208.jpg" alt="Digital Vocal Alignment & Processing Suite" loading="lazy">
+                      <img class="catalog-photo" src="./assets/images/vocal_tuning_plugin_1789336979208.jpg" alt="Digital Vocal Alignment &amp; Processing Suite" loading="lazy">
                     </div>
                     <div class="catalog-audio-dock">
                       <div class="catalog-audio-pair">
@@ -1384,7 +1387,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
                             <span class="catalog-track-tag-desc">Studio Vocal</span>
                           </div>
                           <div class="catalog-track-controls">
-                            <button type="button" class="catalog-play-btn" data-audio="/api/media?file=audio/K-Pop post fx.mp3" data-title="Tuned & FX Vocal" aria-label="Listen to tuned studio vocal">
+                            <button type="button" class="catalog-play-btn" data-audio="/api/media?file=audio/K-Pop post fx.mp3" data-title="Tuned &amp; FX Vocal" aria-label="Listen to tuned studio vocal">
                               <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
                               <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
                             </button>
@@ -1517,12 +1520,12 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
                       <img class="catalog-photo" src="./assets/images/curved_daw_monitor_1789336964825.jpg" alt="Online DAW Project Coaching" loading="lazy">
                     </div>
                     <div class="catalog-tile">
-                      <img class="catalog-photo" src="./assets/images/digital_eq_compressor_1789337007076.jpg" alt="Plugin Technique & Compression Analysis" loading="lazy">
+                      <img class="catalog-photo" src="./assets/images/digital_eq_compressor_1789337007076.jpg" alt="Plugin Technique &amp; Compression Analysis" loading="lazy">
                     </div>
                   </div>
                   <div class="catalog-hero-col">
                     <div class="catalog-hero-img-wrap">
-                      <img class="catalog-photo" src="./assets/images/midi_beat_arranger_1789337019783.jpg" alt="Arrangement & Beatmaking Breakdown" loading="lazy">
+                      <img class="catalog-photo" src="./assets/images/midi_beat_arranger_1789337019783.jpg" alt="Arrangement &amp; Beatmaking Breakdown" loading="lazy">
                     </div>
                     <div class="catalog-audio-dock">
                       <div class="catalog-audio-pair">
@@ -1600,10 +1603,10 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
                 <div class="card-catalog-layout">
                   <div class="catalog-stacked-col">
                     <div class="catalog-tile">
-                      <img class="catalog-photo" src="./assets/images/spectral_cleanup_dsp_1789336993282.jpg" alt="Spectral Noise Removal & Cleanup" loading="lazy">
+                      <img class="catalog-photo" src="./assets/images/spectral_cleanup_dsp_1789336993282.jpg" alt="Spectral Noise Removal &amp; Cleanup" loading="lazy">
                     </div>
                     <div class="catalog-tile">
-                      <img class="catalog-photo" src="./assets/images/vocal_tuning_plugin_1789336979208.jpg" alt="De-Click & Sibilance Repair" loading="lazy">
+                      <img class="catalog-photo" src="./assets/images/vocal_tuning_plugin_1789336979208.jpg" alt="De-Click &amp; Sibilance Repair" loading="lazy">
                     </div>
                   </div>
                   <div class="catalog-hero-col">
@@ -1642,7 +1645,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
                             <span class="catalog-track-tag-desc">Clean Master</span>
                           </div>
                           <div class="catalog-track-controls">
-                            <button type="button" class="catalog-play-btn" data-audio="/api/media?file=audio/broken jar mastered.mp3" data-title="Restored & Clean Audio" aria-label="Listen to restored audio">
+                            <button type="button" class="catalog-play-btn" data-audio="/api/media?file=audio/broken jar mastered.mp3" data-title="Restored &amp; Clean Audio" aria-label="Listen to restored audio">
                               <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
                               <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
                             </button>
@@ -1677,14 +1680,14 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
           </div>
         </section>
         <section class="section contact" id="contact" aria-labelledby="contact-title">
-          <div class="contact-copy"><div class="contact-intro"><h2 id="contact-title">Let&rsquo;s <em>Work</em></h2><p class="contact-intro-lead">Available for collaborations &amp; ongoing projects</p><div class="contact-channels" aria-label="Contact Eko">
-            <a href="#" aria-label="Eko on Instagram"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-instagram" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.9 3.9 0 0 0-1.417.923A3.9 3.9 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.9 3.9 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.299c-.04-.851-.175-1.433-.372-1.941a3.9 3.9 0 0 0-.923-1.417A3.9 3.9 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.443.01 10.172 0 7.998 0zm-.717 1.442h.718c2.136 0 2.389.007 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599s.453.546.598.92c.11.281.24.705.275 1.485.039.843.047 1.096.047 3.231s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.5 2.5 0 0 1-.599.919c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.5 2.5 0 0 1-.92-.598 2.5 2.5 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-2.388-.046-3.233s.008-2.388.046-3.231c.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92s.546-.453.92-.598c.282-.11.705-.24 1.485-.276.738-.034 1.024-.044 2.515-.045zm4.988 1.328a.96.96 0 1 0 0 1.92.96.96 0 0 0 0-1.92m-4.27 1.122a4.109 4.109 0 1 0 0 8.217 4.109 4.109 0 0 0 0-8.217m0 1.441a2.667 2.667 0 1 1 0 5.334 2.667 2.667 0 0 1 0-5.334"/></svg></a>
-            <a href="mailto:hello@eko.com" aria-label="Email Eko"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-envelope" viewBox="0 0 16 16" aria-hidden="true"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741M1 11.105l4.708-2.897L1 5.383z"/></svg></a>
-            <a href="#" aria-label="Contact Eko on Signal"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0q-.934 0-1.83.139l.17 1.111a11 11 0 0 1 3.32 0l.172-1.111A12 12 0 0 0 12 0M9.152.34A12 12 0 0 0 5.77 1.742l.584.961a10.8 10.8 0 0 1 3.066-1.27zm5.696 0-.268 1.094a10.8 10.8 0 0 1 3.066 1.27l.584-.962A12 12 0 0 0 14.848.34M12 2.25a9.75 9.75 0 0 0-8.539 14.459c.074.134.1.292.064.441l-1.013 4.338 4.338-1.013a.62.62 0 0 1 .441.064A9.7 9.7 0 0 0 12 21.75c5.385 0 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25m-7.092.068a12 12 0 0 0-2.59 2.59l.909.664a11 11 0 0 1 2.345-2.345zm14.184 0-.664.909a11 11 0 0 1 2.345 2.345l.909-.664a12 12 0 0 0-2.59-2.59M1.742 5.77A12 12 0 0 0 .34 9.152l1.094.268a10.8 10.8 0 0 1 1.269-3.066zm20.516 0-.961.584a10.8 10.8 0 0 1 1.27 3.066l1.093-.268a12 12 0 0 0-1.402-3.383M.138 10.168A12 12 0 0 0 0 12q0 .934.139 1.83l1.111-.17A11 11 0 0 1 1.125 12q0-.848.125-1.66zm23.723.002-1.111.17q.125.812.125 1.66c0 .848-.042 1.12-.125 1.66l1.111.172a12.1 12.1 0 0 0 0-3.662M1.434 14.58l-1.094.268a12 12 0 0 0 .96 2.591l-.265 1.14 1.096.255.36-1.539-.188-.365a10.8 10.8 0 0 1-.87-2.35m21.133 0a10.8 10.8 0 0 1-1.27 3.067l.962.584a12 12 0 0 0 1.402-3.383zm-1.793 3.848a11 11 0 0 1-2.345 2.345l.664.909a12 12 0 0 0 2.59-2.59zm-19.959 1.1L.357 21.48a1.8 1.8 0 0 0 2.162 2.161l1.954-.455-.256-1.095-1.953.455a.675.675 0 0 1-.81-.81l.454-1.954zm16.832 1.769a10.8 10.8 0 0 1-3.066 1.27l.268 1.093a12 12 0 0 0 3.382-1.402zm-10.94.213-1.54.36.256 1.095 1.139-.266c.814.415 1.683.74 2.591.961l.268-1.094a10.8 10.8 0 0 1-2.35-.869zm3.634 1.24-.172 1.111a12.1 12.1 0 0 0 3.662 0l-.17-1.111q-.812.125-1.66.125a11 11 0 0 1-1.66-.125"/></svg></a>
+          <div class="contact-copy"><div class="contact-intro"><h2 id="contact-title">Let’s <em>Work</em></h2><p class="contact-intro-lead">Available for collaborations &amp; ongoing projects</p><div class="contact-channels" aria-label="Contact Eko">
+            <a href="#" aria-label="Eko on Instagram"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-instagram" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.9 3.9 0 0 0-1.417.923A3.9 3.9 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.9 3.9 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.299c-.04-.851-.175-1.433-.372-1.941a3.9 3.9 0 0 0-.923-1.417A3.9 3.9 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.443.01 10.172 0 7.998 0zm-.717 1.442h.718c2.136 0 2.389.007 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599s.453.546.598.92c.11.281.24.705.275 1.485.039.843.047 1.096.047 3.231s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.5 2.5 0 0 1-.599.919c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.5 2.5 0 0 1-.92-.598 2.5 2.5 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-2.388-.046-3.233s.008-2.388.046-3.231c.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92s.546-.453.92-.598c.282-.11.705-.24 1.485-.276.738-.034 1.024-.044 2.515-.045zm4.988 1.328a.96.96 0 1 0 0 1.92.96.96 0 0 0 0-1.92m-4.27 1.122a4.109 4.109 0 1 0 0 8.217 4.109 4.109 0 0 0 0-8.217m0 1.441a2.667 2.667 0 1 1 0 5.334 2.667 2.667 0 0 1 0-5.334"></path></svg></a>
+            <a href="mailto:hello@eko.com" aria-label="Email Eko"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-envelope" viewBox="0 0 16 16" aria-hidden="true"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741M1 11.105l4.708-2.897L1 5.383z"></path></svg></a>
+            <a href="#" aria-label="Contact Eko on Signal"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0q-.934 0-1.83.139l.17 1.111a11 11 0 0 1 3.32 0l.172-1.111A12 12 0 0 0 12 0M9.152.34A12 12 0 0 0 5.77 1.742l.584.961a10.8 10.8 0 0 1 3.066-1.27zm5.696 0-.268 1.094a10.8 10.8 0 0 1 3.066 1.27l.584-.962A12 12 0 0 0 14.848.34M12 2.25a9.75 9.75 0 0 0-8.539 14.459c.074.134.1.292.064.441l-1.013 4.338 4.338-1.013a.62.62 0 0 1 .441.064A9.7 9.7 0 0 0 12 21.75c5.385 0 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25m-7.092.068a12 12 0 0 0-2.59 2.59l.909.664a11 11 0 0 1 2.345-2.345zm14.184 0-.664.909a11 11 0 0 1 2.345 2.345l.909-.664a12 12 0 0 0-2.59-2.59M1.742 5.77A12 12 0 0 0 .34 9.152l1.094.268a10.8 10.8 0 0 1 1.269-3.066zm20.516 0-.961.584a10.8 10.8 0 0 1 1.27 3.066l1.093-.268a12 12 0 0 0-1.402-3.383M.138 10.168A12 12 0 0 0 0 12q0 .934.139 1.83l1.111-.17A11 11 0 0 1 1.125 12q0-.848.125-1.66zm23.723.002-1.111.17q.125.812.125 1.66c0 .848-.042 1.12-.125 1.66l1.111.172a12.1 12.1 0 0 0 0-3.662M1.434 14.58l-1.094.268a12 12 0 0 0 .96 2.591l-.265 1.14 1.096.255.36-1.539-.188-.365a10.8 10.8 0 0 1-.87-2.35m21.133 0a10.8 10.8 0 0 1-1.27 3.067l.962.584a12 12 0 0 0 1.402-3.383zm-1.793 3.848a11 11 0 0 1-2.345 2.345l.664.909a12 12 0 0 0 2.59-2.59zm-19.959 1.1L.357 21.48a1.8 1.8 0 0 0 2.162 2.161l1.954-.455-.256-1.095-1.953.455a.675.675 0 0 1-.81-.81l.454-1.954zm16.832 1.769a10.8 10.8 0 0 1-3.066 1.27l.268 1.093a12 12 0 0 0 3.382-1.402zm-10.94.213-1.54.36.256 1.095 1.139-.266c.814.415 1.683.74 2.591.961l.268-1.094a10.8 10.8 0 0 1-2.35-.869zm3.634 1.24-.172 1.111a12.1 12.1 0 0 0 3.662 0l-.17-1.111q-.812.125-1.66.125a11 11 0 0 1-1.66-.125"></path></svg></a>
             </div><p class="contact-intro-dm">DM for quick response</p></div></div>
             <form class="contact-form" action="https://api.web3forms.com/submit" method="POST">
               <input type="hidden" name="access_key" value="2ebd4b29-1913-405e-b0ec-b3b7ef0721b3"><input type="hidden" name="subject" value="New project request from Eko website"><input type="hidden" name="from_name" value="Eko Website">
-              <div class="form-row"><label><span class="form-label-text">Name</span><input type="text" name="name" autocomplete="name" required placeholder="Your name"></label><label><span class="form-label-text">Email</span><input type="email" name="email" autocomplete="email" required placeholder="you@email.com"></label></div>
+              <div class="form-row"><label><span class="form-label-text">Name</span><input type="text" name="name" autocomplete="name" required="" placeholder="Your name"></label><label><span class="form-label-text">Email</span><input type="email" name="email" autocomplete="email" required="" placeholder="you@email.com"></label></div>
               <div class="form-group form-select-group">
                 <label for="custom-service-trigger" id="custom-service-label-text" class="form-label-text">What do you need?</label>
                 <div class="custom-select-container" id="custom-service-select">
@@ -1702,8 +1705,8 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
                     <li class="custom-select-option" role="option" tabindex="0" data-value="Other">Other</li>
                     <li class="custom-select-option" role="option" tabindex="0" data-value="Free Genral Inquiry - No pressure. No commitments.">Free Genral Inquiry - No pressure. No commitments.</li>
                   </ul>
-                  <select name="service" id="native-service-select" required tabindex="-1" style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; left: 0; bottom: 0;">
-                    <option value="" selected disabled>Select a service</option>
+                  <select name="service" id="native-service-select" required="" tabindex="-1" style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; left: 0; bottom: 0;">
+                    <option value="" selected="" disabled="">Select a service</option>
                     <option value="Custom Beat Production">Custom Beat Production</option>
                     <option value="Mixing &amp; Mastering">Mixing &amp; Mastering</option>
                     <option value="Vocal Mixing">Vocal Mixing</option>
@@ -1715,7 +1718,7 @@ button.brand { background: transparent; border: none; cursor: pointer; padding: 
                   </select>
                 </div>
               </div>
-              <label class="project-details-field"><span class="form-label-text">Project details</span><textarea name="message" rows="5" required placeholder="Tell me about the sound, timeline, and references..."></textarea><button class="button button-primary cta-button" type="submit" id="submit-btn">Send Request <span aria-hidden="true">›</span></button></label>
+              <label class="project-details-field"><span class="form-label-text">Project details</span><textarea name="message" rows="5" required="" placeholder="Tell me about the sound, timeline, and references..."></textarea><button class="button button-primary cta-button" type="submit" id="submit-btn">Send Request <span aria-hidden="true">›</span></button></label>
               <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
             </form>
             <p class="contact-copyright" style="color: #232230; font-weight: 400;">© <span id="year">2026</span> Eko. All rights reserved.</p>
@@ -2517,5 +2520,6 @@ document.querySelectorAll('a[href="#"]').forEach((link) => { link.addEventListen
   </aside>
 
   <script type="module" src="./src/main.js"></script>
-</body>
-</html>
+
+
+</body></html>
