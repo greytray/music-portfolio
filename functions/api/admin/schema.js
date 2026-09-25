@@ -35,7 +35,7 @@ export async function onRequest(context) {
         });
         if (ghRes.ok) {
           const ghSchema = await ghRes.json();
-          if (ghSchema && ghSchema.elements && Object.keys(ghSchema.elements).length > 0) {
+          if (ghSchema && ghSchema.elements && typeof ghSchema.elements === 'object') {
             return new Response(JSON.stringify({ success: true, schema: ghSchema }), {
               status: 200,
               headers: {
