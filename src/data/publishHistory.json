@@ -1,13 +1,13 @@
 [
   {
-    "id": "cp_1790369290163",
-    "timestamp": "2026-09-25T20:48:10.163Z",
+    "id": "cp_1790369301437",
+    "timestamp": "2026-09-25T20:48:21.437Z",
     "label": "Checkpoint #1",
     "description": "2 elements customized across canvas",
     "elementsCount": 2,
     "schema": {
       "version": "1.0.0",
-      "lastUpdated": "2026-09-25T20:48:11.467Z",
+      "lastUpdated": "2026-09-25T20:48:22.722Z",
       "elementsCount": 2,
       "elements": {
         "#contact": {
@@ -33,10 +33,11 @@
             "tablet": {},
             "mobile": {}
           },
-          "dataAttributes": {}
+          "dataAttributes": {},
+          "text": "Original Production"
         }
       },
-      "lastPublished": "2026-09-25T20:48:10.163Z"
+      "lastPublished": "2026-09-25T20:48:21.437Z"
     }
   },
   {
