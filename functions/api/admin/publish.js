@@ -4,6 +4,94 @@
 import { verifySessionToken, extractToken } from '../../_auth.js';
 import { getGitHubConfig, commitAndPushFilesToGitHub } from '../../_github.js';
 
+function camelToKebab(str) {
+  return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+}
+
+function isValidStyleEntry([key, val]) {
+  if (key === 'text' || key === 'media' || key === 'html' || key === 'dataAttributes' || key === 'breakpoints' || key === 'selector') {
+    return false;
+  }
+  return val !== undefined && val !== null && val !== '';
+}
+
+function generateCssFromSchema(schema) {
+  if (!schema || !schema.elements) return '';
+
+  const elements = schema.elements;
+  const universalCssRules = [];
+  const desktopCssRules = [];
+  const tabletCssRules = [];
+  const mobileCssRules = [];
+
+  Object.keys(elements).forEach(key => {
+    const item = elements[key];
+    if (!item) return;
+    const rawSelector = item.selector || (key.startsWith('#') || key.startsWith('.') ? key : `#${key}`);
+    const selector = `html body ${rawSelector}`;
+
+    // Universal styles
+    if (item.styles && typeof item.styles === 'object') {
+      const declarations = Object.entries(item.styles)
+        .filter(isValidStyleEntry)
+        .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
+        .join(' ');
+      if (declarations) {
+        universalCssRules.push(`  ${selector} { ${declarations} }`);
+      }
+    }
+
+    // Breakpoint styles
+    if (item.breakpoints && typeof item.breakpoints === 'object') {
+      if (item.breakpoints.desktop && typeof item.breakpoints.desktop === 'object') {
+        const dDec = Object.entries(item.breakpoints.desktop)
+          .filter(isValidStyleEntry)
+          .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
+          .join(' ');
+        if (dDec) {
+          desktopCssRules.push(`  @media (min-width: 1024px) {\n    ${selector} { ${dDec} }\n  }\n  html[data-preview-mode="desktop"] body ${rawSelector} { ${dDec} }`);
+        }
+      }
+
+      if (item.breakpoints.tablet && typeof item.breakpoints.tablet === 'object') {
+        const tDec = Object.entries(item.breakpoints.tablet)
+          .filter(isValidStyleEntry)
+          .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
+          .join(' ');
+        if (tDec) {
+          tabletCssRules.push(`  @media (min-width: 768px) and (max-width: 1023px) {\n    ${selector} { ${tDec} }\n  }\n  html[data-preview-mode="tablet"] body ${rawSelector} { ${tDec} }`);
+        }
+      }
+
+      if (item.breakpoints.mobile && typeof item.breakpoints.mobile === 'object') {
+        const mDec = Object.entries(item.breakpoints.mobile)
+          .filter(isValidStyleEntry)
+          .map(([prop, val]) => `${camelToKebab(prop)}: ${val} !important;`)
+          .join(' ');
+        if (mDec) {
+          mobileCssRules.push(`  @media (max-width: 767px) {\n    ${selector} { ${mDec} }\n  }\n  html[data-preview-mode="mobile"] body ${rawSelector} { ${mDec} }`);
+        }
+      }
+    }
+  });
+
+  const sections = [];
+  if (universalCssRules.length > 0) {
+    sections.push(`  /* Universal Overrides */\n${universalCssRules.join('\n')}`);
+  }
+  if (desktopCssRules.length > 0) {
+    sections.push(`  /* Desktop Overrides */\n${desktopCssRules.join('\n')}`);
+  }
+  if (tabletCssRules.length > 0) {
+    sections.push(`  /* Tablet Overrides */\n${tabletCssRules.join('\n')}`);
+  }
+  if (mobileCssRules.length > 0) {
+    sections.push(`  /* Mobile Overrides */\n${mobileCssRules.join('\n')}`);
+  }
+
+  return sections.join('\n\n');
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
 
@@ -13,7 +101,7 @@ export async function onRequest(context) {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-admin-request',
       },
     });
   }
@@ -25,6 +113,7 @@ export async function onRequest(context) {
 
     if (!session) {
       return new Response(JSON.stringify({
+        success: false,
         error: '401 Unauthorized: Valid administrative session required.'
       }), {
         status: 401,
@@ -38,7 +127,7 @@ export async function onRequest(context) {
     try {
       const body = await request.json();
       if (!body || !body.schema) {
-        return new Response(JSON.stringify({ error: 'Missing schema payload' }), {
+        return new Response(JSON.stringify({ success: false, error: 'Missing schema payload' }), {
           status: 400,
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });
@@ -152,6 +241,7 @@ export async function onRequest(context) {
       try {
         const ghConfig = getGitHubConfig(env);
         if (ghConfig.isConfigured && ghConfig.autoPush) {
+          const compiledCss = generateCssFromSchema(publishedSchema);
           const files = [
             {
               path: 'src/data/publishedSchema.json',
@@ -168,6 +258,10 @@ export async function onRequest(context) {
             {
               path: 'public/publishHistory.json',
               content: JSON.stringify(history, null, 2)
+            },
+            {
+              path: 'src/styles/custom-design.css',
+              content: compiledCss
             }
           ];
 
@@ -180,15 +274,29 @@ export async function onRequest(context) {
             authorName: ghConfig.authorName,
             authorEmail: ghConfig.authorEmail
           });
+        } else {
+          console.warn('[Cloudflare Publish] GitHub not configured or autoPush is false');
         }
       } catch (ghErr) {
-        console.warn('[Cloudflare Publish] GitHub push notice:', ghErr.message);
+        console.error('[Cloudflare Publish] GitHub push error:', ghErr.message);
         githubPush = { success: false, error: ghErr.message };
+      }
+
+      // If GitHub push failed, fail the request so the admin UI alerts the user
+      if (githubPush && !githubPush.success) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: `GitHub deployment push failed: ${githubPush.error}`,
+          githubPush
+        }), {
+          status: 502,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
       }
 
       return new Response(JSON.stringify({
         success: true,
-        message: 'Visual schema published successfully',
+        message: 'Visual schema published successfully and pushed to GitHub',
         timestamp: publishedSchema.lastPublished,
         kvSaved,
         hfSaved,
@@ -201,7 +309,7 @@ export async function onRequest(context) {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
     } catch (err) {
-      return new Response(JSON.stringify({ error: 'Publish failed: ' + err.message }), {
+      return new Response(JSON.stringify({ success: false, error: 'Publish failed: ' + err.message }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
