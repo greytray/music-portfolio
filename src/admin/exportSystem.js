@@ -457,11 +457,23 @@ export class ExportSystem {
         headers,
         body: JSON.stringify({ schema })
       });
-      if (res.ok) {
-        serverData = await res.json();
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `Publish request failed with status ${res.status}`);
+      }
+
+      serverData = await res.json();
+      if (serverData.success === false) {
+        throw new Error(serverData.error || 'Server rejected publish request');
+      }
+
+      if (serverData.githubPush && serverData.githubPush.success === false) {
+        throw new Error(`GitHub push failed: ${serverData.githubPush.error}`);
       }
     } catch (err) {
-      console.warn('[ExportSystem] Server publish notice:', err);
+      console.error('[ExportSystem] Server publish error:', err);
+      throw err;
     }
 
     this.hasUnpublishedChanges = false;
