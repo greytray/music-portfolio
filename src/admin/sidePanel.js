@@ -101,9 +101,19 @@ export class SidePanel {
 
       <!-- Tab Content Area -->
       <div class="admin-tab-content" id="admin-tab-content">
-        <div class="admin-empty-notice" style="text-align: center; padding: 40px 16px; color: var(--admin-text-muted);">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; opacity: 0.5;"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 14.14 14.14"/></svg>
-          <p style="margin: 0; font-size: 12px;">Click any element on the canvas to inspect and edit.</p>
+        <div class="admin-empty-notice" style="text-align: center; padding: 48px 20px; color: var(--admin-text-secondary); width: 100%; box-sizing: border-box;">
+          <div class="empty-cursor-icon-wrap" style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: rgba(0, 127, 255, 0.08); border: 1px solid rgba(0, 127, 255, 0.22); margin-bottom: 16px; margin-inline: auto;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--admin-accent-cyan); transform: translate(-1px, 1px);">
+              <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+              <path d="m13 13 6 6"/>
+            </svg>
+          </div>
+          <p style="margin: 0 0 44px 0; font-size: 14.5px; font-weight: 700; color: var(--admin-text-primary); text-align: center;">Inspect &amp; Edit</p>
+          <div style="text-align: left; max-width: 285px; margin-inline: auto; font-size: 12.5px; line-height: 1.8; color: var(--admin-text-secondary);">
+            <div style="margin-bottom: 12px;"><strong>Step 1.</strong> Turn on Edit mode.</div>
+            <div style="margin-bottom: 12px;"><strong>Step 2.</strong> Click any element on the preview website to inspect and edit.</div>
+            <div style="margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--admin-border-subtle); font-size: 12px; color: var(--admin-text-muted);"><strong>Tip:</strong> Double click on highlighted setting names to reset them.</div>
+          </div>
         </div>
       </div>
 
@@ -527,9 +537,19 @@ export class SidePanel {
 
     if (contentEl) {
       contentEl.innerHTML = `
-        <div class="admin-empty-notice" style="text-align: center; padding: 40px 16px; color: var(--admin-text-muted);">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; opacity: 0.5;"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 14.14 14.14"/></svg>
-          <p style="margin: 0; font-size: 12px;">Click any element on the canvas to inspect and edit.</p>
+        <div class="admin-empty-notice" style="text-align: center; padding: 48px 20px; color: var(--admin-text-secondary); width: 100%; box-sizing: border-box;">
+          <div class="empty-cursor-icon-wrap" style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: rgba(0, 127, 255, 0.08); border: 1px solid rgba(0, 127, 255, 0.22); margin-bottom: 16px; margin-inline: auto;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--admin-accent-cyan); transform: translate(-1px, 1px);">
+              <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+              <path d="m13 13 6 6"/>
+            </svg>
+          </div>
+          <p style="margin: 0 0 44px 0; font-size: 14.5px; font-weight: 700; color: var(--admin-text-primary); text-align: center;">Inspect &amp; Edit</p>
+          <div style="text-align: left; max-width: 285px; margin-inline: auto; font-size: 12.5px; line-height: 1.8; color: var(--admin-text-secondary);">
+            <div style="margin-bottom: 12px;"><strong>Step 1.</strong> Turn on Edit mode.</div>
+            <div style="margin-bottom: 12px;"><strong>Step 2.</strong> Click any element on the preview website to inspect and edit.</div>
+            <div style="margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--admin-border-subtle); font-size: 12px; color: var(--admin-text-muted);"><strong>Tip:</strong> Double click on highlighted setting names to reset them.</div>
+          </div>
         </div>
       `;
     }
@@ -822,17 +842,56 @@ export class SidePanel {
         dotEl.style.display = isChanged ? 'inline-block' : 'none';
       });
 
-      if (containerEl.classList.contains('admin-section')) {
-        const hasModifiedInside = containerEl.querySelector('.btn-field-reset[style*="inline-flex"], .field-change-dot[style*="inline-block"]') !== null;
-        if (hasModifiedInside) {
+      if (containerEl.classList.contains('admin-field-row')) {
+        const rowBtn = containerEl.querySelector('.btn-field-reset');
+        let isRowChanged = rowBtn && rowBtn.style.display !== 'none';
+
+        if (!isRowChanged) {
+          const type = containerEl.dataset.resetType;
+          const key = containerEl.dataset.resetKey;
+          if (type === 'style' && key) {
+            if (key === 'textTransform' || key === 'appearance') {
+              isRowChanged = this.isFieldChanged('textTransform') || this.isFieldChanged('fontVariant');
+            } else {
+              isRowChanged = this.isFieldChanged(key);
+            }
+          } else if (type === 'shadow') {
+            isRowChanged = this.isFieldChanged('boxShadow') || this.isFieldChanged('textShadow');
+          } else if (type === 'allMargins') {
+            isRowChanged = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'].some(k => this.isFieldChanged(k));
+          } else if (type === 'allPaddings') {
+            isRowChanged = ['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'].some(k => this.isFieldChanged(k));
+          }
+        }
+
+        if (isRowChanged) {
           containerEl.classList.add('is-modified');
         } else {
           containerEl.classList.remove('is-modified');
         }
-      } else if (containerEl.classList.contains('admin-field-row')) {
-        const rowBtn = containerEl.querySelector('.btn-field-reset');
-        const isRowChanged = rowBtn && rowBtn.style.display !== 'none';
-        if (isRowChanged) {
+      } else if (containerEl.classList.contains('admin-section')) {
+        const headerEl = containerEl.querySelector('.admin-section-header');
+        let count = 0;
+        if (headerEl && headerEl.dataset.indicatorKeys) {
+          const keys = headerEl.dataset.indicatorKeys.split(',').filter(Boolean);
+          keys.forEach(k => {
+            if (this.isFieldChanged(k)) count++;
+          });
+        }
+
+        const badgeEl = containerEl.querySelector('.section-change-badge');
+        if (badgeEl) {
+          badgeEl.textContent = count;
+          badgeEl.style.display = count > 0 ? 'inline-flex' : 'none';
+        }
+
+        const sectionResetBtn = containerEl.querySelector('.btn-section-reset');
+        if (sectionResetBtn) {
+          sectionResetBtn.style.display = count > 0 ? 'inline-flex' : 'none';
+        }
+
+        const hasModifiedInside = count > 0 || containerEl.querySelector('.admin-field-row.is-modified, .btn-field-reset[style*="inline-flex"]') !== null;
+        if (hasModifiedInside) {
           containerEl.classList.add('is-modified');
         } else {
           containerEl.classList.remove('is-modified');
@@ -884,28 +943,50 @@ export class SidePanel {
         }
       }
       if (this.exportSystem) {
-        this.exportSystem.removeChange(selector, 'text', 'text', this.currentBreakpoint);
+        this.exportSystem.removeChange(selector, 'text', 'text', 'all');
       }
+    } else if (type === 'typography') {
+      const keys = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textTransform', 'fontVariant', 'textAlign', 'fontStyle'];
+      keys.forEach(k => {
+        this.activeElement.style.removeProperty(this._camelToKebab(k));
+        if (this.exportSystem) {
+          this.exportSystem.removeChange(selector, 'style', k, 'all');
+        }
+      });
+    } else if (type === 'colors') {
+      ['color', 'backgroundColor'].forEach(k => {
+        this.activeElement.style.removeProperty(this._camelToKebab(k));
+        if (this.exportSystem) {
+          this.exportSystem.removeChange(selector, 'style', k, 'all');
+        }
+      });
+    } else if (type === 'borders') {
+      ['borderColor', 'borderWidth', 'borderRadius'].forEach(k => {
+        this.activeElement.style.removeProperty(this._camelToKebab(k));
+        if (this.exportSystem) {
+          this.exportSystem.removeChange(selector, 'style', k, 'all');
+        }
+      });
     } else if (type === 'shadow') {
       this.activeElement.style.removeProperty('text-shadow');
       this.activeElement.style.removeProperty('box-shadow');
       this.shadowState = { type: 'text', x: 0, y: 0, blur: 0, spread: 0, color: '#00e5ff', opacity: 0 };
       if (this.exportSystem) {
-        this.exportSystem.removeChange(selector, 'style', 'textShadow', this.currentBreakpoint);
-        this.exportSystem.removeChange(selector, 'style', 'boxShadow', this.currentBreakpoint);
+        this.exportSystem.removeChange(selector, 'style', 'textShadow', 'all');
+        this.exportSystem.removeChange(selector, 'style', 'boxShadow', 'all');
       }
     } else if (type === 'allMargins') {
       ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'].forEach(prop => {
         this.activeElement.style.removeProperty(this._camelToKebab(prop));
         if (this.exportSystem) {
-          this.exportSystem.removeChange(selector, 'style', prop, this.currentBreakpoint);
+          this.exportSystem.removeChange(selector, 'style', prop, 'all');
         }
       });
     } else if (type === 'allPaddings') {
       ['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'].forEach(prop => {
         this.activeElement.style.removeProperty(this._camelToKebab(prop));
         if (this.exportSystem) {
-          this.exportSystem.removeChange(selector, 'style', prop, this.currentBreakpoint);
+          this.exportSystem.removeChange(selector, 'style', prop, 'all');
         }
       });
     } else if (type === 'style') {
@@ -913,13 +994,13 @@ export class SidePanel {
         this.activeElement.style.removeProperty('text-transform');
         this.activeElement.style.removeProperty('font-variant');
         if (this.exportSystem) {
-          this.exportSystem.removeChange(selector, 'style', 'textTransform', this.currentBreakpoint);
-          this.exportSystem.removeChange(selector, 'style', 'fontVariant', this.currentBreakpoint);
+          this.exportSystem.removeChange(selector, 'style', 'textTransform', 'all');
+          this.exportSystem.removeChange(selector, 'style', 'fontVariant', 'all');
         }
       } else {
         this.activeElement.style.removeProperty(this._camelToKebab(key));
         if (this.exportSystem) {
-          this.exportSystem.removeChange(selector, 'style', key, this.currentBreakpoint);
+          this.exportSystem.removeChange(selector, 'style', key, 'all');
         }
       }
     } else if (type === 'media') {
@@ -933,20 +1014,32 @@ export class SidePanel {
       }
       this.activeElement.style.removeProperty('background-image');
       if (this.exportSystem) {
-        this.exportSystem.removeChange(selector, 'media', 'src', this.currentBreakpoint);
-        this.exportSystem.removeChange(selector, 'media', 'audio', this.currentBreakpoint);
-        this.exportSystem.removeChange(selector, 'dataAttr', 'audio', this.currentBreakpoint);
-        this.exportSystem.removeChange(selector, 'style', 'backgroundImage', this.currentBreakpoint);
+        this.exportSystem.removeChange(selector, 'media', 'src', 'all');
+        this.exportSystem.removeChange(selector, 'media', 'audio', 'all');
+        this.exportSystem.removeChange(selector, 'dataAttr', 'audio', 'all');
+        this.exportSystem.removeChange(selector, 'style', 'backgroundImage', 'all');
       }
     } else if (type === 'dataAttr') {
       delete this.activeElement.dataset[key];
       if (this.exportSystem) {
-        this.exportSystem.removeChange(selector, 'dataAttr', key, this.currentBreakpoint);
+        this.exportSystem.removeChange(selector, 'dataAttr', key, 'all');
+      }
+    } else if (type === 'dataAttrAll' || type === 'props') {
+      if (baseline && baseline.dataset) {
+        Object.keys(this.activeElement.dataset).forEach(k => delete this.activeElement.dataset[k]);
+        Object.entries(baseline.dataset).forEach(([k, v]) => {
+          this.activeElement.dataset[k] = v;
+        });
+      } else {
+        Object.keys(this.activeElement.dataset).forEach(k => delete this.activeElement.dataset[k]);
+      }
+      if (this.exportSystem) {
+        this.exportSystem.removeChange(selector, 'dataAttr', null, 'all');
       }
     }
 
     // 1. Notify change so exportSystem & schemaApplier immediately strip the dynamic override rule from the iframe <style>
-    this._notifyChange({ reset: true, resetProperty: key });
+    this._notifyChange({ reset: true, resetProperty: key || type });
 
     // 2. Now that dynamic styles are removed from iframe, refresh activeMeta.styles with clean computed values
     this._refreshActiveMetaStyles();
@@ -1036,32 +1129,21 @@ export class SidePanel {
 
     return `
       <!-- Text Content -->
-      <div class="admin-section ${hasTextChanged ? 'is-modified' : ''}">
-        <div class="admin-section-header">
-          <div class="section-title-wrap">
-            <span>Text Content</span>
-            <span class="field-change-dot" data-field-indicator="text" style="display: ${hasTextChanged ? 'inline-block' : 'none'};">●</span>
-          </div>
-          <button type="button" class="btn-field-reset" data-reset-type="text" data-tooltip="Reset text content" style="display: ${hasTextChanged ? 'inline-flex' : 'none'};">↺</button>
-        </div>
+      <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-text-content') ? 'is-collapsed' : ''} ${hasTextChanged ? 'is-modified' : ''}">
+        ${this._renderSectionHeader('sec-text-content', 'Text Content', ['text'], 'text')}
         <div class="admin-field-row" style="margin-bottom: 0;">
           <textarea class="admin-textarea" id="ctrl-text-content" rows="2" placeholder="Edit text content...">${textVal ? textVal.trim() : ''}</textarea>
         </div>
       </div>
 
       <!-- Typography -->
-      <div class="admin-section">
-        <div class="admin-section-header">
-          <div class="section-title-wrap">
-            <span>Typography</span>
-          </div>
-        </div>
+      <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-typography') ? 'is-collapsed' : ''} ${hasFontFamilyChanged || hasFontSizeChanged || hasFontWeightChanged || hasLineHeightChanged || hasLetterSpacingChanged || hasAppearanceChanged || hasTextAlignChanged ? 'is-modified' : ''}">
+        ${this._renderSectionHeader('sec-typography', 'Typography', ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textTransform', 'fontVariant', 'textAlign'], 'style', 'typography')}
 
         <!-- Font Family -->
         <div class="admin-field-row ${hasFontFamilyChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label" for="ctrl-font-family">Font</label>
-            <span class="field-change-dot" data-field-indicator="fontFamily" style="display: ${hasFontFamilyChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             <select class="admin-select" id="ctrl-font-family">
@@ -1081,7 +1163,6 @@ export class SidePanel {
         <div class="admin-field-row ${hasFontSizeChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Font Size</label>
-            <span class="field-change-dot" data-field-indicator="fontSize" style="display: ${hasFontSizeChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('font-size', 10, 140, 1, parseFloat(this.getEffectiveFieldValue('fontSize', s.fontSize || computed.fontSize)) || 16, 'px')}
@@ -1093,7 +1174,6 @@ export class SidePanel {
         <div class="admin-field-row ${hasFontWeightChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label" for="ctrl-font-weight">Font Weight</label>
-            <span class="field-change-dot" data-field-indicator="fontWeight" style="display: ${hasFontWeightChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             <select class="admin-select" id="ctrl-font-weight">
@@ -1115,7 +1195,6 @@ export class SidePanel {
         <div class="admin-field-row ${hasLineHeightChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Line Spacing</label>
-            <span class="field-change-dot" data-field-indicator="lineHeight" style="display: ${hasLineHeightChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('line-height', 0.8, 3.5, 0.05, currentLineHeight, 'em')}
@@ -1127,7 +1206,6 @@ export class SidePanel {
         <div class="admin-field-row ${hasLetterSpacingChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Letter Spacing</label>
-            <span class="field-change-dot" data-field-indicator="letterSpacing" style="display: ${hasLetterSpacingChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('letter-spacing', -3, 24, 0.5, currentLetterSpacing, 'px')}
@@ -1139,7 +1217,6 @@ export class SidePanel {
         <div class="admin-field-row ${hasAppearanceChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Appearance</label>
-            <span class="field-change-dot" data-field-indicator="appearance" style="display: ${hasAppearanceChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             <div class="admin-appearance-group">
@@ -1157,7 +1234,6 @@ export class SidePanel {
         <div class="admin-field-row ${hasTextAlignChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Alignment</label>
-            <span class="field-change-dot" data-field-indicator="textAlign" style="display: ${hasTextAlignChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control" style="justify-content: space-between;">
             <div class="admin-button-group">
@@ -1187,120 +1263,114 @@ export class SidePanel {
       </div>
 
       <!-- Non-Code Visual Shadow & Glow Studio (Text Shadow vs Box Shadow) -->
-      <div class="admin-section ${hasShadowChanged ? 'is-modified' : ''}">
-        <div class="admin-section-header">
-          <div class="section-title-wrap">
-            <span>Shadow & Glow Studio</span>
-            <span class="field-change-dot" data-field-indicator="shadow" style="display: ${hasShadowChanged ? 'inline-block' : 'none'};">●</span>
+      <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-shadow') ? 'is-collapsed' : ''} ${hasShadowChanged ? 'is-modified' : ''}">
+        ${this._renderSectionHeader('sec-shadow', 'Shadow & Glow Studio', ['boxShadow', 'textShadow'], 'shadow')}
+
+        <!-- Shadow Target Mode: Text Glow vs Box Shadow -->
+        <div class="admin-field-row ${hasShadowChanged ? 'is-modified' : ''}">
+          <div class="admin-field-label-wrap">
+            <label class="admin-field-label">Target</label>
           </div>
-          <button type="button" class="btn-field-reset" data-reset-type="shadow" data-tooltip="Reset shadow & glow" style="display: ${hasShadowChanged ? 'inline-flex' : 'none'};">↺</button>
+          <div class="admin-field-control">
+            <div class="admin-appearance-group" id="shadow-target-group">
+              <button type="button" class="admin-case-btn ${this.shadowState.type === 'text' ? 'is-active' : ''}" data-shadow-type="text" data-tooltip="Apply glow directly to the text letters">Text Glow</button>
+              <button type="button" class="admin-case-btn ${this.shadowState.type === 'box' ? 'is-active' : ''}" data-shadow-type="box" data-tooltip="Apply shadow to the container box/card">Box Shadow</button>
+            </div>
+          </div>
         </div>
 
-        <div class="admin-shadow-studio-body">
-          <!-- Shadow Target Mode: Text Glow vs Box Shadow -->
-          <div class="admin-field-row" style="margin-bottom: 4px;">
-            <label class="admin-field-label">Target</label>
-            <div class="admin-field-control">
-              <div class="admin-appearance-group" id="shadow-target-group">
-                <button type="button" class="admin-case-btn ${this.shadowState.type === 'text' ? 'is-active' : ''}" data-shadow-type="text" data-tooltip="Apply glow directly to the text letters">Text Glow</button>
-                <button type="button" class="admin-case-btn ${this.shadowState.type === 'box' ? 'is-active' : ''}" data-shadow-type="box" data-tooltip="Apply shadow to the container box/card">Box Shadow</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Visual Live Swatch -->
-          <div class="admin-shadow-swatch-wrap">
-            <div class="admin-shadow-preview-swatch ${this.shadowState.type === 'text' ? 'is-text-preview' : 'is-box-preview'}" id="shadow-preview-swatch">
-              <span id="shadow-preview-text">GLOW PREVIEW</span>
-            </div>
-          </div>
-
-          <!-- Presets -->
-          <div class="admin-field-row" style="margin-top: 2px;">
+        <!-- Presets -->
+        <div class="admin-field-row ${hasShadowChanged ? 'is-modified' : ''}">
+          <div class="admin-field-label-wrap">
             <label class="admin-field-label">Presets</label>
-            <div class="admin-shadow-presets">
-              <button type="button" class="shadow-preset-btn" data-preset="none">None</button>
-              <button type="button" class="shadow-preset-btn" data-preset="glow">Cyan Glow</button>
-              <button type="button" class="shadow-preset-btn" data-preset="magenta">Neon Pink</button>
-              <button type="button" class="shadow-preset-btn" data-preset="subtle">Soft Dark</button>
-              <button type="button" class="shadow-preset-btn" data-preset="deep">Deep Aura</button>
-            </div>
           </div>
+          <div class="admin-shadow-presets">
+            <button type="button" class="shadow-preset-btn" data-preset="none">None</button>
+            <button type="button" class="shadow-preset-btn" data-preset="glow">Cyan Glow</button>
+            <button type="button" class="shadow-preset-btn" data-preset="magenta">Neon Pink</button>
+            <button type="button" class="shadow-preset-btn" data-preset="subtle">Soft Dark</button>
+            <button type="button" class="shadow-preset-btn" data-preset="deep">Deep Aura</button>
+          </div>
+        </div>
 
-          <!-- X Offset -->
-          <div class="admin-field-row">
+        <!-- X Offset -->
+        <div class="admin-field-row ${hasShadowChanged ? 'is-modified' : ''}">
+          <div class="admin-field-label-wrap">
             <label class="admin-field-label">X Offset</label>
-            <div class="admin-field-control">
-              ${this._renderSliderRow('shadow-x', -40, 40, 1, this.shadowState.x, 'px')}
-            </div>
           </div>
+          <div class="admin-field-control">
+            ${this._renderSliderRow('shadow-x', -40, 40, 1, this.shadowState.x, 'px')}
+          </div>
+        </div>
 
-          <!-- Y Offset -->
-          <div class="admin-field-row">
+        <!-- Y Offset -->
+        <div class="admin-field-row ${hasShadowChanged ? 'is-modified' : ''}">
+          <div class="admin-field-label-wrap">
             <label class="admin-field-label">Y Offset</label>
-            <div class="admin-field-control">
-              ${this._renderSliderRow('shadow-y', -40, 40, 1, this.shadowState.y, 'px')}
-            </div>
           </div>
+          <div class="admin-field-control">
+            ${this._renderSliderRow('shadow-y', -40, 40, 1, this.shadowState.y, 'px')}
+          </div>
+        </div>
 
-          <!-- Blur Radius -->
-          <div class="admin-field-row">
+        <!-- Blur Radius -->
+        <div class="admin-field-row ${hasShadowChanged ? 'is-modified' : ''}">
+          <div class="admin-field-label-wrap">
             <label class="admin-field-label">Blur Radius</label>
-            <div class="admin-field-control">
-              ${this._renderSliderRow('shadow-blur', 0, 60, 1, this.shadowState.blur, 'px')}
-            </div>
           </div>
+          <div class="admin-field-control">
+            ${this._renderSliderRow('shadow-blur', 0, 60, 1, this.shadowState.blur, 'px')}
+          </div>
+        </div>
 
-          <!-- Spread Radius (Only applicable for Box Shadow) -->
-          <div class="admin-field-row" id="row-shadow-spread" style="${this.shadowState.type === 'text' ? 'display: none;' : ''}">
+        <!-- Spread Radius (Only applicable for Box Shadow) -->
+        <div class="admin-field-row ${hasShadowChanged ? 'is-modified' : ''}" id="row-shadow-spread" style="${this.shadowState.type === 'text' ? 'display: none;' : ''}">
+          <div class="admin-field-label-wrap">
             <label class="admin-field-label">Spread</label>
-            <div class="admin-field-control">
-              ${this._renderSliderRow('shadow-spread', -20, 30, 1, this.shadowState.spread, 'px')}
-            </div>
           </div>
+          <div class="admin-field-control">
+            ${this._renderSliderRow('shadow-spread', -20, 30, 1, this.shadowState.spread, 'px')}
+          </div>
+        </div>
 
-          <!-- Shadow Color & Opacity -->
-          <div class="admin-field-row">
+        <!-- Shadow Color & Opacity -->
+        <div class="admin-field-row ${hasShadowChanged ? 'is-modified' : ''}">
+          <div class="admin-field-label-wrap">
             <label class="admin-field-label">Color & Alpha</label>
-            <div class="admin-field-control">
-              <div class="admin-color-field" style="flex: 1;">
-                <div class="admin-color-preview-wrap" style="background-color: ${this.shadowState.color};">
-                  <input type="color" class="admin-color-native" id="native-color-shadow" value="${this.shadowState.color}">
-                </div>
-                <input type="text" class="admin-input admin-color-hex-input" id="hex-color-shadow" value="${this.shadowState.color}">
+          </div>
+          <div class="admin-field-control">
+            <div class="admin-color-field" style="flex: 1;">
+              <div class="admin-color-preview-wrap" style="background-color: ${this.shadowState.color};">
+                <input type="color" class="admin-color-native" id="native-color-shadow" value="${this.shadowState.color}">
               </div>
-              <div style="display: flex; align-items: center; gap: 4px; width: 78px;">
-                <div class="admin-stepper-wrap" style="flex: 1;">
-                  <input type="number" class="admin-range-number" id="num-shadow-opacity" min="0" max="100" step="5" value="${this.shadowState.opacity}">
-                  <div class="admin-stepper-btns">
-                    <button type="button" class="stepper-btn up" data-step-target="num-shadow-opacity" data-dir="1" tabindex="-1">
-                      <svg width="6" height="4" viewBox="0 0 6 4" fill="none"><path d="M1 3L3 1L5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </button>
-                    <button type="button" class="stepper-btn down" data-step-target="num-shadow-opacity" data-dir="-1" tabindex="-1">
-                      <svg width="6" height="4" viewBox="0 0 6 4" fill="none"><path d="M1 1L3 3L5 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </button>
-                  </div>
+              <input type="text" class="admin-input admin-color-hex-input" id="hex-color-shadow" value="${this.shadowState.color}">
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px; width: 78px;">
+              <div class="admin-stepper-wrap" style="flex: 1;">
+                <input type="number" class="admin-range-number" id="num-shadow-opacity" min="0" max="100" step="5" value="${this.shadowState.opacity}">
+                <div class="admin-stepper-btns">
+                  <button type="button" class="stepper-btn up" data-step-target="num-shadow-opacity" data-dir="1" tabindex="-1">
+                    <svg width="6" height="4" viewBox="0 0 6 4" fill="none"><path d="M1 3L3 1L5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                  <button type="button" class="stepper-btn down" data-step-target="num-shadow-opacity" data-dir="-1" tabindex="-1">
+                    <svg width="6" height="4" viewBox="0 0 6 4" fill="none"><path d="M1 1L3 3L5 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
                 </div>
-                <span class="unit-label">%</span>
               </div>
+              <span class="unit-label">%</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Colors (Text, Background, Border) -->
-      <div class="admin-section">
-        <div class="admin-section-header">
-          <div class="section-title-wrap">
-            <span>Colors & Borders</span>
-          </div>
-        </div>
+      <!-- Colors (Text & Background) -->
+      <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-colors') ? 'is-collapsed' : ''} ${hasColorChanged || hasBgChanged ? 'is-modified' : ''}">
+        ${this._renderSectionHeader('sec-colors', 'Color & Background', ['color', 'backgroundColor'], 'style', 'colors')}
 
         <!-- Text Color -->
         <div class="admin-field-row ${hasColorChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Font Color</label>
-            <span class="field-change-dot" data-field-indicator="color" style="display: ${hasColorChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             <div class="admin-color-field">
@@ -1317,7 +1387,6 @@ export class SidePanel {
         <div class="admin-field-row ${hasBgChanged ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Background</label>
-            <span class="field-change-dot" data-field-indicator="backgroundColor" style="display: ${hasBgChanged ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             <div class="admin-color-field">
@@ -1329,6 +1398,11 @@ export class SidePanel {
             <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="backgroundColor" data-tooltip="Reset background" style="display: ${hasBgChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
+      </div>
+
+      <!-- Borders & Corner Radius -->
+      <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-borders') ? 'is-collapsed' : ''} ${hasBorderChanged ? 'is-modified' : ''}">
+        ${this._renderSectionHeader('sec-borders', 'Borders & Corner Radius', ['borderColor', 'borderWidth', 'borderRadius'], 'style', 'borders')}
 
         <!-- Border Color -->
         <div class="admin-field-row ${hasBorderChanged ? 'is-modified' : ''}">
@@ -1800,25 +1874,17 @@ export class SidePanel {
       </div>
 
       <!-- Page & Element Margins (0px to 120px) -->
-      <div class="admin-section ${hasMarginChanged ? 'is-modified' : ''}">
-        <div class="admin-section-header">
-          <div class="section-title-wrap">
-            <span>Margins (0px – 120px)</span>
-            <span class="field-change-dot" data-field-indicator="allMargins" style="display: ${hasMarginChanged ? 'inline-block' : 'none'};">●</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <button type="button" class="admin-btn admin-btn-ghost" id="btn-toggle-link-margin" style="padding: 2px 6px; font-size: 10px;">
-              ${this.linkMargins ? '🔗 Linked' : '🔓 Unlinked'}
-            </button>
-            <button type="button" class="btn-field-reset" data-reset-type="allMargins" data-tooltip="Reset all margins" style="display: ${hasMarginChanged ? 'inline-flex' : 'none'};">↺</button>
-          </div>
-        </div>
+      <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-margins') ? 'is-collapsed' : ''} ${hasMarginChanged ? 'is-modified' : ''}">
+        ${this._renderSectionHeader('sec-margins', 'Margins (0px – 120px)', ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'], 'allMargins', null, `
+          <button type="button" class="admin-btn admin-btn-ghost" id="btn-toggle-link-margin" style="padding: 2px 6px; font-size: 10px;">
+            ${this.linkMargins ? '🔗 Linked' : '🔓 Unlinked'}
+          </button>
+        `)}
 
         <!-- Margin Top -->
         <div class="admin-field-row ${this.isFieldChanged('marginTop') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Margin Top</label>
-            <span class="field-change-dot" data-field-indicator="marginTop" style="display: ${this.isFieldChanged('marginTop') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('margin-top', 0, 120, 1, mt, 'px')}
@@ -1830,7 +1896,6 @@ export class SidePanel {
         <div class="admin-field-row ${this.isFieldChanged('marginBottom') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Margin Bottom</label>
-            <span class="field-change-dot" data-field-indicator="marginBottom" style="display: ${this.isFieldChanged('marginBottom') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('margin-bottom', 0, 120, 1, mb, 'px')}
@@ -1842,7 +1907,6 @@ export class SidePanel {
         <div class="admin-field-row ${this.isFieldChanged('marginLeft') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Margin Left</label>
-            <span class="field-change-dot" data-field-indicator="marginLeft" style="display: ${this.isFieldChanged('marginLeft') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('margin-left', 0, 120, 1, ml, 'px')}
@@ -1854,7 +1918,6 @@ export class SidePanel {
         <div class="admin-field-row ${this.isFieldChanged('marginRight') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Margin Right</label>
-            <span class="field-change-dot" data-field-indicator="marginRight" style="display: ${this.isFieldChanged('marginRight') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('margin-right', 0, 120, 1, mr, 'px')}
@@ -1864,25 +1927,17 @@ export class SidePanel {
       </div>
 
       <!-- Element Paddings (0px to 120px) -->
-      <div class="admin-section ${hasPaddingChanged ? 'is-modified' : ''}">
-        <div class="admin-section-header">
-          <div class="section-title-wrap">
-            <span>Paddings (0px – 120px)</span>
-            <span class="field-change-dot" data-field-indicator="allPaddings" style="display: ${hasPaddingChanged ? 'inline-block' : 'none'};">●</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <button type="button" class="admin-btn admin-btn-ghost" id="btn-toggle-link-padding" style="padding: 2px 6px; font-size: 10px;">
-              ${this.linkPaddings ? '🔗 Linked' : '🔓 Unlinked'}
-            </button>
-            <button type="button" class="btn-field-reset" data-reset-type="allPaddings" data-tooltip="Reset all paddings" style="display: ${hasPaddingChanged ? 'inline-flex' : 'none'};">↺</button>
-          </div>
-        </div>
+      <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-paddings') ? 'is-collapsed' : ''} ${hasPaddingChanged ? 'is-modified' : ''}">
+        ${this._renderSectionHeader('sec-paddings', 'Paddings (0px – 120px)', ['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'], 'allPaddings', null, `
+          <button type="button" class="admin-btn admin-btn-ghost" id="btn-toggle-link-padding" style="padding: 2px 6px; font-size: 10px;">
+            ${this.linkPaddings ? '🔗 Linked' : '🔓 Unlinked'}
+          </button>
+        `)}
 
         <!-- Padding Top -->
         <div class="admin-field-row ${this.isFieldChanged('paddingTop') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Padding Top</label>
-            <span class="field-change-dot" data-field-indicator="paddingTop" style="display: ${this.isFieldChanged('paddingTop') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('padding-top', 0, 120, 1, pt, 'px')}
@@ -1894,7 +1949,6 @@ export class SidePanel {
         <div class="admin-field-row ${this.isFieldChanged('paddingBottom') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Padding Bottom</label>
-            <span class="field-change-dot" data-field-indicator="paddingBottom" style="display: ${this.isFieldChanged('paddingBottom') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('padding-bottom', 0, 120, 1, pb, 'px')}
@@ -1906,7 +1960,6 @@ export class SidePanel {
         <div class="admin-field-row ${this.isFieldChanged('paddingLeft') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Padding Left</label>
-            <span class="field-change-dot" data-field-indicator="paddingLeft" style="display: ${this.isFieldChanged('paddingLeft') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('padding-left', 0, 120, 1, pl, 'px')}
@@ -1918,7 +1971,6 @@ export class SidePanel {
         <div class="admin-field-row ${this.isFieldChanged('paddingRight') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Padding Right</label>
-            <span class="field-change-dot" data-field-indicator="paddingRight" style="display: ${this.isFieldChanged('paddingRight') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('padding-right', 0, 120, 1, pr, 'px')}
@@ -1928,16 +1980,12 @@ export class SidePanel {
       </div>
 
       <!-- Gap (Flex/Grid) -->
-      <div class="admin-section ${hasGapChanged ? 'is-modified' : ''}">
-        <div class="admin-section-header">
-          <div class="section-title-wrap">
-            <span>Flex / Grid Gap</span>
-            <span class="field-change-dot" data-field-indicator="gap" style="display: ${hasGapChanged ? 'inline-block' : 'none'};">●</span>
+      <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-gap') ? 'is-collapsed' : ''} ${hasGapChanged ? 'is-modified' : ''}">
+        ${this._renderSectionHeader('sec-gap', 'Flex / Grid Gap', ['gap'], 'style', 'gap')}
+        <div class="admin-field-row ${hasGapChanged ? 'is-modified' : ''}">
+          <div class="admin-field-label-wrap">
+            <label class="admin-field-label">Gap Spacing</label>
           </div>
-          <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="gap" data-tooltip="Reset gap" style="display: ${hasGapChanged ? 'inline-flex' : 'none'};">↺</button>
-        </div>
-        <div class="admin-field-row">
-          <label class="admin-field-label">Gap Spacing</label>
           <div class="admin-field-control">
             ${this._renderSliderRow('gap', 0, 80, 1, gap, 'px')}
           </div>
@@ -2073,16 +2121,11 @@ export class SidePanel {
     const currentSrc = isImg ? this.activeElement.getAttribute('src') : (this.activeElement.dataset.audio || '');
 
     const hasMediaChanged = this.isFieldChanged('media') || this.isFieldChanged('backgroundImage');
+    const mediaTitle = isAudioTarget ? 'Audio Track Replacement' : (isImg ? 'Image Asset Replacement' : 'Background Image');
 
     return `
-      <div class="admin-section ${hasMediaChanged ? 'is-modified' : ''}">
-        <div class="admin-section-header">
-          <div class="section-title-wrap">
-            <span>${isAudioTarget ? 'Audio Track Replacement' : (isImg ? 'Image Asset Replacement' : 'Background Image')}</span>
-            <span class="field-change-dot" data-field-indicator="media" style="display: ${hasMediaChanged ? 'inline-block' : 'none'};">●</span>
-          </div>
-          <button type="button" class="btn-field-reset" data-reset-type="media" data-tooltip="Reset media" style="display: ${hasMediaChanged ? 'inline-flex' : 'none'};">↺</button>
-        </div>
+      <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-media') ? 'is-collapsed' : ''} ${hasMediaChanged ? 'is-modified' : ''}">
+        ${this._renderSectionHeader('sec-media', mediaTitle, ['media', 'backgroundImage'], 'media')}
 
         <div class="admin-dropzone" id="media-dropzone">
           <input type="file" id="media-file-input" style="display: none;" accept="${isAudioTarget ? 'audio/*' : 'image/*'}">
@@ -2101,7 +2144,9 @@ export class SidePanel {
 
         <!-- Current URL / Audio Preview -->
         <div class="admin-field-row" style="margin-top: 12px; margin-bottom: 0;">
-          <label class="admin-field-label">Current URL</label>
+          <div class="admin-field-label-wrap">
+            <label class="admin-field-label">Current URL</label>
+          </div>
           <div class="admin-field-control">
             <input type="text" class="admin-input" id="media-url-input" value="${currentSrc || ''}" placeholder="https://...">
           </div>
@@ -2217,13 +2262,8 @@ export class SidePanel {
     const hasPropsChanged = propKeys.length > 0;
 
     return `
-      <div class="admin-section ${hasPropsChanged ? 'is-modified' : ''}">
-        <div class="admin-section-header">
-          <div class="section-title-wrap">
-            <span>Custom Data Attributes</span>
-            <span class="field-change-dot" data-field-indicator="props" style="display: ${hasPropsChanged ? 'inline-block' : 'none'};">●</span>
-          </div>
-        </div>
+      <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-props') ? 'is-collapsed' : ''} ${hasPropsChanged ? 'is-modified' : ''}">
+        ${this._renderSectionHeader('sec-props', 'Custom Data Attributes', propKeys.map(k => `data-${k}`), 'props')}
 
         ${propKeys.length === 0 ? `
           <div style="font-size: 11px; color: var(--admin-text-secondary); text-align: center; padding: 12px 0;">
@@ -2236,10 +2276,9 @@ export class SidePanel {
               const kebab = this._camelToKebab(key);
               const isChanged = this.isFieldChanged(`data-${key}`) || this.isFieldChanged(key);
               return `
-                <div class="admin-field-row" style="margin-bottom: 6px;">
+                <div class="admin-field-row ${isChanged ? 'is-modified' : ''}" style="margin-bottom: 6px;">
                   <div class="admin-field-label-wrap">
                     <label class="admin-field-label" style="font-family: var(--admin-mono); font-size: 10px;">data-${kebab}</label>
-                    <span class="field-change-dot" data-field-indicator="data-${key}" style="display: ${isChanged ? 'inline-block' : 'none'};">●</span>
                   </div>
                   <div class="admin-field-control">
                     <input type="text" class="admin-input prop-val-input" data-prop="${key}" value="${val}">
@@ -2253,7 +2292,7 @@ export class SidePanel {
         `}
 
         <!-- Add New Prop -->
-        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--admin-border-subtle);">
+        <div class="admin-add-prop-wrap" style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--admin-border-subtle);">
           <div style="font-size: 10.5px; font-weight: 600; color: #fff; margin-bottom: 8px;">Add New Data Attribute</div>
           <div style="display: flex; gap: 6px;">
             <input type="text" class="admin-input" id="new-prop-name" placeholder="attribute-name" style="flex: 1;">
@@ -2313,16 +2352,99 @@ export class SidePanel {
     this._bindResetButtons(container);
   }
 
+  _renderSectionHeader(sectionId, title, indicatorKeys = [], resetType = null, resetKey = null, extraHtml = '') {
+    let count = 0;
+    indicatorKeys.forEach(k => {
+      if (this.isFieldChanged(k)) count++;
+    });
+
+    const isCollapsed = this.collapsedSections ? this.collapsedSections.has(sectionId) : false;
+
+    return `
+      <div class="admin-section-header" data-section-id="${sectionId}" data-indicator-keys="${indicatorKeys.join(',')}">
+        <div class="section-title-wrap">
+          <button type="button" class="btn-section-toggle" data-section-toggle="${sectionId}" title="${isCollapsed ? 'Expand section' : 'Collapse section'}">
+            <svg class="chevron-icon ${isCollapsed ? 'is-collapsed' : ''}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <span class="section-title-text">${title}</span>
+          <span class="section-change-badge" style="display: ${count > 0 ? 'inline-flex' : 'none'};">${count}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          ${extraHtml}
+          ${resetType ? `
+            <button type="button" class="btn-field-reset btn-section-reset" data-reset-type="${resetType}" ${resetKey ? `data-reset-key="${resetKey}"` : ''} data-tooltip="Reset section" style="display: ${count > 0 ? 'inline-flex' : 'none'};">↺ Reset</button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }
+
   // ==========================================================================
   // HELPERS
   // ==========================================================================
   _bindResetButtons(container) {
+    // 1. Reset buttons click
     container.querySelectorAll('.btn-field-reset').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const type = btn.dataset.resetType;
         const key = btn.dataset.resetKey;
         this.resetProperty(type, key);
+      });
+    });
+
+    // 2. Double-click on setting names (.admin-field-label) resets that parameter
+    container.querySelectorAll('.admin-field-row').forEach(row => {
+      const label = row.querySelector('.admin-field-label');
+      const resetBtn = row.querySelector('.btn-field-reset');
+      if (label) {
+        label.style.cursor = 'pointer';
+        label.title = 'Double-click to reset setting';
+        label.addEventListener('dblclick', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (resetBtn) {
+            resetBtn.click();
+          } else {
+            const type = row.dataset.resetType;
+            const key = row.dataset.resetKey;
+            if (type) {
+              this.resetProperty(type, key);
+            }
+          }
+        });
+      }
+    });
+
+    // 3. Section collapse/expand binding
+    this._bindSectionToggles(container);
+  }
+
+  _bindSectionToggles(container) {
+    if (!this.collapsedSections) this.collapsedSections = new Set();
+
+    container.querySelectorAll('.admin-section-header').forEach(headerEl => {
+      const sectionId = headerEl.dataset.sectionId;
+      const sectionEl = headerEl.closest('.admin-section');
+      if (!sectionEl) return;
+
+      headerEl.style.cursor = 'pointer';
+      headerEl.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-field-reset, .btn-section-reset, a, input, select')) {
+          return;
+        }
+
+        const isNowCollapsed = sectionEl.classList.toggle('is-collapsed');
+        if (isNowCollapsed) {
+          this.collapsedSections.add(sectionId);
+        } else {
+          this.collapsedSections.delete(sectionId);
+        }
+
+        const chevron = headerEl.querySelector('.chevron-icon');
+        if (chevron) {
+          chevron.classList.toggle('is-collapsed', isNowCollapsed);
+        }
       });
     });
   }

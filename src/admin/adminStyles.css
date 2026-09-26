@@ -2,13 +2,16 @@
    Eko In-Context Visual Editor (Design Mode) — Figma / DevTools UI Architecture
    ========================================================================== */
 
-:root {
+:root,
+html[data-admin-theme="dark"],
+.admin-workspace[data-theme="dark"] {
   --admin-bg-base: #090a0f;
   --admin-bg-surface: #12141f;
   --admin-bg-card: #181b2a;
   --admin-bg-elevated: #202438;
   --admin-border-subtle: rgba(255, 255, 255, 0.08);
   --admin-border-strong: rgba(255, 255, 255, 0.16);
+  --admin-border-focus: #007fff;
   --admin-accent-blue: #007fff;
   --admin-accent-hover: #1a8cff;
   --admin-accent-cyan: #00e5ff;
@@ -23,7 +26,34 @@
   --admin-radius-lg: 12px;
   --admin-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Work Sans", "DM Sans", sans-serif;
   --admin-mono: "SF Mono", Monaco, "Cascadia Code", "Courier New", monospace;
-  --admin-sidebar-width: 380px;
+  --admin-sidebar-width: 415px;
+  --admin-topbar-height: 54px;
+}
+
+html[data-admin-theme="light"],
+.admin-workspace[data-theme="light"] {
+  --admin-bg-base: #f0f3f8;
+  --admin-bg-surface: #ffffff;
+  --admin-bg-card: #f8fafc;
+  --admin-bg-elevated: #e2e8f0;
+  --admin-border-subtle: #e2e8f0;
+  --admin-border-strong: #cbd5e1;
+  --admin-border-focus: #007fff;
+  --admin-accent-blue: #007fff;
+  --admin-accent-hover: #0066cc;
+  --admin-accent-cyan: #0284c7;
+  --admin-accent-magenta: #c026d3;
+  --admin-accent-green: #16a34a;
+  --admin-accent-amber: #d97706;
+  --admin-text-primary: #0f172a;
+  --admin-text-secondary: #475569;
+  --admin-text-muted: #94a3b8;
+  --admin-radius-sm: 4px;
+  --admin-radius-md: 8px;
+  --admin-radius-lg: 12px;
+  --admin-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Work Sans", "DM Sans", sans-serif;
+  --admin-mono: "SF Mono", Monaco, "Cascadia Code", "Courier New", monospace;
+  --admin-sidebar-width: 415px;
   --admin-topbar-height: 54px;
 }
 
@@ -79,7 +109,7 @@
   font-weight: 700;
   font-size: 14px;
   letter-spacing: 0.06em;
-  color: #ffffff;
+  color: var(--admin-text-primary);
 }
 
 .admin-breadcrumb {
@@ -411,10 +441,14 @@
   right: 4px;
   width: 7px;
   height: 7px;
-  background: var(--admin-accent-magenta);
+  background: #FFFF00;
   border-radius: 50%;
-  box-shadow: 0 0 8px var(--admin-accent-magenta);
-  animation: pulseBlob 1.8s infinite;
+  box-shadow: 0 0 8px rgba(255, 255, 0, 0.85);
+  animation: none !important;
+}
+
+.admin-btn-publish.is-publishing::after {
+  display: none !important;
 }
 
 @keyframes pulseBlob {
@@ -763,7 +797,7 @@
 .admin-sidepanel-title strong {
   font-size: 13px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--admin-text-primary);
 }
 
 .admin-sidepanel-title span {
@@ -811,12 +845,13 @@
 /* Tab Panels Content Scroll Container */
 .admin-tab-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 14px;
+  padding: 14px 14px 90px 14px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   box-sizing: border-box;
   width: 100%;
 }
@@ -832,19 +867,50 @@
   border-radius: 3px;
 }
 
-/* Section Group in Inspector */
+/* Section Group in Inspector — Subtle Visual Card Grouping with Fine Dividing Lines */
 .admin-section {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--admin-border-subtle);
+  gap: 11px;
+  padding: 13px 14px 14px 14px;
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
   width: 100%;
   box-sizing: border-box;
+  margin-bottom: 0px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  overflow: visible;
+  flex-shrink: 0;
 }
 
 .admin-section:last-child {
-  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.admin-section.is-modified {
+  border-color: rgba(0, 229, 255, 0.4);
+  background: rgba(0, 229, 255, 0.02);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.08);
+}
+
+.admin-section.is-collapsed {
+  gap: 0;
+  padding-bottom: 12px;
+}
+
+.admin-section.is-collapsed > :not(.admin-section-header) {
+  display: none !important;
+}
+
+.admin-section-header .chevron-icon {
+  transition: transform 0.2s ease;
+}
+
+.admin-section-header .chevron-icon.is-collapsed {
+  transform: rotate(-90deg);
 }
 
 .admin-section-header {
@@ -855,9 +921,18 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--admin-text-secondary);
+  color: var(--admin-text-primary);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--admin-border-subtle);
+  margin-bottom: 2px;
   width: 100%;
   box-sizing: border-box;
+}
+
+.admin-section-header .section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .admin-field-row {
@@ -869,14 +944,26 @@
   box-sizing: border-box;
 }
 
+.admin-field-row + .admin-field-row {
+  padding-top: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+html[data-admin-theme="light"] .admin-field-row + .admin-field-row,
+.admin-workspace[data-theme="light"] .admin-field-row + .admin-field-row {
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
 .admin-field-label {
-  font-size: 11.5px;
-  color: var(--admin-text-secondary);
-  flex: 0 0 92px;
-  max-width: 92px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--admin-text-primary);
+  flex: 0 0 96px;
+  max-width: 96px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  -webkit-font-smoothing: antialiased;
 }
 
 .admin-field-control {
@@ -899,9 +986,11 @@
   color: var(--admin-text-primary);
   font-family: var(--admin-font);
   font-size: 12px;
+  font-weight: 400;
   padding: 6px 9px;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  -webkit-font-smoothing: antialiased;
 }
 
 .admin-input:focus,
@@ -915,6 +1004,26 @@
   resize: vertical;
   min-height: 64px;
   line-height: 1.45;
+  scrollbar-width: thin;
+  scrollbar-color: var(--admin-border-strong) transparent;
+}
+
+.admin-textarea::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.admin-textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-textarea::-webkit-scrollbar-thumb {
+  background: var(--admin-border-strong);
+  border-radius: 2px;
+}
+
+.admin-textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--admin-accent-cyan);
 }
 
 /* Alignment & Toggle Toolbars */
@@ -978,13 +1087,25 @@
   height: 14px;
   border-radius: 50%;
   background: var(--admin-accent-blue);
-  border: 2px solid #ffffff;
+  border: none;
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
   transition: transform 0.1s ease;
 }
 
-.admin-range-input::-webkit-slider-thumb:hover {
+.admin-range-input::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--admin-accent-blue);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s ease;
+}
+
+.admin-range-input::-webkit-slider-thumb:hover,
+.admin-range-input::-moz-range-thumb:hover {
   transform: scale(1.2);
 }
 
@@ -1324,7 +1445,7 @@
 .admin-dropzone-title {
   font-size: 12px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--admin-text-primary);
 }
 
 .admin-dropzone-desc {
@@ -1537,7 +1658,8 @@
 /* --------------------------------------------------------------------------
    Change Indicators & Badges
    -------------------------------------------------------------------------- */
-.tab-change-badge {
+.tab-change-badge,
+.section-change-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1545,7 +1667,7 @@
   height: 16px;
   padding: 0 4px;
   background: var(--admin-accent-blue);
-  color: #ffffff;
+  color: #ffffff !important;
   border-radius: 9999px;
   font-size: 9.5px;
   font-weight: 700;
@@ -1553,6 +1675,9 @@
   line-height: 1;
   margin-left: 4px;
   box-shadow: 0 1px 4px rgba(0, 127, 255, 0.4);
+}
+
+.tab-change-badge {
   animation: pulseBadge 0.25s ease;
 }
 
@@ -1563,8 +1688,8 @@
 }
 
 .admin-field-label-wrap {
-  flex: 0 0 92px;
-  max-width: 92px;
+  flex: 0 0 88px;
+  max-width: 88px;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -1577,14 +1702,129 @@
   gap: 6px;
 }
 
-.field-change-dot {
-  color: var(--admin-accent-cyan);
-  font-size: 9px;
-  line-height: 1;
+/* Chevron Collapse/Expand Button at far right of section header */
+.btn-section-toggle {
   display: inline-flex;
   align-items: center;
-  text-shadow: 0 0 6px var(--admin-accent-cyan);
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--admin-text-muted, #5e6480);
+  cursor: pointer;
+  border-radius: var(--admin-radius-sm);
+  transition: all 0.15s ease;
   flex-shrink: 0;
+}
+
+.btn-section-toggle:hover {
+  color: var(--admin-text-secondary, #9aa0b8);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.btn-section-toggle .chevron-icon {
+  stroke: var(--admin-text-muted, #5e6480);
+  transition: transform 0.2s ease, stroke 0.15s ease;
+}
+
+.btn-section-toggle:hover .chevron-icon {
+  stroke: var(--admin-text-secondary, #9aa0b8);
+}
+
+.admin-field-row.is-modified .admin-field-label,
+.admin-field-label.is-modified {
+  color: var(--admin-text-primary) !important;
+  position: relative !important;
+  border-bottom: none !important;
+  padding-bottom: 4px !important;
+  display: inline-block !important;
+  width: max-content !important;
+  max-width: 100% !important;
+}
+
+/* Static, dynamically sized underline sitting below descenders ('p', 'g', 'y') for uniform weight */
+.admin-field-row.is-modified .admin-field-label::after,
+.admin-field-label.is-modified::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: 1px;
+  background-color: #FFFF00 !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+/* Light / Bright Mode Underline matching light mode slider change color */
+html[data-admin-theme="light"] .admin-field-row.is-modified .admin-field-label::after,
+html[data-admin-theme="light"] .admin-field-label.is-modified::after,
+.admin-workspace[data-theme="light"] .admin-field-row.is-modified .admin-field-label::after,
+.admin-workspace[data-theme="light"] .admin-field-label.is-modified::after {
+  background-color: #d97706 !important;
+  box-shadow: none !important;
+}
+
+/* Hide dots since setting names are underlined */
+.field-change-dot {
+  display: none !important;
+}
+
+/* Adjusted/Moved Sliders turn Yellow to indicate change - Clean solid yellow, no glow */
+.admin-field-row.is-modified .admin-range-input::-webkit-slider-thumb {
+  background: #FFFF00 !important;
+  box-shadow: none !important;
+}
+
+.admin-field-row.is-modified .admin-range-input::-moz-range-thumb {
+  background: #FFFF00 !important;
+  box-shadow: none !important;
+}
+
+.admin-field-row.is-modified .admin-range-input {
+  background: rgba(255, 255, 0, 0.25) !important;
+  box-shadow: none !important;
+}
+
+.admin-field-row.is-modified .admin-range-number {
+  border-color: #FFFF00 !important;
+  color: #FFFF00 !important;
+  background: #252200 !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* Light / Bright Mode Overrides for changed sliders & numbers for maximum readability */
+html[data-admin-theme="light"] .admin-field-row.is-modified .admin-range-input::-webkit-slider-thumb,
+.admin-workspace[data-theme="light"] .admin-field-row.is-modified .admin-range-input::-webkit-slider-thumb {
+  background: #d97706 !important;
+  box-shadow: none !important;
+}
+
+html[data-admin-theme="light"] .admin-field-row.is-modified .admin-range-input::-moz-range-thumb,
+.admin-workspace[data-theme="light"] .admin-field-row.is-modified .admin-range-input::-moz-range-thumb {
+  background: #d97706 !important;
+  box-shadow: none !important;
+}
+
+html[data-admin-theme="light"] .admin-field-row.is-modified .admin-range-input,
+.admin-workspace[data-theme="light"] .admin-field-row.is-modified .admin-range-input {
+  background: rgba(217, 119, 6, 0.22) !important;
+  box-shadow: none !important;
+}
+
+html[data-admin-theme="light"] .admin-field-row.is-modified .admin-range-number,
+.admin-workspace[data-theme="light"] .admin-field-row.is-modified .admin-range-number {
+  border-color: #d97706 !important;
+  color: #b45309 !important;
+  background: #fef3c7 !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
 }
 
 .btn-field-reset {
@@ -1865,7 +2105,7 @@ input[type=number] {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  color: #fff;
+  color: var(--admin-text-primary);
 }
 
 .admin-modal-body {
@@ -1874,13 +2114,13 @@ input[type=number] {
 }
 
 .admin-json-viewer {
-  background: #090a0f;
+  background: var(--admin-bg-base);
   border: 1px solid var(--admin-border-subtle);
   border-radius: var(--admin-radius-md);
   padding: 16px;
   font-family: var(--admin-mono);
   font-size: 12px;
-  color: #79c0ff;
+  color: var(--admin-accent-blue);
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-all;
@@ -1924,7 +2164,7 @@ input[type=number] {
   padding: 2px 5px;
   border-radius: 8px;
   background: rgba(0, 240, 255, 0.2);
-  color: #00f0ff;
+  color: var(--admin-accent-cyan);
   border: 1px solid rgba(0, 240, 255, 0.3);
   margin-left: 4px;
 }
@@ -1944,15 +2184,15 @@ input[type=number] {
   justify-content: space-between;
   gap: 16px;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--admin-bg-card);
   border: 1px solid var(--admin-border-subtle);
   border-radius: var(--admin-radius-md);
   transition: all 0.15s ease;
 }
 
 .history-item-card:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.12);
+  background: var(--admin-bg-elevated);
+  border-color: var(--admin-border-strong);
 }
 
 .history-item-card.is-active-checkpoint {
@@ -1978,7 +2218,7 @@ input[type=number] {
 .history-item-label {
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
+  color: var(--admin-text-primary);
 }
 
 .history-item-badge {

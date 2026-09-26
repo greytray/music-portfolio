@@ -22,6 +22,7 @@ export class AdminApp {
     this.activeDeviceMode = 'desktop'; // 'desktop' | 'tablet' | 'mobile'
     this.currentMode = 'interactive'; // 'interactive' (Normal Mode, default) | 'select' (Inspect Mode)
     this.sidebarPosition = localStorage.getItem('eko_admin_sidebar_pos') || 'right'; // 'right' | 'left'
+    this.theme = localStorage.getItem('eko_admin_theme') || 'dark'; // 'dark' | 'light'
     this.isSidebarCollapsed = false;
     this.rootElement = null;
     this.toastTimer = null;
@@ -34,9 +35,13 @@ export class AdminApp {
     const existing = document.getElementById('eko-admin-workspace');
     if (existing) existing.remove();
 
+    // Sync theme to root html element
+    document.documentElement.setAttribute('data-admin-theme', this.theme);
+
     this.rootElement = document.createElement('div');
     this.rootElement.id = 'eko-admin-workspace';
     this.rootElement.className = 'admin-workspace';
+    this.rootElement.setAttribute('data-theme', this.theme);
 
     this.rootElement.innerHTML = `
       <!-- Top Navigation Toolbar -->
@@ -86,6 +91,17 @@ export class AdminApp {
         </div>
 
         <div class="admin-topbar-right">
+          <!-- Light / Dark Mode Toggle Button -->
+          <button type="button" class="admin-btn admin-btn-ghost" id="btn-toggle-theme" data-tooltip="Toggle Light / Dark Mode">
+            <span id="theme-icon-container" style="display: inline-flex; align-items: center; justify-content: center;">
+              ${this.theme === 'dark'
+                ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+                : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+              }
+            </span>
+            <span id="theme-mode-label">${this.theme === 'dark' ? 'Dark' : 'Light'}</span>
+          </button>
+
           <!-- Sidebar Position Switch (Left / Right) with Stacked Arrows Symbol -->
           <button type="button" class="admin-btn admin-btn-ghost" id="btn-toggle-sidebar-pos" data-tooltip="Dock Sidebar Left / Right">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -434,7 +450,46 @@ export class AdminApp {
       }, 280);
     });
 
-    // 3. Sidebar Dock Switch
+    // 3. Theme Toggle Button (Light <-> Dark)
+    const themeToggleBtn = this.rootElement.querySelector('#btn-toggle-theme');
+    const themeIconContainer = this.rootElement.querySelector('#theme-icon-container');
+    const themeModeLabel = this.rootElement.querySelector('#theme-mode-label');
+
+    const updateThemeUI = (theme) => {
+      this.theme = theme;
+      localStorage.setItem('eko_admin_theme', theme);
+      document.documentElement.setAttribute('data-admin-theme', theme);
+      this.rootElement.setAttribute('data-theme', theme);
+
+      if (themeIconContainer) {
+        themeIconContainer.innerHTML = theme === 'dark'
+          ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`
+          : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+      }
+
+      if (themeModeLabel) {
+        themeModeLabel.textContent = theme === 'dark' ? 'Dark' : 'Light';
+      }
+
+      if (iframe) {
+        try {
+          const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+          if (iDoc && iDoc.documentElement) {
+            iDoc.documentElement.setAttribute('data-admin-theme', theme);
+          }
+        } catch (_) {}
+      }
+    };
+
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener('click', () => {
+        const nextTheme = this.theme === 'dark' ? 'light' : 'dark';
+        updateThemeUI(nextTheme);
+        this._showToast(`Switched to ${nextTheme === 'dark' ? 'Dark' : 'Light'} theme`);
+      });
+    }
+
+    // 4. Sidebar Dock Switch
     const toggleSidebarBtn = this.rootElement.querySelector('#btn-toggle-sidebar-pos');
     if (toggleSidebarBtn) {
       toggleSidebarBtn.addEventListener('click', () => {
@@ -442,7 +497,7 @@ export class AdminApp {
       });
     }
 
-    // 4. Sidebar Expand Tab (when collapsed)
+    // 5. Sidebar Expand Tab (when collapsed)
     const expandTabBtn = this.rootElement.querySelector('#btn-expand-sidebar-tab');
     if (expandTabBtn) {
       expandTabBtn.addEventListener('click', () => {
@@ -450,7 +505,7 @@ export class AdminApp {
       });
     }
 
-    // 5. Publish button & Deployment Status Lifecycle (GitHub commit/push deployment indicator)
+    // 6. Publish button & Deployment Status Lifecycle (GitHub commit/push deployment indicator)
     const publishBtn = this.rootElement.querySelector('#btn-publish-changes');
     const publishLabel = this.rootElement.querySelector('#btn-publish-label');
     const publishIconDefault = this.rootElement.querySelector('#publish-icon-default');

