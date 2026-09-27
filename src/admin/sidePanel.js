@@ -795,107 +795,116 @@ export class SidePanel {
     const tabContent = this.container.querySelector('#admin-tab-content');
     if (!tabContent) return;
 
-    tabContent.querySelectorAll('.admin-field-row, .admin-section').forEach(containerEl => {
-      const allResetBtns = containerEl.querySelectorAll('.btn-field-reset');
-      const allDots = containerEl.querySelectorAll('.field-change-dot');
+    // 1. Sync all field reset buttons
+    const allResetBtns = tabContent.querySelectorAll('.btn-field-reset');
+    allResetBtns.forEach(btn => {
+      const type = btn.dataset.resetType;
+      const key = btn.dataset.resetKey;
+      let isChanged = false;
 
-      allResetBtns.forEach(btn => {
-        const type = btn.dataset.resetType;
-        const key = btn.dataset.resetKey;
-        let isChanged = false;
-
-        if (type === 'text') {
-          isChanged = this.isFieldChanged('text');
-        } else if (type === 'shadow') {
-          isChanged = this.isFieldChanged('boxShadow') || this.isFieldChanged('textShadow');
-        } else if (type === 'allMargins') {
-          isChanged = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'].some(k => this.isFieldChanged(k));
-        } else if (type === 'allPaddings') {
-          isChanged = ['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'].some(k => this.isFieldChanged(k));
-        } else if (type === 'media') {
-          isChanged = this.isFieldChanged('media') || this.isFieldChanged('backgroundImage');
-        } else if (type === 'dataAttr') {
-          isChanged = this.isFieldChanged(`data-${key}`) || this.isFieldChanged(key);
-        } else if (type === 'style') {
-          if (key === 'textTransform' || key === 'appearance') {
-            isChanged = this.isFieldChanged('textTransform') || this.isFieldChanged('fontVariant');
-          } else {
-            isChanged = this.isFieldChanged(key);
-          }
+      if (type === 'text' || key === 'text') {
+        isChanged = this.isFieldChanged('text');
+      } else if (type === 'typography' || key === 'typography') {
+        isChanged = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textTransform', 'fontVariant', 'textAlign', 'fontStyle'].some(k => this.isFieldChanged(k));
+      } else if (type === 'colors' || key === 'colors') {
+        isChanged = this.isFieldChanged('color') || this.isFieldChanged('backgroundColor');
+      } else if (type === 'borders' || key === 'borders') {
+        isChanged = this.isFieldChanged('borderColor') || this.isFieldChanged('borderWidth') || this.isFieldChanged('borderRadius');
+      } else if (type === 'shadow' || key === 'shadow') {
+        isChanged = this.isFieldChanged('boxShadow') || this.isFieldChanged('textShadow');
+      } else if (type === 'allMargins' || key === 'allMargins' || key === 'margins') {
+        isChanged = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'].some(k => this.isFieldChanged(k));
+      } else if (type === 'allPaddings' || key === 'allPaddings' || key === 'paddings') {
+        isChanged = ['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'].some(k => this.isFieldChanged(k));
+      } else if (type === 'media' || key === 'media') {
+        isChanged = this.isFieldChanged('media') || this.isFieldChanged('src') || this.isFieldChanged('audio') || this.isFieldChanged('backgroundImage');
+      } else if (type === 'dataAttr') {
+        isChanged = this.isFieldChanged(`data-${key}`) || this.isFieldChanged(key);
+      } else if (type === 'style') {
+        if (key === 'textTransform' || key === 'appearance') {
+          isChanged = this.isFieldChanged('textTransform') || this.isFieldChanged('fontVariant');
+        } else if (key) {
+          isChanged = this.isFieldChanged(key);
         }
+      }
 
-        btn.style.display = isChanged ? 'inline-flex' : 'none';
-      });
+      btn.style.display = isChanged ? 'inline-flex' : 'none';
+    });
 
-      allDots.forEach(dotEl => {
-        const fieldKey = dotEl.dataset.fieldIndicator;
-        let isChanged = false;
-        if (fieldKey === 'text') isChanged = this.isFieldChanged('text');
-        else if (fieldKey === 'shadow') isChanged = this.isFieldChanged('boxShadow') || this.isFieldChanged('textShadow');
-        else if (fieldKey === 'allMargins') isChanged = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'].some(k => this.isFieldChanged(k));
-        else if (fieldKey === 'allPaddings') isChanged = ['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'].some(k => this.isFieldChanged(k));
-        else if (fieldKey === 'media') isChanged = this.isFieldChanged('media') || this.isFieldChanged('backgroundImage');
-        else if (fieldKey === 'appearance') isChanged = this.isFieldChanged('textTransform') || this.isFieldChanged('fontVariant');
-        else if (fieldKey && fieldKey.startsWith('data-')) isChanged = this.isFieldChanged(fieldKey);
-        else if (fieldKey) isChanged = this.isFieldChanged(fieldKey);
+    // 2. Sync all field rows and their labels
+    tabContent.querySelectorAll('.admin-field-row').forEach(rowEl => {
+      let isRowChanged = false;
 
-        dotEl.style.display = isChanged ? 'inline-block' : 'none';
-      });
+      // Check reset button inside row
+      const rowResetBtn = rowEl.querySelector('.btn-field-reset:not(.btn-section-reset)');
+      if (rowResetBtn && rowResetBtn.style.display !== 'none') {
+        isRowChanged = true;
+      }
 
-      if (containerEl.classList.contains('admin-field-row')) {
-        const rowBtn = containerEl.querySelector('.btn-field-reset');
-        let isRowChanged = rowBtn && rowBtn.style.display !== 'none';
+      // Check specific controls inside row
+      if (!isRowChanged) {
+        if (rowEl.querySelector('#ctrl-font-family') && this.isFieldChanged('fontFamily')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-font-size') && this.isFieldChanged('fontSize')) isRowChanged = true;
+        else if (rowEl.querySelector('#ctrl-font-weight') && this.isFieldChanged('fontWeight')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-line-height') && this.isFieldChanged('lineHeight')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-letter-spacing') && this.isFieldChanged('letterSpacing')) isRowChanged = true;
+        else if (rowEl.querySelector('.admin-appearance-group') && (this.isFieldChanged('textTransform') || this.isFieldChanged('fontVariant'))) isRowChanged = true;
+        else if (rowEl.querySelector('[data-align]') && this.isFieldChanged('textAlign')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-margin-top') && this.isFieldChanged('marginTop')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-margin-bottom') && this.isFieldChanged('marginBottom')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-margin-left') && this.isFieldChanged('marginLeft')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-margin-right') && this.isFieldChanged('marginRight')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-padding-top') && this.isFieldChanged('paddingTop')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-padding-bottom') && this.isFieldChanged('paddingBottom')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-padding-left') && this.isFieldChanged('paddingLeft')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-padding-right') && this.isFieldChanged('paddingRight')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-gap') && this.isFieldChanged('gap')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-border-width') && this.isFieldChanged('borderWidth')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-border-radius') && this.isFieldChanged('borderRadius')) isRowChanged = true;
+        else if (rowEl.querySelector('#hex-color-text') && this.isFieldChanged('color')) isRowChanged = true;
+        else if (rowEl.querySelector('#hex-color-bg') && this.isFieldChanged('backgroundColor')) isRowChanged = true;
+        else if (rowEl.querySelector('#hex-color-border') && this.isFieldChanged('borderColor')) isRowChanged = true;
+        else if (rowEl.querySelector('#ctrl-text-content') && this.isFieldChanged('text')) isRowChanged = true;
+        else if (rowEl.closest('.admin-section[data-section-id="sec-shadow"]') && (this.isFieldChanged('boxShadow') || this.isFieldChanged('textShadow'))) isRowChanged = true;
+      }
 
-        if (!isRowChanged) {
-          const type = containerEl.dataset.resetType;
-          const key = containerEl.dataset.resetKey;
-          if (type === 'style' && key) {
-            if (key === 'textTransform' || key === 'appearance') {
-              isRowChanged = this.isFieldChanged('textTransform') || this.isFieldChanged('fontVariant');
-            } else {
-              isRowChanged = this.isFieldChanged(key);
-            }
-          } else if (type === 'shadow') {
-            isRowChanged = this.isFieldChanged('boxShadow') || this.isFieldChanged('textShadow');
-          } else if (type === 'allMargins') {
-            isRowChanged = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'].some(k => this.isFieldChanged(k));
-          } else if (type === 'allPaddings') {
-            isRowChanged = ['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'].some(k => this.isFieldChanged(k));
-          }
-        }
+      const labelEl = rowEl.querySelector('.admin-field-label');
+      if (isRowChanged) {
+        rowEl.classList.add('is-modified');
+        if (labelEl) labelEl.classList.add('is-modified');
+      } else {
+        rowEl.classList.remove('is-modified');
+        if (labelEl) labelEl.classList.remove('is-modified');
+      }
+    });
 
-        if (isRowChanged) {
-          containerEl.classList.add('is-modified');
-        } else {
-          containerEl.classList.remove('is-modified');
-        }
-      } else if (containerEl.classList.contains('admin-section')) {
-        const headerEl = containerEl.querySelector('.admin-section-header');
-        let count = 0;
-        if (headerEl && headerEl.dataset.indicatorKeys) {
-          const keys = headerEl.dataset.indicatorKeys.split(',').filter(Boolean);
-          keys.forEach(k => {
-            if (this.isFieldChanged(k)) count++;
-          });
-        }
+    // 3. Sync section headers and section change badges
+    tabContent.querySelectorAll('.admin-section').forEach(sectionEl => {
+      const headerEl = sectionEl.querySelector('.admin-section-header');
+      let count = 0;
+      if (headerEl && headerEl.dataset.indicatorKeys) {
+        const keys = headerEl.dataset.indicatorKeys.split(',').filter(Boolean);
+        keys.forEach(k => {
+          if (this.isFieldChanged(k)) count++;
+        });
+      }
 
-        const badgeEl = containerEl.querySelector('.section-change-badge');
-        if (badgeEl) {
-          badgeEl.textContent = count;
-          badgeEl.style.display = count > 0 ? 'inline-flex' : 'none';
-        }
+      const badgeEl = sectionEl.querySelector('.section-change-badge');
+      if (badgeEl) {
+        badgeEl.textContent = count;
+        badgeEl.style.display = count > 0 ? 'inline-flex' : 'none';
+      }
 
-        const sectionResetBtn = containerEl.querySelector('.btn-section-reset');
-        if (sectionResetBtn) {
-          sectionResetBtn.style.display = count > 0 ? 'inline-flex' : 'none';
-        }
+      const sectionResetBtn = sectionEl.querySelector('.btn-section-reset');
+      if (sectionResetBtn) {
+        sectionResetBtn.style.display = count > 0 ? 'inline-flex' : 'none';
+      }
 
-        const hasModifiedInside = count > 0 || containerEl.querySelector('.admin-field-row.is-modified, .btn-field-reset[style*="inline-flex"]') !== null;
-        if (hasModifiedInside) {
-          containerEl.classList.add('is-modified');
-        } else {
-          containerEl.classList.remove('is-modified');
-        }
+      const hasModifiedInside = count > 0 || sectionEl.querySelector('.admin-field-row.is-modified') !== null;
+      if (hasModifiedInside) {
+        sectionEl.classList.add('is-modified');
+      } else {
+        sectionEl.classList.remove('is-modified');
       }
     });
 
@@ -934,7 +943,7 @@ export class SidePanel {
     const selector = this.activeMeta.selector;
     const baseline = this.elementBaselines.get(selector);
 
-    if (type === 'text') {
+    if (type === 'text' || key === 'text') {
       if (baseline) {
         if (baseline.isTextOnly) {
           this.activeElement.textContent = baseline.text;
@@ -945,7 +954,7 @@ export class SidePanel {
       if (this.exportSystem) {
         this.exportSystem.removeChange(selector, 'text', 'text', 'all');
       }
-    } else if (type === 'typography') {
+    } else if (type === 'typography' || key === 'typography') {
       const keys = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textTransform', 'fontVariant', 'textAlign', 'fontStyle'];
       keys.forEach(k => {
         this.activeElement.style.removeProperty(this._camelToKebab(k));
@@ -953,21 +962,21 @@ export class SidePanel {
           this.exportSystem.removeChange(selector, 'style', k, 'all');
         }
       });
-    } else if (type === 'colors') {
+    } else if (type === 'colors' || key === 'colors') {
       ['color', 'backgroundColor'].forEach(k => {
         this.activeElement.style.removeProperty(this._camelToKebab(k));
         if (this.exportSystem) {
           this.exportSystem.removeChange(selector, 'style', k, 'all');
         }
       });
-    } else if (type === 'borders') {
+    } else if (type === 'borders' || key === 'borders') {
       ['borderColor', 'borderWidth', 'borderRadius'].forEach(k => {
         this.activeElement.style.removeProperty(this._camelToKebab(k));
         if (this.exportSystem) {
           this.exportSystem.removeChange(selector, 'style', k, 'all');
         }
       });
-    } else if (type === 'shadow') {
+    } else if (type === 'shadow' || key === 'shadow') {
       this.activeElement.style.removeProperty('text-shadow');
       this.activeElement.style.removeProperty('box-shadow');
       this.shadowState = { type: 'text', x: 0, y: 0, blur: 0, spread: 0, color: '#00e5ff', opacity: 0 };
@@ -975,14 +984,14 @@ export class SidePanel {
         this.exportSystem.removeChange(selector, 'style', 'textShadow', 'all');
         this.exportSystem.removeChange(selector, 'style', 'boxShadow', 'all');
       }
-    } else if (type === 'allMargins') {
+    } else if (type === 'allMargins' || key === 'allMargins' || key === 'margins') {
       ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'].forEach(prop => {
         this.activeElement.style.removeProperty(this._camelToKebab(prop));
         if (this.exportSystem) {
           this.exportSystem.removeChange(selector, 'style', prop, 'all');
         }
       });
-    } else if (type === 'allPaddings') {
+    } else if (type === 'allPaddings' || key === 'allPaddings' || key === 'paddings') {
       ['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight'].forEach(prop => {
         this.activeElement.style.removeProperty(this._camelToKebab(prop));
         if (this.exportSystem) {
@@ -1003,7 +1012,7 @@ export class SidePanel {
           this.exportSystem.removeChange(selector, 'style', key, 'all');
         }
       }
-    } else if (type === 'media') {
+    } else if (type === 'media' || key === 'media') {
       if (this.activeElement.tagName === 'IMG') {
         if (baseline && baseline.dataset && baseline.dataset.src) {
           this.activeElement.setAttribute('src', baseline.dataset.src);
@@ -1024,7 +1033,7 @@ export class SidePanel {
       if (this.exportSystem) {
         this.exportSystem.removeChange(selector, 'dataAttr', key, 'all');
       }
-    } else if (type === 'dataAttrAll' || type === 'props') {
+    } else if (type === 'dataAttrAll' || type === 'props' || key === 'dataAttrAll' || key === 'props') {
       if (baseline && baseline.dataset) {
         Object.keys(this.activeElement.dataset).forEach(k => delete this.activeElement.dataset[k]);
         Object.entries(baseline.dataset).forEach(([k, v]) => {
@@ -1138,7 +1147,7 @@ export class SidePanel {
 
       <!-- Typography -->
       <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-typography') ? 'is-collapsed' : ''} ${hasFontFamilyChanged || hasFontSizeChanged || hasFontWeightChanged || hasLineHeightChanged || hasLetterSpacingChanged || hasAppearanceChanged || hasTextAlignChanged ? 'is-modified' : ''}">
-        ${this._renderSectionHeader('sec-typography', 'Typography', ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textTransform', 'fontVariant', 'textAlign'], 'style', 'typography')}
+        ${this._renderSectionHeader('sec-typography', 'Typography', ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textTransform', 'fontVariant', 'textAlign'], 'typography')}
 
         <!-- Font Family -->
         <div class="admin-field-row ${hasFontFamilyChanged ? 'is-modified' : ''}">
@@ -1365,7 +1374,7 @@ export class SidePanel {
 
       <!-- Colors (Text & Background) -->
       <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-colors') ? 'is-collapsed' : ''} ${hasColorChanged || hasBgChanged ? 'is-modified' : ''}">
-        ${this._renderSectionHeader('sec-colors', 'Color & Background', ['color', 'backgroundColor'], 'style', 'colors')}
+        ${this._renderSectionHeader('sec-colors', 'Color & Background', ['color', 'backgroundColor'], 'colors')}
 
         <!-- Text Color -->
         <div class="admin-field-row ${hasColorChanged ? 'is-modified' : ''}">
@@ -1402,7 +1411,7 @@ export class SidePanel {
 
       <!-- Borders & Corner Radius -->
       <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-borders') ? 'is-collapsed' : ''} ${hasBorderChanged ? 'is-modified' : ''}">
-        ${this._renderSectionHeader('sec-borders', 'Borders & Corner Radius', ['borderColor', 'borderWidth', 'borderRadius'], 'style', 'borders')}
+        ${this._renderSectionHeader('sec-borders', 'Borders & Corner Radius', ['borderColor', 'borderWidth', 'borderRadius'], 'borders')}
 
         <!-- Border Color -->
         <div class="admin-field-row ${hasBorderChanged ? 'is-modified' : ''}">
@@ -2363,17 +2372,17 @@ export class SidePanel {
     return `
       <div class="admin-section-header" data-section-id="${sectionId}" data-indicator-keys="${indicatorKeys.join(',')}">
         <div class="section-title-wrap">
-          <button type="button" class="btn-section-toggle" data-section-toggle="${sectionId}" title="${isCollapsed ? 'Expand section' : 'Collapse section'}">
-            <svg class="chevron-icon ${isCollapsed ? 'is-collapsed' : ''}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
           <span class="section-title-text">${title}</span>
           <span class="section-change-badge" style="display: ${count > 0 ? 'inline-flex' : 'none'};">${count}</span>
         </div>
-        <div style="display: flex; align-items: center; gap: 6px;">
+        <div class="section-header-actions" style="display: flex; align-items: center; gap: 8px;">
           ${extraHtml}
           ${resetType ? `
             <button type="button" class="btn-field-reset btn-section-reset" data-reset-type="${resetType}" ${resetKey ? `data-reset-key="${resetKey}"` : ''} data-tooltip="Reset section" style="display: ${count > 0 ? 'inline-flex' : 'none'};">↺ Reset</button>
           ` : ''}
+          <button type="button" class="btn-section-toggle" data-section-toggle="${sectionId}" title="${isCollapsed ? 'Expand section' : 'Collapse section'}">
+            <svg class="chevron-icon ${isCollapsed ? 'is-collapsed' : ''}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
         </div>
       </div>
     `;
@@ -2716,8 +2725,7 @@ export class SidePanel {
 
           panel.innerHTML = `
             <div class="admin-sat-val-box">
-              <div class="admin-sat-val-white"></div>
-              <div class="admin-sat-val-black"></div>
+              <canvas class="admin-sat-val-canvas" width="220" height="125"></canvas>
               <div class="admin-sat-val-handle"></div>
             </div>
             <div class="admin-hue-slider-wrap">
@@ -2763,6 +2771,7 @@ export class SidePanel {
           }, 20);
 
           const satValBox = panel.querySelector('.admin-sat-val-box');
+          const satValCanvas = panel.querySelector('.admin-sat-val-canvas');
           const satValHandle = panel.querySelector('.admin-sat-val-handle');
           const hueSlider = panel.querySelector('.admin-hue-slider-wrap');
           const hueHandle = panel.querySelector('.admin-hue-handle');
@@ -2771,9 +2780,32 @@ export class SidePanel {
           const panelCopyBtn = panel.querySelector('.admin-picker-copy-btn');
           const panelPasteBtn = panel.querySelector('.admin-picker-paste-btn');
 
+          const drawCanvas = (hueVal) => {
+            if (!satValCanvas) return;
+            const ctx = satValCanvas.getContext('2d');
+            if (!ctx) return;
+            const w = satValCanvas.width;
+            const hPx = satValCanvas.height;
+
+            const [hr, hg, hb] = hsvToRgb(hueVal, 1, 1);
+            ctx.fillStyle = `rgb(${hr}, ${hg}, ${hb})`;
+            ctx.fillRect(0, 0, w, hPx);
+
+            const gradWhite = ctx.createLinearGradient(0, 0, w, 0);
+            gradWhite.addColorStop(0, '#ffffff');
+            gradWhite.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = gradWhite;
+            ctx.fillRect(0, 0, w, hPx);
+
+            const gradBlack = ctx.createLinearGradient(0, 0, 0, hPx);
+            gradBlack.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            gradBlack.addColorStop(1, '#000000');
+            ctx.fillStyle = gradBlack;
+            ctx.fillRect(0, 0, w, hPx);
+          };
+
           const updateUI = (notify = true) => {
-            const pureHue = hsvToRgb(h, 1, 1);
-            satValBox.style.backgroundColor = `rgb(${pureHue[0]}, ${pureHue[1]}, ${pureHue[2]})`;
+            drawCanvas(h);
 
             satValHandle.style.left = `${Math.max(0, Math.min(100, s * 100))}%`;
             satValHandle.style.top = `${Math.max(0, Math.min(100, (1 - v) * 100))}%`;
@@ -2818,71 +2850,77 @@ export class SidePanel {
             });
           }
 
-          // Saturation / Value Canvas Drag (Pointer Events with setPointerCapture)
+          // Saturation / Value Canvas Drag (Pointer Events with Window Listeners)
           let isDraggingSatVal = false;
           const handleSatVal = (evt) => {
             const rect = satValBox.getBoundingClientRect();
             const x = Math.max(0, Math.min(rect.width, evt.clientX - rect.left));
             const y = Math.max(0, Math.min(rect.height, evt.clientY - rect.top));
-            s = x / rect.width;
-            v = 1 - (y / rect.height);
+            s = rect.width > 0 ? x / rect.width : 0;
+            v = rect.height > 0 ? 1 - (y / rect.height) : 1;
             updateUI(true);
           };
 
-          const satValPointerDown = (evt) => {
-            if (evt.button !== 0 && evt.buttons !== 1) return;
-            isDraggingSatVal = true;
-            try { satValBox.setPointerCapture(evt.pointerId); } catch (_) {}
-            handleSatVal(evt);
-          };
-
-          const satValPointerMove = (evt) => {
+          const onSatValMove = (evt) => {
             if (isDraggingSatVal) {
               handleSatVal(evt);
             }
           };
 
-          const satValPointerUp = (evt) => {
-            isDraggingSatVal = false;
-            try { satValBox.releasePointerCapture(evt.pointerId); } catch (_) {}
+          const onSatValUp = (evt) => {
+            if (isDraggingSatVal) {
+              isDraggingSatVal = false;
+              try { satValBox.releasePointerCapture(evt.pointerId); } catch (_) {}
+              window.removeEventListener('pointermove', onSatValMove);
+              window.removeEventListener('pointerup', onSatValUp);
+              window.removeEventListener('pointercancel', onSatValUp);
+            }
           };
 
-          satValBox.addEventListener('pointerdown', satValPointerDown);
-          satValBox.addEventListener('pointermove', satValPointerMove);
-          satValBox.addEventListener('pointerup', satValPointerUp);
-          satValBox.addEventListener('pointercancel', satValPointerUp);
+          satValBox.addEventListener('pointerdown', (evt) => {
+            if (evt.button !== 0 && evt.buttons !== 1) return;
+            isDraggingSatVal = true;
+            try { satValBox.setPointerCapture(evt.pointerId); } catch (_) {}
+            window.addEventListener('pointermove', onSatValMove);
+            window.addEventListener('pointerup', onSatValUp);
+            window.addEventListener('pointercancel', onSatValUp);
+            handleSatVal(evt);
+          });
 
-          // Hue Slider Drag (Pointer Events with setPointerCapture)
+          // Hue Slider Drag (Pointer Events with Window Listeners & Smooth Clamping)
           let isDraggingHue = false;
           const handleHue = (evt) => {
             const rect = hueSlider.getBoundingClientRect();
-            const x = Math.max(0, Math.min(rect.width, evt.clientX - rect.left));
-            h = Math.round((x / rect.width) * 360) % 360;
+            const ratio = rect.width > 0 ? Math.max(0, Math.min(1, (evt.clientX - rect.left) / rect.width)) : 0;
+            h = ratio * 360;
             updateUI(true);
           };
 
-          const huePointerDown = (evt) => {
-            if (evt.button !== 0 && evt.buttons !== 1) return;
-            isDraggingHue = true;
-            try { hueSlider.setPointerCapture(evt.pointerId); } catch (_) {}
-            handleHue(evt);
-          };
-
-          const huePointerMove = (evt) => {
+          const onHueMove = (evt) => {
             if (isDraggingHue) {
               handleHue(evt);
             }
           };
 
-          const huePointerUp = (evt) => {
-            isDraggingHue = false;
-            try { hueSlider.releasePointerCapture(evt.pointerId); } catch (_) {}
+          const onHueUp = (evt) => {
+            if (isDraggingHue) {
+              isDraggingHue = false;
+              try { hueSlider.releasePointerCapture(evt.pointerId); } catch (_) {}
+              window.removeEventListener('pointermove', onHueMove);
+              window.removeEventListener('pointerup', onHueUp);
+              window.removeEventListener('pointercancel', onHueUp);
+            }
           };
 
-          hueSlider.addEventListener('pointerdown', huePointerDown);
-          hueSlider.addEventListener('pointermove', huePointerMove);
-          hueSlider.addEventListener('pointerup', huePointerUp);
-          hueSlider.addEventListener('pointercancel', huePointerUp);
+          hueSlider.addEventListener('pointerdown', (evt) => {
+            if (evt.button !== 0 && evt.buttons !== 1) return;
+            isDraggingHue = true;
+            try { hueSlider.setPointerCapture(evt.pointerId); } catch (_) {}
+            window.addEventListener('pointermove', onHueMove);
+            window.addEventListener('pointerup', onHueUp);
+            window.addEventListener('pointercancel', onHueUp);
+            handleHue(evt);
+          });
 
           // Direct HEX Input inside Panel
           pickerInput.addEventListener('input', () => {

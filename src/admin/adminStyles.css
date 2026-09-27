@@ -809,28 +809,59 @@ html[data-admin-theme="light"],
 /* Tabs Header */
 .admin-tabs-nav {
   display: flex;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
   border-bottom: 1px solid var(--admin-border-subtle);
   background: var(--admin-bg-base);
-  padding: 0 8px;
+  padding: 0;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
 }
 
 .admin-tab-btn {
-  flex: 1;
-  padding: 10px 6px;
+  flex: 1 1 0% !important;
+  width: 25% !important;
+  max-width: 25% !important;
+  min-width: 0 !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  position: relative;
+  padding: 0 2px !important;
   border: none;
   background: transparent;
   color: var(--admin-text-secondary);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
   cursor: pointer;
   border-bottom: 2px solid transparent;
-  transition: all 0.15s ease;
+  transition: color 0.15s ease, border-color 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 3px;
+  box-sizing: border-box;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  flex-wrap: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+.admin-tab-btn span:not(.tab-change-badge) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-tab-btn svg {
+  flex-shrink: 0;
 }
 
 .admin-tab-btn:hover {
@@ -958,12 +989,9 @@ html[data-admin-theme="light"] .admin-field-row + .admin-field-row,
   font-size: 12px;
   font-weight: 400;
   color: var(--admin-text-primary);
-  flex: 0 0 96px;
-  max-width: 96px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   -webkit-font-smoothing: antialiased;
+  overflow: visible !important;
 }
 
 .admin-field-control {
@@ -1245,27 +1273,15 @@ html[data-admin-theme="light"] .admin-field-row + .admin-field-row,
   cursor: crosshair;
   border-bottom: 1px solid var(--admin-border-subtle);
   box-sizing: border-box;
-  background-clip: padding-box;
   overflow: hidden;
+  user-select: none;
+  background: #000;
 }
 
-.admin-sat-val-white {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(to right, #ffffff 0%, rgba(255, 255, 255, 0) 100%);
-  pointer-events: none;
-}
-
-.admin-sat-val-black {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(to top, #000000 0%, rgba(0, 0, 0, 0) 100%);
+.admin-sat-val-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
   pointer-events: none;
 }
 
@@ -1310,29 +1326,40 @@ html[data-admin-theme="light"] .admin-field-row + .admin-field-row,
 .admin-picker-footer {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   padding: 0 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .admin-picker-preview {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 4px;
   border: 1px solid var(--admin-border-strong);
   flex-shrink: 0;
 }
 
 .admin-picker-hex-input {
-  flex: 1;
+  flex: 1 1 0%;
+  min-width: 0;
+  width: 0;
   font-family: var(--admin-mono);
   font-size: 11px;
-  padding: 5px 8px;
+  padding: 4px 6px;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid var(--admin-border-subtle);
   border-radius: 4px;
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  box-sizing: border-box;
+}
+
+.admin-picker-footer .admin-color-btn {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
 }
 
 .admin-picker-hex-input:focus {
@@ -1678,7 +1705,16 @@ html[data-admin-theme="light"] .admin-field-row + .admin-field-row,
 }
 
 .tab-change-badge {
+  min-width: 15px;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  margin-left: 2px;
   animation: pulseBadge 0.25s ease;
+}
+
+.section-change-badge {
+  margin-left: 4px;
 }
 
 @keyframes pulseBadge {
@@ -1694,6 +1730,8 @@ html[data-admin-theme="light"] .admin-field-row + .admin-field-row,
   display: flex;
   align-items: center;
   gap: 4px;
+  position: relative;
+  overflow: visible;
 }
 
 .section-title-wrap {
@@ -1736,36 +1774,19 @@ html[data-admin-theme="light"] .admin-field-row + .admin-field-row,
 .admin-field-row.is-modified .admin-field-label,
 .admin-field-label.is-modified {
   color: var(--admin-text-primary) !important;
-  position: relative !important;
-  border-bottom: none !important;
-  padding-bottom: 4px !important;
+  text-decoration: underline 1.7px #FFFF00 !important;
+  text-underline-offset: 6px !important;
+  text-decoration-skip-ink: none !important;
   display: inline-block !important;
-  width: max-content !important;
-  max-width: 100% !important;
-}
-
-/* Static, dynamically sized underline sitting below descenders ('p', 'g', 'y') for uniform weight */
-.admin-field-row.is-modified .admin-field-label::after,
-.admin-field-label.is-modified::after {
-  content: '';
-  position: absolute;
-  bottom: -3px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  border-radius: 1px;
-  background-color: #FFFF00 !important;
-  box-shadow: none !important;
-  animation: none !important;
+  overflow: visible !important;
 }
 
 /* Light / Bright Mode Underline matching light mode slider change color */
-html[data-admin-theme="light"] .admin-field-row.is-modified .admin-field-label::after,
-html[data-admin-theme="light"] .admin-field-label.is-modified::after,
-.admin-workspace[data-theme="light"] .admin-field-row.is-modified .admin-field-label::after,
-.admin-workspace[data-theme="light"] .admin-field-label.is-modified::after {
-  background-color: #d97706 !important;
-  box-shadow: none !important;
+html[data-admin-theme="light"] .admin-field-row.is-modified .admin-field-label,
+html[data-admin-theme="light"] .admin-field-label.is-modified,
+.admin-workspace[data-theme="light"] .admin-field-row.is-modified .admin-field-label,
+.admin-workspace[data-theme="light"] .admin-field-label.is-modified {
+  text-decoration-color: #d97706 !important;
 }
 
 /* Hide dots since setting names are underlined */
