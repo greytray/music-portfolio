@@ -931,13 +931,28 @@ html[data-admin-theme="light"] .admin-btn-primary:hover,
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 14px 14px 90px 14px;
+  padding: 14px 14px 60px 14px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   box-sizing: border-box;
   width: 100%;
   background: var(--admin-bg-base);
+}
+
+.admin-tab-content::after {
+  content: "";
+  display: block;
+  width: 100%;
+  margin-top: 28px;
+  padding-bottom: 20px;
+  border-top: 2px dashed rgba(0, 229, 255, 0.45);
+  box-sizing: border-box;
+}
+
+html[data-admin-theme="light"] .admin-tab-content::after,
+.admin-workspace[data-theme="light"] .admin-tab-content::after {
+  border-top-color: rgba(2, 102, 179, 0.45);
 }
 
 .admin-tab-content::-webkit-scrollbar {
@@ -1001,11 +1016,11 @@ html[data-admin-theme="light"] .admin-btn-primary:hover,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.05em;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--admin-accent-blue);
+  color: #38BDF8;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--admin-border-subtle);
   margin-bottom: 2px;
@@ -1017,13 +1032,13 @@ html[data-admin-theme="light"] .admin-btn-primary:hover,
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 500;
-  color: var(--admin-accent-blue);
+  font-weight: 700;
+  color: #38BDF8;
 }
 
 .admin-section-header .section-title-text {
-  color: var(--admin-accent-blue);
-  font-weight: 500;
+  color: #38BDF8;
+  font-weight: 700;
 }
 
 .admin-field-row {
@@ -2485,7 +2500,16 @@ input[type=number] {
 
 
 
-/* Light Mode: Restore Checkpoint Button high readability with solid accent fill */
+/* Light Mode Section Headers High Readability Override */
+html[data-admin-theme="light"] .admin-section-header,
+.admin-workspace[data-theme="light"] .admin-section-header,
+html[data-admin-theme="light"] .admin-section-header .section-title-wrap,
+.admin-workspace[data-theme="light"] .admin-section-header .section-title-wrap,
+html[data-admin-theme="light"] .admin-section-header .section-title-text,
+.admin-workspace[data-theme="light"] .admin-section-header .section-title-text {
+  color: #0266b3 !important;
+  font-weight: 700 !important;
+}
 html[data-admin-theme="light"] .btn-restore-checkpoint,
 .admin-workspace[data-theme="light"] .btn-restore-checkpoint {
   background: #0077D6 !important;
