@@ -216,7 +216,7 @@ export class AdminApp {
           </div>
           <div class="admin-modal-footer">
             <button type="button" class="admin-btn admin-btn-ghost" id="btn-refresh-history">Refresh</button>
-            <button type="button" class="admin-btn admin-btn-primary" id="btn-done-history-modal">Close</button>
+            <button type="button" class="admin-btn admin-btn-ghost" id="btn-done-history-modal">Close</button>
           </div>
         </div>
       </div>
@@ -724,7 +724,7 @@ export class AdminApp {
             <div class="history-item-card ${isCurrentActive ? 'is-active-checkpoint' : ''} is-v0-checkpoint" data-cp-id="${cp.id}">
               <div class="history-item-left">
                 <div class="history-item-top">
-                  <span class="history-item-label" style="font-weight: 700;">Baseline v0</span>
+                  <span class="history-item-label">Baseline v0</span>
                   ${isCurrentActive ? '<span class="history-item-badge is-live">Active on Canvas</span>' : ''}
                 </div>
               </div>

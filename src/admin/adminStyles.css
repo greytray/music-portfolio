@@ -503,17 +503,27 @@ html[data-admin-theme="light"] .admin-btn-primary:hover,
 }
 
 .admin-btn-ghost {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.04);
   color: #E2E8F0;
-  border-color: var(--admin-border-strong);
+  border: 1px solid var(--admin-border-strong);
   font-weight: 700;
   letter-spacing: 0.02em;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 .admin-btn-ghost:hover {
-  background: var(--admin-bg-card);
-  color: var(--admin-text-primary);
-  border-color: var(--admin-border-strong);
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35) !important;
+}
+
+.admin-btn-ghost:active {
+  transform: translateY(0);
+  background: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
 }
 
 .admin-btn-danger {
@@ -916,12 +926,12 @@ html[data-admin-theme="light"] .admin-btn-primary:hover,
 }
 
 .admin-tab-btn:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
+  color: #E2E8F0;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .admin-tab-btn.is-active {
-  color: #ffffff !important;
+  color: #E2E8F0 !important;
   background: rgba(255, 255, 255, 0.08) !important;
   border: 1px solid rgba(0, 229, 255, 0.35) !important;
   border-bottom: 2.5px solid var(--admin-accent-cyan) !important;
@@ -2283,6 +2293,33 @@ input[type=number] {
   color: var(--admin-text-primary);
 }
 
+.admin-modal-header .admin-btn-ghost {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--admin-radius-sm);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.admin-modal-header .admin-btn-ghost:hover {
+  border-color: rgba(0, 229, 255, 0.6) !important;
+  color: var(--admin-accent-cyan) !important;
+  background: rgba(0, 229, 255, 0.12) !important;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.25) !important;
+}
+
+.admin-modal-footer #btn-done-history-modal:hover,
+.admin-modal-footer #btn-done-schema-modal:hover {
+  border-color: rgba(0, 229, 255, 0.6) !important;
+  color: #ffffff !important;
+  background: rgba(0, 229, 255, 0.14) !important;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.25), 0 3px 8px rgba(0, 0, 0, 0.35) !important;
+}
+
 .admin-modal-body {
   padding: 20px;
   overflow-y: auto;
@@ -2392,7 +2429,7 @@ input[type=number] {
 
 .history-item-label {
   font-size: 13px;
-  font-weight: 400;
+  font-weight: 400 !important;
   color: var(--admin-text-primary);
 }
 
@@ -2435,44 +2472,61 @@ input[type=number] {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 5px 12px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   border-radius: var(--admin-radius-sm);
-  background: var(--admin-accent-blue);
-  color: #000000;
-  border: 1px solid var(--admin-accent-blue);
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #E2E8F0 !important;
+  border: 1px solid var(--admin-border-strong) !important;
   cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: none !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
 }
 
 .btn-restore-checkpoint svg {
-  stroke: #000000;
+  stroke: currentColor !important;
+  transition: transform 0.18s ease;
 }
 
 .btn-restore-checkpoint:hover:not(:disabled) {
-  background: var(--admin-accent-hover);
-  color: #000000;
-  border-color: var(--admin-accent-hover);
-  box-shadow: none !important;
+  background: rgba(0, 229, 255, 0.12) !important;
+  color: #ffffff !important;
+  border-color: rgba(0, 229, 255, 0.6) !important;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.22), 0 3px 8px rgba(0, 0, 0, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+.btn-restore-checkpoint:hover:not(:disabled) svg {
+  stroke: var(--admin-accent-cyan) !important;
+  transform: rotate(-15deg);
+}
+
+.btn-restore-checkpoint:active:not(:disabled) {
+  transform: translateY(0);
+  background: rgba(0, 229, 255, 0.22) !important;
+  border-color: var(--admin-accent-cyan) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
 }
 
 .btn-restore-checkpoint:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .btn-restore-checkpoint.is-active-btn {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
-  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.12) !important;
+  color: #10b981 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
   cursor: default;
+  transform: none !important;
   box-shadow: none !important;
 }
 
 .btn-restore-checkpoint.is-active-btn svg {
-  stroke: #10b981;
+  stroke: #10b981 !important;
 }
 
 .history-loading-indicator {
@@ -2510,16 +2564,30 @@ html[data-admin-theme="light"] .admin-btn-ghost,
 .admin-workspace[data-theme="light"] .admin-btn-ghost {
   color: #0F172A !important;
   font-weight: 700 !important;
-  border-color: #CBD5E1 !important;
+  border: 1px solid #CBD5E1 !important;
   background: #FFFFFF !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 html[data-admin-theme="light"] .admin-mode-toggle-btn:hover,
 .admin-workspace[data-theme="light"] .admin-mode-toggle-btn:hover,
 html[data-admin-theme="light"] .admin-btn-ghost:hover,
 .admin-workspace[data-theme="light"] .admin-btn-ghost:hover {
-  background: #F1F5F9 !important;
+  background: #F8FAFC !important;
   color: #000000 !important;
+  border-color: #64748B !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12) !important;
+  transform: translateY(-1px);
+}
+
+html[data-admin-theme="light"] .admin-mode-toggle-btn:active,
+.admin-workspace[data-theme="light"] .admin-mode-toggle-btn:active,
+html[data-admin-theme="light"] .admin-btn-ghost:active,
+.admin-workspace[data-theme="light"] .admin-btn-ghost:active {
+  transform: translateY(0);
+  background: #E2E8F0 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
 }
 
 /* Light Mode Section Headers High Readability Override */
@@ -2534,34 +2602,71 @@ html[data-admin-theme="light"] .admin-section-header .section-title-text,
 }
 html[data-admin-theme="light"] .btn-restore-checkpoint,
 .admin-workspace[data-theme="light"] .btn-restore-checkpoint {
-  background: #0077D6 !important;
-  color: #ffffff !important;
-  border: 1px solid #0077D6 !important;
-  font-weight: 600 !important;
+  background: #FFFFFF !important;
+  color: #1E293B !important;
+  border: 1px solid #CBD5E1 !important;
+  font-weight: 500 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 html[data-admin-theme="light"] .btn-restore-checkpoint svg,
 .admin-workspace[data-theme="light"] .btn-restore-checkpoint svg {
-  stroke: #ffffff !important;
+  stroke: currentColor !important;
+  transition: transform 0.18s ease;
 }
 
 html[data-admin-theme="light"] .btn-restore-checkpoint:hover:not(:disabled),
 .admin-workspace[data-theme="light"] .btn-restore-checkpoint:hover:not(:disabled) {
-  background: #0060B2 !important;
-  color: #ffffff !important;
-  border-color: #0060B2 !important;
+  background: rgba(0, 119, 214, 0.08) !important;
+  color: #0077D6 !important;
+  border-color: #0077D6 !important;
+  box-shadow: 0 0 10px rgba(0, 119, 214, 0.18), 0 3px 8px rgba(0, 0, 0, 0.12) !important;
+  transform: translateY(-1px);
+}
+
+html[data-admin-theme="light"] .btn-restore-checkpoint:hover:not(:disabled) svg,
+.admin-workspace[data-theme="light"] .btn-restore-checkpoint:hover:not(:disabled) svg {
+  stroke: #0077D6 !important;
+  transform: rotate(-15deg);
+}
+
+html[data-admin-theme="light"] .btn-restore-checkpoint:active:not(:disabled),
+.admin-workspace[data-theme="light"] .btn-restore-checkpoint:active:not(:disabled) {
+  transform: translateY(0);
+  background: rgba(0, 119, 214, 0.16) !important;
+  border-color: #0077D6 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+html[data-admin-theme="light"] .admin-modal-header .admin-btn-ghost:hover,
+.admin-workspace[data-theme="light"] .admin-modal-header .admin-btn-ghost:hover {
+  border-color: #0077D6 !important;
+  color: #0077D6 !important;
+  background: rgba(0, 119, 214, 0.08) !important;
+  box-shadow: 0 0 8px rgba(0, 119, 214, 0.16) !important;
+}
+
+html[data-admin-theme="light"] .admin-modal-footer #btn-done-history-modal:hover,
+.admin-workspace[data-theme="light"] .admin-modal-footer #btn-done-history-modal:hover,
+html[data-admin-theme="light"] .admin-modal-footer #btn-done-schema-modal:hover,
+.admin-workspace[data-theme="light"] .admin-modal-footer #btn-done-schema-modal:hover {
+  border-color: #0077D6 !important;
+  color: #0077D6 !important;
+  background: rgba(0, 119, 214, 0.08) !important;
+  box-shadow: 0 0 10px rgba(0, 119, 214, 0.18), 0 3px 8px rgba(0, 0, 0, 0.08) !important;
 }
 
 html[data-admin-theme="light"] .btn-restore-checkpoint.is-active-btn,
 .admin-workspace[data-theme="light"] .btn-restore-checkpoint.is-active-btn {
-  background: rgba(16, 185, 129, 0.15) !important;
-  color: #10b981 !important;
-  border-color: rgba(16, 185, 129, 0.4) !important;
+  background: transparent !important;
+  color: #059669 !important;
+  border-color: rgba(5, 150, 105, 0.4) !important;
 }
 
 html[data-admin-theme="light"] .btn-restore-checkpoint.is-active-btn svg,
 .admin-workspace[data-theme="light"] .btn-restore-checkpoint.is-active-btn svg {
-  stroke: #10b981 !important;
+  stroke: #059669 !important;
 }
 
 /* Light Mode: Fix button group, alignment, bold, italic, case/appearance texts turning white */
@@ -2637,14 +2742,14 @@ html[data-admin-theme="light"] .admin-tab-btn,
 
 html[data-admin-theme="light"] .admin-tab-btn:hover,
 .admin-workspace[data-theme="light"] .admin-tab-btn:hover {
-  color: #000000;
+  color: #1e293b;
   background: rgba(0, 0, 0, 0.06);
 }
 
 html[data-admin-theme="light"] .admin-tab-btn.is-active,
 .admin-workspace[data-theme="light"] .admin-tab-btn.is-active {
   background: #ffffff !important;
-  color: #0F172A !important;
+  color: #1e293b !important;
   border: 1px solid #0077D6 !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
 }
