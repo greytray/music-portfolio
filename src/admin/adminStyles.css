@@ -179,9 +179,10 @@ html[data-admin-theme="light"],
   background: var(--admin-bg-base);
   border: 1px solid var(--admin-border-strong);
   border-radius: var(--admin-radius-md);
-  color: var(--admin-text-secondary);
+  color: #E2E8F0;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
@@ -366,11 +367,11 @@ html[data-admin-theme="light"] .admin-btn-primary:hover,
 .admin-btn-publish {
   position: relative;
   overflow: hidden;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .admin-btn-publish span {
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .publish-btn-icon-wrap {
@@ -503,9 +504,10 @@ html[data-admin-theme="light"] .admin-btn-primary:hover,
 
 .admin-btn-ghost {
   background: transparent;
-  color: var(--admin-text-secondary);
-  border-color: var(--admin-border-subtle);
-  font-weight: 500;
+  color: #E2E8F0;
+  border-color: var(--admin-border-strong);
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .admin-btn-ghost:hover {
@@ -884,10 +886,10 @@ html[data-admin-theme="light"] .admin-btn-primary:hover,
   border: 1px solid transparent;
   border-radius: var(--admin-radius-sm);
   background: transparent;
-  color: var(--admin-text-secondary);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
+  color: #E2E8F0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -914,15 +916,16 @@ html[data-admin-theme="light"] .admin-btn-primary:hover,
 }
 
 .admin-tab-btn:hover {
-  color: var(--admin-text-primary);
-  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .admin-tab-btn.is-active {
-  color: #ffffff;
-  background: var(--admin-bg-elevated);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(0, 229, 255, 0.35) !important;
+  border-bottom: 2.5px solid var(--admin-accent-cyan) !important;
+  box-shadow: 0 2px 8px rgba(0, 229, 255, 0.12) !important;
 }
 
 /* Tab Panels Content Scroll Container */
@@ -2389,7 +2392,7 @@ input[type=number] {
 
 .history-item-label {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
   color: var(--admin-text-primary);
 }
 
@@ -2500,6 +2503,25 @@ input[type=number] {
 
 
 
+/* Light Mode Top Bar Action Buttons Readability */
+html[data-admin-theme="light"] .admin-mode-toggle-btn,
+.admin-workspace[data-theme="light"] .admin-mode-toggle-btn,
+html[data-admin-theme="light"] .admin-btn-ghost,
+.admin-workspace[data-theme="light"] .admin-btn-ghost {
+  color: #0F172A !important;
+  font-weight: 700 !important;
+  border-color: #CBD5E1 !important;
+  background: #FFFFFF !important;
+}
+
+html[data-admin-theme="light"] .admin-mode-toggle-btn:hover,
+.admin-workspace[data-theme="light"] .admin-mode-toggle-btn:hover,
+html[data-admin-theme="light"] .admin-btn-ghost:hover,
+.admin-workspace[data-theme="light"] .admin-btn-ghost:hover {
+  background: #F1F5F9 !important;
+  color: #000000 !important;
+}
+
 /* Light Mode Section Headers High Readability Override */
 html[data-admin-theme="light"] .admin-section-header,
 .admin-workspace[data-theme="light"] .admin-section-header,
@@ -2603,16 +2625,28 @@ html[data-admin-theme="light"] .shadow-preset-btn:hover {
 
 html[data-admin-theme="light"] .admin-tabs-nav,
 .admin-workspace[data-theme="light"] .admin-tabs-nav {
-  background: #f1f5f9;
+  background: #FBFBFB !important;
   border-color: #cbd5e1;
+}
+
+html[data-admin-theme="light"] .admin-tab-btn,
+.admin-workspace[data-theme="light"] .admin-tab-btn {
+  color: #1e293b;
+  font-weight: 700;
+}
+
+html[data-admin-theme="light"] .admin-tab-btn:hover,
+.admin-workspace[data-theme="light"] .admin-tab-btn:hover {
+  color: #000000;
+  background: rgba(0, 0, 0, 0.06);
 }
 
 html[data-admin-theme="light"] .admin-tab-btn.is-active,
 .admin-workspace[data-theme="light"] .admin-tab-btn.is-active {
-  background: #ffffff;
-  color: #000000;
-  border-color: #0077D6;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  background: #ffffff !important;
+  color: #0F172A !important;
+  border: 1px solid #0077D6 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
 }
 
 /* Light Mode Default Slider Track Colors (#E2E8F0) */
