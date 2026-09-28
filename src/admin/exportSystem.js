@@ -12,6 +12,7 @@ const SESSION_HISTORY_KEY = 'eko_session_publish_history';
 export class ExportSystem {
   constructor() {
     this.changesMap = new Map(); // selector -> override object
+    this.sessionUserChangesMap = new Map(); // selector -> active session user modifications
     this.sessionBaselineSchema = {
       version: '1.0.0',
       lastUpdated: new Date().toISOString(),
@@ -134,6 +135,42 @@ export class ExportSystem {
     }
 
     this.changesMap.set(selector, existing);
+    
+    // Also track active user session changes for badge counters
+    const userExisting = this.sessionUserChangesMap.get(selector) || {
+      selector,
+      styles: {},
+      breakpoints: { desktop: {}, tablet: {}, mobile: {} },
+      dataAttributes: {}
+    };
+    if (!userExisting.breakpoints) userExisting.breakpoints = { desktop: {}, tablet: {}, mobile: {} };
+
+    if (changeData.text !== undefined) {
+      if (breakpoint === 'universal') {
+        userExisting.text = changeData.text;
+      } else {
+        if (!userExisting.breakpoints[breakpoint]) userExisting.breakpoints[breakpoint] = {};
+        userExisting.breakpoints[breakpoint].text = changeData.text;
+      }
+    }
+    if (changeData.styleKey && changeData.val !== undefined) {
+      if (breakpoint === 'universal') {
+        userExisting.styles[changeData.styleKey] = changeData.val;
+      } else {
+        if (!userExisting.breakpoints[breakpoint]) userExisting.breakpoints[breakpoint] = {};
+        userExisting.breakpoints[breakpoint][changeData.styleKey] = changeData.val;
+      }
+    }
+    if (changeData.styles) {
+      if (breakpoint === 'universal') {
+        userExisting.styles = { ...userExisting.styles, ...changeData.styles };
+      } else {
+        if (!userExisting.breakpoints[breakpoint]) userExisting.breakpoints[breakpoint] = {};
+        userExisting.breakpoints[breakpoint] = { ...userExisting.breakpoints[breakpoint], ...changeData.styles };
+      }
+    }
+    this.sessionUserChangesMap.set(selector, userExisting);
+
     this.hasUnpublishedChanges = true;
     try {
       localStorage.setItem('eko_draft_design_schema', JSON.stringify(this.serializeSchema()));
@@ -145,7 +182,15 @@ export class ExportSystem {
    */
   removeChange(selector, type, key, breakpoint = 'universal') {
     if (!selector) return;
-    const existing = this.changesMap.get(selector);
+
+    this._applyRemoveToMap(this.changesMap, selector, type, key, breakpoint);
+    this._applyRemoveToMap(this.sessionUserChangesMap, selector, type, key, breakpoint);
+
+    this.hasUnpublishedChanges = this.changesMap.size > 0;
+  }
+
+  _applyRemoveToMap(map, selector, type, key, breakpoint) {
+    const existing = map.get(selector);
     if (!existing) return;
 
     if (type === 'text') {
@@ -199,11 +244,10 @@ export class ExportSystem {
     const hasMedia = existing.media !== undefined;
 
     if (!hasStyles && !hasBp && !hasAttrs && !hasText && !hasMedia) {
-      this.changesMap.delete(selector);
+      map.delete(selector);
     } else {
-      this.changesMap.set(selector, existing);
+      map.set(selector, existing);
     }
-    this.hasUnpublishedChanges = this.changesMap.size > 0;
   }
 
   /**
@@ -212,6 +256,7 @@ export class ExportSystem {
   resetElement(selector) {
     if (!selector) return;
     this.changesMap.delete(selector);
+    this.sessionUserChangesMap.delete(selector);
     this.hasUnpublishedChanges = this.changesMap.size > 0;
   }
 
@@ -230,52 +275,56 @@ export class ExportSystem {
       'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'gap'
     ];
 
-    const targets = selector ? [selector] : Array.from(this.changesMap.keys());
+    const targetMaps = [this.changesMap, this.sessionUserChangesMap];
 
-    targets.forEach(sel => {
-      const elData = this.changesMap.get(sel);
-      if (!elData) return;
+    targetMaps.forEach(map => {
+      const targets = selector ? [selector] : Array.from(map.keys());
 
-      if (sectionName === 'text') {
-        delete elData.text;
-        textStyleList.forEach(k => {
-          if (elData.styles) delete elData.styles[k];
-          if (elData.breakpoints) {
-            if (elData.breakpoints.desktop) delete elData.breakpoints.desktop[k];
-            if (elData.breakpoints.tablet) delete elData.breakpoints.tablet[k];
-            if (elData.breakpoints.mobile) delete elData.breakpoints.mobile[k];
-          }
-        });
-      } else if (sectionName === 'spacing') {
-        spacingStyleList.forEach(k => {
-          if (elData.styles) delete elData.styles[k];
-          if (elData.breakpoints) {
-            if (elData.breakpoints.desktop) delete elData.breakpoints.desktop[k];
-            if (elData.breakpoints.tablet) delete elData.breakpoints.tablet[k];
-            if (elData.breakpoints.mobile) delete elData.breakpoints.mobile[k];
-          }
-        });
-      } else if (sectionName === 'media') {
-        delete elData.media;
-        if (elData.styles) delete elData.styles.backgroundImage;
-      } else if (sectionName === 'props') {
-        delete elData.dataAttributes;
-      }
+      targets.forEach(sel => {
+        const elData = map.get(sel);
+        if (!elData) return;
 
-      // Cleanup empty data objects
-      const hasStyles = elData.styles && Object.keys(elData.styles).length > 0;
-      const hasBp = elData.breakpoints && (
-        (elData.breakpoints.desktop && Object.keys(elData.breakpoints.desktop).length > 0) ||
-        (elData.breakpoints.tablet && Object.keys(elData.breakpoints.tablet).length > 0) ||
-        (elData.breakpoints.mobile && Object.keys(elData.breakpoints.mobile).length > 0)
-      );
-      const hasAttrs = elData.dataAttributes && Object.keys(elData.dataAttributes).length > 0;
-      const hasText = elData.text !== undefined;
-      const hasMedia = elData.media !== undefined;
+        if (sectionName === 'text') {
+          delete elData.text;
+          textStyleList.forEach(k => {
+            if (elData.styles) delete elData.styles[k];
+            if (elData.breakpoints) {
+              if (elData.breakpoints.desktop) delete elData.breakpoints.desktop[k];
+              if (elData.breakpoints.tablet) delete elData.breakpoints.tablet[k];
+              if (elData.breakpoints.mobile) delete elData.breakpoints.mobile[k];
+            }
+          });
+        } else if (sectionName === 'spacing') {
+          spacingStyleList.forEach(k => {
+            if (elData.styles) delete elData.styles[k];
+            if (elData.breakpoints) {
+              if (elData.breakpoints.desktop) delete elData.breakpoints.desktop[k];
+              if (elData.breakpoints.tablet) delete elData.breakpoints.tablet[k];
+              if (elData.breakpoints.mobile) delete elData.breakpoints.mobile[k];
+            }
+          });
+        } else if (sectionName === 'media') {
+          delete elData.media;
+          if (elData.styles) delete elData.styles.backgroundImage;
+        } else if (sectionName === 'props') {
+          delete elData.dataAttributes;
+        }
 
-      if (!hasStyles && !hasBp && !hasAttrs && !hasText && !hasMedia) {
-        this.changesMap.delete(sel);
-      }
+        // Cleanup empty data objects
+        const hasStyles = elData.styles && Object.keys(elData.styles).length > 0;
+        const hasBp = elData.breakpoints && (
+          (elData.breakpoints.desktop && Object.keys(elData.breakpoints.desktop).length > 0) ||
+          (elData.breakpoints.tablet && Object.keys(elData.breakpoints.tablet).length > 0) ||
+          (elData.breakpoints.mobile && Object.keys(elData.breakpoints.mobile).length > 0)
+        );
+        const hasAttrs = elData.dataAttributes && Object.keys(elData.dataAttributes).length > 0;
+        const hasText = elData.text !== undefined;
+        const hasMedia = elData.media !== undefined;
+
+        if (!hasStyles && !hasBp && !hasAttrs && !hasText && !hasMedia) {
+          map.delete(sel);
+        }
+      });
     });
 
     this.hasUnpublishedChanges = this.changesMap.size > 0;
@@ -370,15 +419,12 @@ export class ExportSystem {
    * Generates the immutable default v0 baseline checkpoint for this session
    */
   getV0Checkpoint() {
-    const elementsCount = Object.keys(this.sessionBaselineSchema?.elements || {}).length;
     return {
       id: 'cp_session_v0',
       timestamp: this.sessionBaselineSchema?.lastPublished || this.sessionBaselineSchema?.lastUpdated || new Date().toISOString(),
-      label: 'Checkpoint v0 (Session Baseline)',
-      description: elementsCount > 0
-        ? `Session baseline state (${elementsCount} element(s) currently published)`
-        : 'Initial unedited site baseline (v0)',
-      elementsCount,
+      label: 'Baseline v0',
+      description: '',
+      elementsCount: Object.keys(this.sessionBaselineSchema?.elements || {}).length,
       schema: JSON.parse(JSON.stringify(this.sessionBaselineSchema || { version: '1.0.0', elements: {}, elementsCount: 0 })),
       isV0: true
     };
@@ -544,6 +590,7 @@ export class ExportSystem {
    */
   revertAll() {
     this.changesMap.clear();
+    this.sessionUserChangesMap.clear();
     this.sessionCheckpoints = [];
     this.hasUnpublishedChanges = false;
     try {

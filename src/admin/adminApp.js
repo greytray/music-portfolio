@@ -719,23 +719,41 @@ export class AdminApp {
         const dateStr = cp.timestamp ? new Date(cp.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Session Start';
         const elemCount = cp.elementsCount !== undefined ? cp.elementsCount : (cp.schema && cp.schema.elements ? Object.keys(cp.schema.elements).length : 0);
 
+        if (isV0) {
+          return `
+            <div class="history-item-card ${isCurrentActive ? 'is-active-checkpoint' : ''} is-v0-checkpoint" data-cp-id="${cp.id}">
+              <div class="history-item-left">
+                <div class="history-item-top">
+                  <span class="history-item-label" style="font-weight: 700;">Baseline v0</span>
+                  ${isCurrentActive ? '<span class="history-item-badge is-live">Active on Canvas</span>' : ''}
+                </div>
+              </div>
+              <div class="history-item-right">
+                <button type="button" class="btn-restore-checkpoint ${isCurrentActive ? 'is-active-btn' : ''}" data-restore-id="${cp.id}" ${isCurrentActive ? 'disabled' : ''}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                  <span>${isCurrentActive ? 'Active' : 'Restore'}</span>
+                </button>
+              </div>
+            </div>
+          `;
+        }
+
         return `
-          <div class="history-item-card ${isCurrentActive ? 'is-active-checkpoint' : ''} ${isV0 ? 'is-v0-checkpoint' : ''}" data-cp-id="${cp.id}">
+          <div class="history-item-card ${isCurrentActive ? 'is-active-checkpoint' : ''}" data-cp-id="${cp.id}">
             <div class="history-item-left">
               <div class="history-item-top">
-                <span class="history-item-label">${cp.label || (isV0 ? 'Checkpoint v0 (Session Baseline)' : `Checkpoint #${publishedCheckpoints.length - idx}`)}</span>
-                ${isV0 ? '<span class="history-item-badge is-v0" style="background: rgba(255, 255, 255, 0.08); color: var(--admin-text-muted); border: 1px solid rgba(255, 255, 255, 0.12);">Baseline v0</span>' : ''}
+                <span class="history-item-label">${cp.label || `Checkpoint #${publishedCheckpoints.length - idx}`}</span>
                 ${isLatest ? '<span class="history-item-badge is-live">Latest</span>' : ''}
                 ${isCurrentActive ? '<span class="history-item-badge is-live">Active on Canvas</span>' : ''}
                 <span class="history-item-badge">${elemCount} element${elemCount === 1 ? '' : 's'}</span>
               </div>
-              <div class="history-item-date">${isV0 ? 'Starting baseline for this session' : `Published in this session: ${dateStr}`}</div>
-              <div class="history-item-desc">${cp.description || (isV0 ? 'Session initial baseline state (v0)' : 'Saved design checkpoint')}</div>
+              <div class="history-item-date">Published in this session: ${dateStr}</div>
+              <div class="history-item-desc">${cp.description || 'Saved design checkpoint'}</div>
             </div>
             <div class="history-item-right">
               <button type="button" class="btn-restore-checkpoint ${isCurrentActive ? 'is-active-btn' : ''}" data-restore-id="${cp.id}" ${isCurrentActive ? 'disabled' : ''}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                <span>${isCurrentActive ? 'Active' : (isV0 ? 'Restore v0' : 'Revert to this')}</span>
+                <span>${isCurrentActive ? 'Active' : 'Revert to this'}</span>
               </button>
             </div>
           </div>

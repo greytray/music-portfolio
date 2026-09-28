@@ -193,11 +193,13 @@ export class SidePanel {
       const isTextOnly = this.activeElement.children.length === 0;
       const win = (this.activeElement.ownerDocument) ? this.activeElement.ownerDocument.defaultView : window;
       const computed = win ? win.getComputedStyle(this.activeElement) : null;
+      this._parseExistingShadow();
       this.elementBaselines.set(selector, {
         style: this.activeElement.getAttribute('style') || '',
         text: isTextOnly ? this.activeElement.textContent : this.activeElement.innerHTML,
         isTextOnly,
         dataset: { ...this.activeElement.dataset },
+        shadowState: { ...this.shadowState },
         computedColor: computed ? computed.color : '',
         computedBgColor: computed ? computed.backgroundColor : '',
         computedBorderColor: computed ? computed.borderColor : '',
@@ -634,6 +636,37 @@ export class SidePanel {
   }
 
   /**
+   * Check if a specific shadow property has been modified compared to pristine baseline
+   */
+  isShadowPropChanged(propKey) {
+    if (!this.activeElement || !this.activeMeta) return false;
+    const selector = this.activeMeta.selector;
+    const baseline = this.elementBaselines.get(selector);
+    const hasExportShadow = this.isFieldChanged('textShadow') || this.isFieldChanged('boxShadow');
+
+    if (!baseline || !baseline.shadowState) {
+      if (!hasExportShadow) return false;
+      const defaultBase = { type: 'text', x: 0, y: 0, blur: 0, spread: 0, color: '#00e5ff', opacity: 0 };
+      if (propKey === 'shadow-x' || propKey === 'shadowX') return this.shadowState.x !== defaultBase.x;
+      if (propKey === 'shadow-y' || propKey === 'shadowY') return this.shadowState.y !== defaultBase.y;
+      if (propKey === 'shadow-blur' || propKey === 'shadowBlur') return this.shadowState.blur !== defaultBase.blur;
+      if (propKey === 'shadow-spread' || propKey === 'shadowSpread') return this.shadowState.spread !== defaultBase.spread;
+      if (propKey === 'shadow-color' || propKey === 'shadowColor') return this.shadowState.color.toLowerCase() !== defaultBase.color.toLowerCase() || this.shadowState.opacity !== defaultBase.opacity;
+      if (propKey === 'shadow-target' || propKey === 'shadowType') return this.shadowState.type !== defaultBase.type;
+      return false;
+    }
+
+    const base = baseline.shadowState;
+    if (propKey === 'shadow-x' || propKey === 'shadowX') return this.shadowState.x !== base.x;
+    if (propKey === 'shadow-y' || propKey === 'shadowY') return this.shadowState.y !== base.y;
+    if (propKey === 'shadow-blur' || propKey === 'shadowBlur') return this.shadowState.blur !== base.blur;
+    if (propKey === 'shadow-spread' || propKey === 'shadowSpread') return this.shadowState.spread !== base.spread;
+    if (propKey === 'shadow-color' || propKey === 'shadowColor') return this.shadowState.color.toLowerCase() !== base.color.toLowerCase() || this.shadowState.opacity !== base.opacity;
+    if (propKey === 'shadow-target' || propKey === 'shadowType') return this.shadowState.type !== base.type;
+    return false;
+  }
+
+  /**
    * Check if a specific style or setting has been changed on the element for the current breakpoint context
    */
   isFieldChanged(fieldKey) {
@@ -641,6 +674,10 @@ export class SidePanel {
     const selector = this.activeMeta.selector;
     const data = this.exportSystem.getElementData(selector);
     if (!data) return false;
+
+    if (fieldKey.startsWith('shadow-') || fieldKey === 'shadow') {
+      return this.isShadowPropChanged(fieldKey);
+    }
 
     if (fieldKey === 'text') {
       if (this.currentBreakpoint === 'universal') {
@@ -690,7 +727,15 @@ export class SidePanel {
     if (this.isFieldChanged('textTransform') || this.isFieldChanged('fontVariant')) textCount++;
     if (this.isFieldChanged('textAlign')) textCount++;
     if (this.isFieldChanged('fontStyle')) textCount++;
-    if (this.isFieldChanged('textShadow') || this.isFieldChanged('boxShadow')) textCount++;
+    
+    // Count individual shadow changes
+    if (this.isShadowPropChanged('shadow-target')) textCount++;
+    if (this.isShadowPropChanged('shadow-x')) textCount++;
+    if (this.isShadowPropChanged('shadow-y')) textCount++;
+    if (this.isShadowPropChanged('shadow-blur')) textCount++;
+    if (this.isShadowPropChanged('shadow-spread') && this.shadowState.type === 'box') textCount++;
+    if (this.isShadowPropChanged('shadow-color')) textCount++;
+
     if (this.isFieldChanged('color')) textCount++;
     if (this.isFieldChanged('backgroundColor')) textCount++;
     if (this.isFieldChanged('borderColor')) textCount++;
@@ -728,6 +773,43 @@ export class SidePanel {
     };
   }
 
+  getSiteWideTextChanges() {
+    if (!this.exportSystem) return 0;
+    const userChanges = this.exportSystem.sessionUserChangesMap;
+    if (!userChanges || userChanges.size === 0) return 0;
+
+    let totalTextCount = 0;
+    const textStyleKeys = [
+      'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing',
+      'textTransform', 'fontVariant', 'textAlign', 'fontStyle', 'color',
+      'textShadow'
+    ];
+
+    for (const [, elData] of userChanges.entries()) {
+      if (!elData) continue;
+
+      if (elData.text !== undefined && elData.text !== null) {
+        totalTextCount++;
+      }
+      if (elData.styles) {
+        textStyleKeys.forEach(k => {
+          if (elData.styles[k] !== undefined) totalTextCount++;
+        });
+      }
+      if (elData.breakpoints) {
+        ['desktop', 'tablet', 'mobile'].forEach(bp => {
+          if (elData.breakpoints[bp]) {
+            if (elData.breakpoints[bp].text !== undefined) totalTextCount++;
+            textStyleKeys.forEach(k => {
+              if (elData.breakpoints[bp][k] !== undefined) totalTextCount++;
+            });
+          }
+        });
+      }
+    }
+    return totalTextCount;
+  }
+
   /**
    * Calculate change counts for the currently active element and update tab bar badges
    */
@@ -737,8 +819,20 @@ export class SidePanel {
     const mediaBadge = this.container.querySelector('#badge-tab-media');
     const propsBadge = this.container.querySelector('#badge-tab-props');
 
-    if (!this.exportSystem || !this.activeElement) {
+    if (!this.exportSystem) {
       if (textBadge) textBadge.style.display = 'none';
+      if (spacingBadge) spacingBadge.style.display = 'none';
+      if (mediaBadge) mediaBadge.style.display = 'none';
+      if (propsBadge) propsBadge.style.display = 'none';
+      this._updateResetButtonVisibility();
+      return;
+    }
+
+    // Header | Text | badge counts total of all text changes anywhere in the website
+    const siteTextCount = this.getSiteWideTextChanges();
+    this._updateBadge(textBadge, siteTextCount);
+
+    if (!this.activeElement) {
       if (spacingBadge) spacingBadge.style.display = 'none';
       if (mediaBadge) mediaBadge.style.display = 'none';
       if (propsBadge) propsBadge.style.display = 'none';
@@ -748,7 +842,6 @@ export class SidePanel {
 
     const counts = this.getActiveElementSectionCounts();
 
-    this._updateBadge(textBadge, counts.text);
     this._updateBadge(spacingBadge, counts.spacing);
     this._updateBadge(mediaBadge, counts.media);
     this._updateBadge(propsBadge, counts.props);
@@ -811,7 +904,9 @@ export class SidePanel {
       } else if (type === 'borders' || key === 'borders') {
         isChanged = this.isFieldChanged('borderColor') || this.isFieldChanged('borderWidth') || this.isFieldChanged('borderRadius');
       } else if (type === 'shadow' || key === 'shadow') {
-        isChanged = this.isFieldChanged('boxShadow') || this.isFieldChanged('textShadow');
+        isChanged = ['shadow-target', 'shadow-x', 'shadow-y', 'shadow-blur', 'shadow-spread', 'shadow-color'].some(k => this.isShadowPropChanged(k));
+      } else if (type === 'shadow-prop') {
+        isChanged = this.isShadowPropChanged(key);
       } else if (type === 'allMargins' || key === 'allMargins' || key === 'margins') {
         isChanged = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'].some(k => this.isFieldChanged(k));
       } else if (type === 'allPaddings' || key === 'allPaddings' || key === 'paddings') {
@@ -865,7 +960,12 @@ export class SidePanel {
         else if (rowEl.querySelector('#hex-color-bg') && this.isFieldChanged('backgroundColor')) isRowChanged = true;
         else if (rowEl.querySelector('#hex-color-border') && this.isFieldChanged('borderColor')) isRowChanged = true;
         else if (rowEl.querySelector('#ctrl-text-content') && this.isFieldChanged('text')) isRowChanged = true;
-        else if (rowEl.closest('.admin-section[data-section-id="sec-shadow"]') && (this.isFieldChanged('boxShadow') || this.isFieldChanged('textShadow'))) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-shadow-x') && this.isShadowPropChanged('shadow-x')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-shadow-y') && this.isShadowPropChanged('shadow-y')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-shadow-blur') && this.isShadowPropChanged('shadow-blur')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-shadow-spread') && this.isShadowPropChanged('shadow-spread')) isRowChanged = true;
+        else if (rowEl.querySelector('#hex-color-shadow') && this.isShadowPropChanged('shadow-color')) isRowChanged = true;
+        else if (rowEl.querySelector('#shadow-target-group') && this.isShadowPropChanged('shadow-target')) isRowChanged = true;
       }
 
       const labelEl = rowEl.querySelector('.admin-field-label');
@@ -977,12 +1077,67 @@ export class SidePanel {
         }
       });
     } else if (type === 'shadow' || key === 'shadow') {
+      if (baseline && baseline.shadowState) {
+        this.shadowState = { ...baseline.shadowState };
+        const { x, y, blur, spread, color, opacity, type: sType } = this.shadowState;
+        const alpha = Math.max(0, Math.min(1, opacity / 100));
+        const rgb = this._hexToRgb(color);
+        const rgbaColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+        this.activeElement.style.removeProperty('text-shadow');
+        this.activeElement.style.removeProperty('box-shadow');
+        if (this.exportSystem) {
+          this.exportSystem.removeChange(selector, 'style', 'textShadow', 'all');
+          this.exportSystem.removeChange(selector, 'style', 'boxShadow', 'all');
+        }
+        if (opacity > 0) {
+          if (sType === 'text') {
+            const sh = `${x}px ${y}px ${blur}px ${rgbaColor}`;
+            this._notifyChange({ styleKey: 'textShadow', val: sh });
+          } else {
+            const sh = `${x}px ${y}px ${blur}px ${spread}px ${rgbaColor}`;
+            this._notifyChange({ styleKey: 'boxShadow', val: sh });
+          }
+        }
+      } else {
+        this.activeElement.style.removeProperty('text-shadow');
+        this.activeElement.style.removeProperty('box-shadow');
+        this.shadowState = { type: 'text', x: 0, y: 0, blur: 0, spread: 0, color: '#00e5ff', opacity: 0 };
+        if (this.exportSystem) {
+          this.exportSystem.removeChange(selector, 'style', 'textShadow', 'all');
+          this.exportSystem.removeChange(selector, 'style', 'boxShadow', 'all');
+        }
+      }
+    } else if (type === 'shadow-prop' || (key && key.startsWith('shadow-'))) {
+      const baseShadow = (baseline && baseline.shadowState) ? baseline.shadowState : { type: 'text', x: 0, y: 0, blur: 0, spread: 0, color: '#00e5ff', opacity: 0 };
+      if (key === 'shadow-x' || key === 'shadowX') this.shadowState.x = baseShadow.x;
+      else if (key === 'shadow-y' || key === 'shadowY') this.shadowState.y = baseShadow.y;
+      else if (key === 'shadow-blur' || key === 'shadowBlur') this.shadowState.blur = baseShadow.blur;
+      else if (key === 'shadow-spread' || key === 'shadowSpread') this.shadowState.spread = baseShadow.spread;
+      else if (key === 'shadow-color' || key === 'shadowColor') {
+        this.shadowState.color = baseShadow.color;
+        this.shadowState.opacity = baseShadow.opacity;
+      } else if (key === 'shadow-target' || key === 'shadowType') {
+        this.shadowState.type = baseShadow.type;
+      }
+      // Re-apply updated shadow
+      const { x, y, blur, spread, color, opacity, type: sType } = this.shadowState;
+      const alpha = Math.max(0, Math.min(1, opacity / 100));
+      const rgb = this._hexToRgb(color);
+      const rgbaColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
       this.activeElement.style.removeProperty('text-shadow');
       this.activeElement.style.removeProperty('box-shadow');
-      this.shadowState = { type: 'text', x: 0, y: 0, blur: 0, spread: 0, color: '#00e5ff', opacity: 0 };
       if (this.exportSystem) {
         this.exportSystem.removeChange(selector, 'style', 'textShadow', 'all');
         this.exportSystem.removeChange(selector, 'style', 'boxShadow', 'all');
+      }
+      if (opacity > 0) {
+        if (sType === 'text') {
+          const sh = `${x}px ${y}px ${blur}px ${rgbaColor}`;
+          this._notifyChange({ styleKey: 'textShadow', val: sh });
+        } else {
+          const sh = `${x}px ${y}px ${blur}px ${spread}px ${rgbaColor}`;
+          this._notifyChange({ styleKey: 'boxShadow', val: sh });
+        }
       }
     } else if (type === 'allMargins' || key === 'allMargins' || key === 'margins') {
       ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'].forEach(prop => {
@@ -1272,11 +1427,11 @@ export class SidePanel {
       </div>
 
       <!-- Non-Code Visual Shadow & Glow Studio (Text Shadow vs Box Shadow) -->
-      <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-shadow') ? 'is-collapsed' : ''} ${hasShadowChanged ? 'is-modified' : ''}">
-        ${this._renderSectionHeader('sec-shadow', 'Shadow & Glow Studio', ['boxShadow', 'textShadow'], 'shadow')}
+      <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-shadow') ? 'is-collapsed' : ''} ${this.isShadowPropChanged('shadow-target') || this.isShadowPropChanged('shadow-x') || this.isShadowPropChanged('shadow-y') || this.isShadowPropChanged('shadow-blur') || this.isShadowPropChanged('shadow-spread') || this.isShadowPropChanged('shadow-color') ? 'is-modified' : ''}" data-section-id="sec-shadow">
+        ${this._renderSectionHeader('sec-shadow', 'Shadow & Glow Studio', ['shadow-target', 'shadow-x', 'shadow-y', 'shadow-blur', 'shadow-spread', 'shadow-color'], 'shadow')}
 
         <!-- Shadow Target Mode: Text Glow vs Box Shadow -->
-        <div class="admin-field-row ${hasShadowChanged ? 'is-modified' : ''}">
+        <div class="admin-field-row ${this.isShadowPropChanged('shadow-target') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Target</label>
           </div>
@@ -1285,11 +1440,12 @@ export class SidePanel {
               <button type="button" class="admin-case-btn ${this.shadowState.type === 'text' ? 'is-active' : ''}" data-shadow-type="text" data-tooltip="Apply glow directly to the text letters">Text Glow</button>
               <button type="button" class="admin-case-btn ${this.shadowState.type === 'box' ? 'is-active' : ''}" data-shadow-type="box" data-tooltip="Apply shadow to the container box/card">Box Shadow</button>
             </div>
+            <button type="button" class="btn-field-reset" data-reset-type="shadow-prop" data-reset-key="shadow-target" data-tooltip="Reset shadow target" style="display: ${this.isShadowPropChanged('shadow-target') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
         <!-- Presets -->
-        <div class="admin-field-row ${hasShadowChanged ? 'is-modified' : ''}">
+        <div class="admin-field-row">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Presets</label>
           </div>
@@ -1303,47 +1459,51 @@ export class SidePanel {
         </div>
 
         <!-- X Offset -->
-        <div class="admin-field-row ${hasShadowChanged ? 'is-modified' : ''}">
+        <div class="admin-field-row ${this.isShadowPropChanged('shadow-x') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">X Offset</label>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('shadow-x', -40, 40, 1, this.shadowState.x, 'px')}
+            <button type="button" class="btn-field-reset" data-reset-type="shadow-prop" data-reset-key="shadow-x" data-tooltip="Reset X offset" style="display: ${this.isShadowPropChanged('shadow-x') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
         <!-- Y Offset -->
-        <div class="admin-field-row ${hasShadowChanged ? 'is-modified' : ''}">
+        <div class="admin-field-row ${this.isShadowPropChanged('shadow-y') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Y Offset</label>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('shadow-y', -40, 40, 1, this.shadowState.y, 'px')}
+            <button type="button" class="btn-field-reset" data-reset-type="shadow-prop" data-reset-key="shadow-y" data-tooltip="Reset Y offset" style="display: ${this.isShadowPropChanged('shadow-y') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
         <!-- Blur Radius -->
-        <div class="admin-field-row ${hasShadowChanged ? 'is-modified' : ''}">
+        <div class="admin-field-row ${this.isShadowPropChanged('shadow-blur') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Blur Radius</label>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('shadow-blur', 0, 60, 1, this.shadowState.blur, 'px')}
+            <button type="button" class="btn-field-reset" data-reset-type="shadow-prop" data-reset-key="shadow-blur" data-tooltip="Reset blur" style="display: ${this.isShadowPropChanged('shadow-blur') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
         <!-- Spread Radius (Only applicable for Box Shadow) -->
-        <div class="admin-field-row ${hasShadowChanged ? 'is-modified' : ''}" id="row-shadow-spread" style="${this.shadowState.type === 'text' ? 'display: none;' : ''}">
+        <div class="admin-field-row ${this.isShadowPropChanged('shadow-spread') ? 'is-modified' : ''}" id="row-shadow-spread" style="${this.shadowState.type === 'text' ? 'display: none;' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Spread</label>
           </div>
           <div class="admin-field-control">
             ${this._renderSliderRow('shadow-spread', -20, 30, 1, this.shadowState.spread, 'px')}
+            <button type="button" class="btn-field-reset" data-reset-type="shadow-prop" data-reset-key="shadow-spread" data-tooltip="Reset spread" style="display: ${this.isShadowPropChanged('shadow-spread') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
 
         <!-- Shadow Color & Opacity -->
-        <div class="admin-field-row ${hasShadowChanged ? 'is-modified' : ''}">
+        <div class="admin-field-row ${this.isShadowPropChanged('shadow-color') ? 'is-modified' : ''}">
           <div class="admin-field-label-wrap">
             <label class="admin-field-label">Color & Alpha</label>
           </div>
@@ -1368,6 +1528,7 @@ export class SidePanel {
               </div>
               <span class="unit-label">%</span>
             </div>
+            <button type="button" class="btn-field-reset" data-reset-type="shadow-prop" data-reset-key="shadow-color" data-tooltip="Reset color & alpha" style="display: ${this.isShadowPropChanged('shadow-color') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
       </div>
@@ -2302,7 +2463,7 @@ export class SidePanel {
 
         <!-- Add New Prop -->
         <div class="admin-add-prop-wrap" style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--admin-border-subtle);">
-          <div style="font-size: 10.5px; font-weight: 600; color: #fff; margin-bottom: 8px;">Add New Data Attribute</div>
+          <div style="font-size: 10.5px; font-weight: 600; color: var(--admin-text-primary); margin-bottom: 8px;">Add New Data Attribute</div>
           <div style="display: flex; gap: 6px;">
             <input type="text" class="admin-input" id="new-prop-name" placeholder="attribute-name" style="flex: 1;">
             <input type="text" class="admin-input" id="new-prop-val" placeholder="value" style="flex: 1;">
