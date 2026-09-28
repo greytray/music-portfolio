@@ -286,8 +286,19 @@ export function applyDesignSchema(schema, doc = document) {
       if (targetText !== null) {
         if (targetHtml) {
           el.innerHTML = targetHtml;
-        } else {
+        } else if (el.children.length === 0) {
           el.textContent = targetText;
+        } else {
+          // Has child elements (e.g. <small>Original production</small>, <span>, icons): safely update direct text node
+          const directTextNodes = Array.from(el.childNodes).filter(n => n.nodeType === Node.TEXT_NODE);
+          if (directTextNodes.length > 0) {
+            directTextNodes[0].nodeValue = targetText;
+            for (let i = 1; i < directTextNodes.length; i++) {
+              directTextNodes[i].remove();
+            }
+          } else {
+            el.insertBefore(doc.createTextNode(targetText), el.firstChild);
+          }
         }
       } else if (el.__ekoOriginalText !== undefined) {
         if (el.__ekoOriginalHtml !== undefined && el.__ekoOriginalHtml.includes('<')) {

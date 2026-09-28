@@ -18,13 +18,25 @@ export class SidePanel {
    * @param {Function} options.onElementChange - Called when any style/text/prop changes
    * @param {Function} options.onDeselect - Called when user deselects
    * @param {Function} options.onToggleCollapse - Called when toggling sidebar collapse
+   * @param {Function} options.onToggleShowChanges - Called when toggling show/hide changes
+   * @param {Function} options.onToast - Optional toast notification trigger
    */
-  constructor(container, { exportSystem, onElementChange, onDeselect, onToggleCollapse } = {}) {
+  constructor(container, { exportSystem, onElementChange, onDeselect, onToggleCollapse, onToggleShowChanges, onToast } = {}) {
     this.container = container;
     this.exportSystem = exportSystem;
     this.onElementChange = onElementChange;
     this.onDeselect = onDeselect;
     this.onToggleCollapse = onToggleCollapse;
+    this.onToggleShowChanges = onToggleShowChanges;
+    this.onToast = onToast;
+
+    this.showChangesHighlight = localStorage.getItem('eko_admin_show_changes') !== 'false';
+    this._lastChangesCount = 0;
+
+    // Undo / Redo History Stack for Sidebar Menu
+    this.undoStack = [];
+    this.redoStack = [];
+    this._isUndoingOrRedoing = false;
 
     this.activeElement = null;
     this.activeMeta = null;
@@ -68,6 +80,12 @@ export class SidePanel {
           <span>Select an element on canvas</span>
         </div>
         <div style="display: flex; gap: 4px; align-items: center;">
+          <button type="button" class="admin-btn admin-btn-ghost btn-undo" id="btn-sidepanel-undo" data-tooltip="Undo (Ctrl+Z)" disabled style="padding: 4px 6px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+          </button>
+          <button type="button" class="admin-btn admin-btn-ghost btn-redo" id="btn-sidepanel-redo" data-tooltip="Redo (Ctrl+Shift+Z)" disabled style="padding: 4px 6px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
+          </button>
           <button type="button" class="admin-btn admin-btn-ghost" id="btn-sidepanel-collapse" data-tooltip="Collapse Inspector Sidebar">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/><path d="m10 9-3 3 3 3"/></svg>
           </button>
@@ -117,18 +135,90 @@ export class SidePanel {
         </div>
       </div>
 
-      <!-- Footer Quick Actions (Reset Changes shows whenever changes exist) -->
-      <div class="admin-sidepanel-footer" id="admin-panel-footer" style="display: none;">
+      <!-- Footer Quick Actions: Reset Changes and Compact Show Changes on/off -->
+      <div class="admin-sidepanel-footer" id="admin-panel-footer">
         <button type="button" class="admin-btn admin-btn-danger" id="btn-reset-element" data-tooltip="Reset changes" style="display: none;">Reset Changes</button>
-        <button type="button" class="admin-btn admin-btn-ghost" id="btn-copy-css" data-tooltip="Copy inline CSS overrides">Copy CSS</button>
+        <button type="button" class="admin-toggle-changes-compact ${this.showChangesHighlight ? 'is-on' : ''}" id="btn-toggle-show-changes" data-tooltip="Toggle changes highlight">
+          <span class="toggle-changes-badge-dot"></span>
+          <span class="toggle-changes-title" id="toggle-changes-title">Show Changes</span>
+          <span class="toggle-changes-count" id="toggle-changes-count" style="display: none;">0</span>
+          <span class="toggle-changes-pill" id="toggle-switch-label">${this.showChangesHighlight ? 'ON' : 'OFF'}</span>
+        </button>
       </div>
     `;
 
     this._bindTabEvents();
     this._bindHeaderEvents();
+    this._bindFooterEvents();
+  }
+
+  _bindFooterEvents() {
+    const toggleBtn = this.container.querySelector('#btn-toggle-show-changes');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        this.showChangesHighlight = !this.showChangesHighlight;
+        try {
+          localStorage.setItem('eko_admin_show_changes', String(this.showChangesHighlight));
+        } catch (_) {}
+        this.updateShowChangesBadge(this._lastChangesCount, this.showChangesHighlight);
+        if (typeof this.onToggleShowChanges === 'function') {
+          this.onToggleShowChanges(this.showChangesHighlight);
+        }
+      });
+    }
+  }
+
+  /**
+   * Update the compact show changes button badge and switch state
+   */
+  updateShowChangesBadge(count, isEnabled) {
+    if (isEnabled !== undefined) {
+      this.showChangesHighlight = isEnabled;
+    }
+    if (typeof count === 'number') {
+      this._lastChangesCount = count;
+    }
+    const btn = this.container.querySelector('#btn-toggle-show-changes');
+    const label = this.container.querySelector('#toggle-switch-label');
+    const countBadge = this.container.querySelector('#toggle-changes-count');
+
+    if (btn) {
+      if (this.showChangesHighlight) {
+        btn.classList.add('is-on');
+        if (label) label.textContent = 'ON';
+      } else {
+        btn.classList.remove('is-on');
+        if (label) label.textContent = 'OFF';
+      }
+    }
+
+    if (countBadge) {
+      const displayCount = typeof count === 'number' ? count : this._lastChangesCount;
+      if (displayCount > 0) {
+        countBadge.style.display = 'inline-flex';
+        countBadge.textContent = `${displayCount}`;
+        countBadge.title = `${displayCount} changed element${displayCount === 1 ? '' : 's'}`;
+      } else {
+        countBadge.style.display = 'none';
+      }
+    }
   }
 
   _bindHeaderEvents() {
+    const undoBtn = this.container.querySelector('#btn-sidepanel-undo');
+    if (undoBtn) {
+      undoBtn.addEventListener('click', () => {
+        this.undo();
+      });
+    }
+
+    const redoBtn = this.container.querySelector('#btn-sidepanel-redo');
+    if (redoBtn) {
+      redoBtn.addEventListener('click', () => {
+        this.redo();
+      });
+    }
+
     const collapseBtn = this.container.querySelector('#btn-sidepanel-collapse');
     if (collapseBtn) {
       collapseBtn.addEventListener('click', () => {
@@ -152,18 +242,6 @@ export class SidePanel {
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
         this._handleResetElement();
-      });
-    }
-
-    const copyCssBtn = this.container.querySelector('#btn-copy-css');
-    if (copyCssBtn) {
-      copyCssBtn.addEventListener('click', () => {
-        if (!this.activeElement) return;
-        const css = this.activeElement.getAttribute('style') || '/* No inline overrides */';
-        navigator.clipboard.writeText(css).then(() => {
-          copyCssBtn.textContent = 'Copied!';
-          setTimeout(() => { copyCssBtn.textContent = 'Copy CSS'; }, 1500);
-        });
       });
     }
   }
@@ -247,7 +325,7 @@ export class SidePanel {
     const hasSectionChanges = this._hasActiveElementSectionChanges(currentTab);
 
     if (footer) {
-      footer.style.display = this.activeElement ? 'flex' : 'none';
+      footer.style.display = 'flex';
     }
 
     if (resetBtn) {
@@ -292,9 +370,189 @@ export class SidePanel {
   }
 
   /**
+   * Helper: Extracts only direct text node content of an element without eating up child elements (like <small>)
+   */
+  _getDirectText(el) {
+    if (!el) return '';
+    const textNodes = Array.from(el.childNodes).filter(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
+    if (textNodes.length > 0) {
+      return textNodes.map(n => n.textContent).join(' ').trim();
+    }
+    if (el.children.length === 0) {
+      return (el.textContent || '').trim();
+    }
+    return '';
+  }
+
+  /**
+   * Helper: Safely updates direct text node of an element without destroying child elements (like <small>Original production</small>)
+   */
+  _updateElementDirectText(el, newVal) {
+    if (!el) return;
+    if (el.children.length === 0) {
+      el.textContent = newVal;
+      return;
+    }
+    const directTextNodes = Array.from(el.childNodes).filter(n => n.nodeType === Node.TEXT_NODE);
+    if (directTextNodes.length > 0) {
+      directTextNodes[0].nodeValue = newVal;
+      for (let i = 1; i < directTextNodes.length; i++) {
+        directTextNodes[i].remove();
+      }
+    } else {
+      el.insertBefore(el.ownerDocument.createTextNode(newVal), el.firstChild);
+    }
+  }
+
+  /**
+   * Undo/Redo: Captures snapshot of element and export state before a change
+   */
+  captureCurrentSnapshot(label = '') {
+    if (!this.activeMeta || !this.exportSystem) return null;
+    const selector = this.activeMeta.selector;
+    const el = this.activeElement;
+    return {
+      label,
+      selector,
+      breakpoint: this.currentBreakpoint,
+      activeTab: this.activeTab,
+      exportData: JSON.parse(JSON.stringify(this.exportSystem.getElementData(selector) || null)),
+      domStyle: el ? el.getAttribute('style') : null,
+      domDirectText: el ? this._getDirectText(el) : null,
+      domHtml: el ? el.innerHTML : null,
+      dataset: el ? { ...el.dataset } : {},
+      shadowState: { ...this.shadowState },
+      timestamp: Date.now()
+    };
+  }
+
+  pushUndoSnapshot(label = '') {
+    if (this._isUndoingOrRedoing) return;
+    const snapshot = this.captureCurrentSnapshot(label);
+    if (!snapshot) return;
+    this.undoStack.push(snapshot);
+    if (this.undoStack.length > 60) {
+      this.undoStack.shift();
+    }
+    this.redoStack = [];
+    this.updateUndoRedoButtons();
+  }
+
+  updateUndoRedoButtons() {
+    const undoBtn = this.container.querySelector('#btn-sidepanel-undo');
+    const redoBtn = this.container.querySelector('#btn-sidepanel-redo');
+    if (undoBtn) undoBtn.disabled = this.undoStack.length === 0;
+    if (redoBtn) redoBtn.disabled = this.redoStack.length === 0;
+  }
+
+  undo() {
+    if (this.undoStack.length === 0) return false;
+    this._isUndoingOrRedoing = true;
+    try {
+      const currentSnapshot = this.captureCurrentSnapshot('Current State');
+      if (currentSnapshot) {
+        this.redoStack.push(currentSnapshot);
+        if (this.redoStack.length > 60) this.redoStack.shift();
+      }
+
+      const prev = this.undoStack.pop();
+      if (prev) {
+        this._restoreSnapshot(prev);
+      }
+    } finally {
+      this._isUndoingOrRedoing = false;
+      this.updateUndoRedoButtons();
+    }
+    return true;
+  }
+
+  redo() {
+    if (this.redoStack.length === 0) return false;
+    this._isUndoingOrRedoing = true;
+    try {
+      const currentSnapshot = this.captureCurrentSnapshot('Current State');
+      if (currentSnapshot) {
+        this.undoStack.push(currentSnapshot);
+        if (this.undoStack.length > 60) this.undoStack.shift();
+      }
+
+      const next = this.redoStack.pop();
+      if (next) {
+        this._restoreSnapshot(next);
+      }
+    } finally {
+      this._isUndoingOrRedoing = false;
+      this.updateUndoRedoButtons();
+    }
+    return true;
+  }
+
+  _restoreSnapshot(snapshot) {
+    if (!snapshot || !this.exportSystem) return;
+    const selector = snapshot.selector;
+
+    // 1. Restore data in exportSystem
+    if (snapshot.exportData) {
+      this.exportSystem.changesMap.set(selector, JSON.parse(JSON.stringify(snapshot.exportData)));
+      this.exportSystem.sessionUserChangesMap.set(selector, JSON.parse(JSON.stringify(snapshot.exportData)));
+    } else {
+      this.exportSystem.changesMap.delete(selector);
+      this.exportSystem.sessionUserChangesMap.delete(selector);
+    }
+
+    // 2. Restore DOM element state
+    const doc = this.activeElement?.ownerDocument || window.document;
+    const targetEl = doc.querySelector(selector) || this.activeElement;
+
+    if (targetEl) {
+      if (snapshot.domStyle !== null) {
+        targetEl.setAttribute('style', snapshot.domStyle);
+      } else {
+        targetEl.removeAttribute('style');
+      }
+
+      if (snapshot.domDirectText !== null) {
+        this._updateElementDirectText(targetEl, snapshot.domDirectText);
+      }
+
+      if (snapshot.dataset) {
+        Object.keys(targetEl.dataset).forEach(k => delete targetEl.dataset[k]);
+        Object.entries(snapshot.dataset).forEach(([k, v]) => {
+          targetEl.dataset[k] = v;
+        });
+      }
+    }
+
+    if (snapshot.shadowState) {
+      this.shadowState = { ...snapshot.shadowState };
+    }
+
+    // 3. Re-apply schema to iframe
+    try {
+      applyDesignSchema(this.exportSystem.serializeSchema(), doc);
+    } catch (_) {}
+
+    // 4. If current element is selected, update inspector tab
+    if (this.activeMeta && this.activeMeta.selector === selector) {
+      this._refreshActiveMetaStyles();
+      this._parseExistingShadow();
+      if (snapshot.activeTab) this.activeTab = snapshot.activeTab;
+      this._renderActiveTab();
+      this.updateTabCounters();
+      this._updateResetButtonVisibility();
+    }
+
+    // 5. Notify parent app
+    if (typeof this.onElementChange === 'function' && targetEl && this.activeMeta) {
+      this.onElementChange(targetEl, this.activeMeta, { undoRedo: true }, snapshot.breakpoint || this.currentBreakpoint);
+    }
+  }
+
+  /**
    * Reset all changes in the current section category
    */
   _handleResetSection(sectionName) {
+    this.pushUndoSnapshot(`Reset ${sectionName}`);
     const currentTab = sectionName || this.activeTab || 'text';
     const targetSelector = this.activeMeta ? this.activeMeta.selector : null;
 
@@ -535,7 +793,7 @@ export class SidePanel {
         <span>Select an element on canvas</span>
       `;
     }
-    if (footerEl) footerEl.style.display = 'none';
+    this._updateResetButtonVisibility();
 
     if (contentEl) {
       contentEl.innerHTML = `
@@ -1039,6 +1297,7 @@ export class SidePanel {
    * Reset helper for a single property
    */
   resetProperty(type, key) {
+    this.pushUndoSnapshot(`Reset ${key || type}`);
     if (!this.activeElement || !this.activeMeta) return;
     const selector = this.activeMeta.selector;
     const baseline = this.elementBaselines.get(selector);
@@ -1240,14 +1499,7 @@ export class SidePanel {
 
     let textVal = this.getEffectiveText('');
     if (!textVal) {
-      const textNodes = Array.from(this.activeElement.childNodes).filter(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
-      if (textNodes.length > 0) {
-        textVal = textNodes.map(n => n.textContent).join(' ').trim();
-      } else if (this.activeElement.children.length === 0) {
-        textVal = (this.activeElement.textContent || '').trim();
-      } else {
-        textVal = (this.activeElement.innerText || this.activeElement.textContent || '').trim();
-      }
+      textVal = this._getDirectText(this.activeElement);
     }
 
     const getEffectiveColor = (key, computedVal, baselineVal) => {
@@ -1622,9 +1874,12 @@ export class SidePanel {
     // 1. Text Content Live Edit
     const textInput = container.querySelector('#ctrl-text-content');
     if (textInput) {
+      textInput.addEventListener('focus', () => {
+        this.pushUndoSnapshot('Text Content');
+      });
       textInput.addEventListener('input', () => {
         const newVal = textInput.value;
-        this.activeElement.textContent = newVal;
+        this._updateElementDirectText(this.activeElement, newVal);
         this._notifyChange({ text: newVal });
         this.updateTabCounters();
       });
@@ -1633,6 +1888,9 @@ export class SidePanel {
     // 2. Font Family
     const fontSelect = container.querySelector('#ctrl-font-family');
     if (fontSelect) {
+      fontSelect.addEventListener('focus', () => {
+        this.pushUndoSnapshot('Font Family');
+      });
       const computed = window.getComputedStyle ? window.getComputedStyle(this.activeElement) : {};
       const currentFamily = this.activeElement.style.fontFamily || (this.activeMeta.styles && this.activeMeta.styles.fontFamily) || computed.fontFamily || '';
       let matched = false;
@@ -1673,6 +1931,9 @@ export class SidePanel {
     // 4. Font Weight
     const weightSelect = container.querySelector('#ctrl-font-weight');
     if (weightSelect) {
+      weightSelect.addEventListener('focus', () => {
+        this.pushUndoSnapshot('Font Weight');
+      });
       const computed = window.getComputedStyle ? window.getComputedStyle(this.activeElement) : {};
       const rawWeight = this.activeElement.style.fontWeight || (this.activeMeta.styles && this.activeMeta.styles.fontWeight) || computed.fontWeight || '400';
       let normWeight = '400';
@@ -1716,6 +1977,7 @@ export class SidePanel {
     // 7. Appearance: Case Switching
     container.querySelectorAll('.admin-case-btn[data-case]').forEach(btn => {
       btn.addEventListener('click', () => {
+        this.pushUndoSnapshot('Appearance Case');
         container.querySelectorAll('.admin-case-btn[data-case]').forEach(b => b.classList.remove('is-active'));
         btn.classList.add('is-active');
 
@@ -1742,6 +2004,7 @@ export class SidePanel {
     // 8. Alignments
     container.querySelectorAll('[data-align]').forEach(btn => {
       btn.addEventListener('click', () => {
+        this.pushUndoSnapshot('Text Alignment');
         container.querySelectorAll('[data-align]').forEach(b => b.classList.remove('is-active'));
         btn.classList.add('is-active');
         const align = btn.dataset.align;
@@ -2625,6 +2888,25 @@ export class SidePanel {
 
     if (!slider || !num) return;
 
+    let isInteracting = false;
+    const startInteraction = () => {
+      if (!isInteracting) {
+        isInteracting = true;
+        this.pushUndoSnapshot(`Slider ${prefix}`);
+      }
+    };
+    const endInteraction = () => {
+      isInteracting = false;
+    };
+
+    slider.addEventListener('pointerdown', startInteraction);
+    slider.addEventListener('keydown', startInteraction);
+    slider.addEventListener('pointerup', endInteraction);
+    slider.addEventListener('change', endInteraction);
+
+    num.addEventListener('focus', startInteraction);
+    num.addEventListener('blur', endInteraction);
+
     const updateVal = (val) => {
       slider.value = val;
       num.value = val;
@@ -2645,6 +2927,7 @@ export class SidePanel {
     container.querySelectorAll(`.stepper-btn[data-step-target="num-${prefix}"]`).forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
+        this.pushUndoSnapshot(`Stepper ${prefix}`);
         const dir = parseInt(btn.dataset.dir, 10) || 1;
         const step = parseFloat(slider.step) || 1;
         const min = parseFloat(slider.min) !== undefined ? parseFloat(slider.min) : -Infinity;

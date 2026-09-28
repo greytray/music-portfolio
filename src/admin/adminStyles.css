@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Work+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 /* ==========================================================================
    Eko In-Context Visual Editor (Design Mode) — Figma / DevTools UI Architecture
@@ -29,6 +29,7 @@ html[data-admin-theme="dark"],
   --admin-radius-md: 8px;
   --admin-radius-lg: 12px;
   --admin-font: "Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --admin-font-number: "Manrope", var(--admin-font), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --admin-mono: "JetBrains Mono", "SF Mono", Monaco, monospace;
   --admin-sidebar-width: 415px;
   --admin-topbar-height: 54px;
@@ -58,6 +59,7 @@ html[data-admin-theme="light"],
   --admin-radius-md: 8px;
   --admin-radius-lg: 12px;
   --admin-font: "Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --admin-font-number: "Manrope", var(--admin-font), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --admin-mono: "JetBrains Mono", "SF Mono", Monaco, monospace;
   --admin-sidebar-width: 415px;
   --admin-topbar-height: 54px;
@@ -524,6 +526,15 @@ html[data-admin-theme="light"] .admin-btn-primary:hover,
   transform: translateY(0);
   background: rgba(255, 255, 255, 0.2) !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
+}
+
+.admin-btn-ghost:disabled,
+.admin-btn:disabled {
+  opacity: 0.32 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .admin-btn-danger {
@@ -1264,8 +1275,10 @@ html[data-admin-theme="light"] .admin-field-row + .admin-field-row,
   border: 1px solid var(--admin-border-strong);
   border-radius: var(--admin-radius-sm);
   color: var(--admin-text-primary);
-  font-family: var(--admin-mono);
-  font-size: 11px;
+  font-family: var(--admin-font-number);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   text-align: right;
   box-sizing: border-box;
   outline: none;
@@ -1732,16 +1745,131 @@ html[data-admin-theme="light"] .admin-picker-hex-input,
 }
 
 /* --------------------------------------------------------------------------
-   Side Panel Footer
+   Side Panel Footer & Compact Show Changes Button
    -------------------------------------------------------------------------- */
 .admin-sidepanel-footer {
-  padding: 12px 16px;
+  padding: 10px 14px;
   border-top: 1px solid var(--admin-border-subtle);
   background: var(--admin-bg-base);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.admin-sidepanel-footer:has(#btn-reset-element[style*="inline-flex"]) {
+  justify-content: space-between;
+}
+
+.admin-toggle-changes-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  user-select: none;
+  font-family: var(--admin-font);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.admin-toggle-changes-compact:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(168, 85, 247, 0.55);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.admin-toggle-changes-compact:active {
+  transform: translateY(0);
+}
+
+.admin-toggle-changes-compact .toggle-changes-badge-dot {
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  min-height: 8px;
+  max-width: 8px;
+  max-height: 8px;
+  border-radius: 50%;
+  aspect-ratio: 1 / 1;
+  background: #64748b;
+  border: none;
+  box-shadow: none;
+  flex-shrink: 0;
+  display: inline-block;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.admin-toggle-changes-compact.is-on .toggle-changes-badge-dot {
+  background: #a855f7;
+  border: none;
+  box-shadow: none;
+}
+
+.admin-toggle-changes-compact .toggle-changes-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  letter-spacing: 0.01em;
+}
+
+.admin-toggle-changes-compact .toggle-changes-count {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9999px;
+  background: rgba(168, 85, 247, 0.2);
+  color: #e9d5ff;
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--admin-font-number), "Manrope", sans-serif !important;
+  font-variant-numeric: tabular-nums;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+  box-shadow: none;
+  letter-spacing: 0;
+  margin: 0;
+  vertical-align: middle;
+}
+
+.admin-toggle-changes-compact .toggle-changes-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--admin-radius-sm);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--admin-text-muted);
+  letter-spacing: 0.02em;
+  transition: all 0.18s ease;
+}
+
+.admin-toggle-changes-compact.is-on .toggle-changes-pill {
+  background: rgba(168, 85, 247, 0.22);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.5);
+}
+
+.admin-toggle-changes-compact.is-on {
+  border-color: rgba(168, 85, 247, 0.5);
 }
 
 /* --------------------------------------------------------------------------
@@ -1846,7 +1974,8 @@ html[data-admin-theme="light"] .admin-picker-hex-input,
   border-radius: 9999px;
   font-size: 9.5px;
   font-weight: 800;
-  font-family: var(--admin-mono);
+  font-family: var(--admin-font-number), "Manrope", sans-serif;
+  font-variant-numeric: tabular-nums;
   line-height: 1;
   margin-left: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
@@ -2123,6 +2252,8 @@ input[type=number] {
   outline: none !important;
   border-radius: 0 !important;
   text-align: right;
+  font-family: var(--admin-font-number), "Manrope", sans-serif !important;
+  font-variant-numeric: tabular-nums;
   box-sizing: border-box !important;
 }
 
@@ -2372,6 +2503,8 @@ input[type=number] {
   justify-content: center;
   font-size: 10px;
   font-weight: 700;
+  font-family: var(--admin-font-number), "Manrope", sans-serif;
+  font-variant-numeric: tabular-nums;
   line-height: 1;
   padding: 2px 5px;
   border-radius: 8px;
@@ -2774,6 +2907,59 @@ html[data-admin-theme="light"] .admin-field-row.is-modified .admin-range-input::
 html[data-admin-theme="light"] .admin-field-row.is-modified .admin-range-input::-moz-range-track,
 .admin-workspace[data-theme="light"] .admin-field-row.is-modified .admin-range-input::-moz-range-track {
   background: rgba(217, 119, 6, 0.32) !important;
+}
+
+/* Light Mode: Compact Show/Hide Changes Button in Sidepanel Footer */
+html[data-admin-theme="light"] .admin-toggle-changes-compact,
+.admin-workspace[data-theme="light"] .admin-toggle-changes-compact {
+  background: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  color: #475569 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+html[data-admin-theme="light"] .admin-toggle-changes-compact:hover,
+.admin-workspace[data-theme="light"] .admin-toggle-changes-compact:hover {
+  background: #F8FAFC !important;
+  border-color: #9333ea !important;
+  color: #0F172A !important;
+}
+
+html[data-admin-theme="light"] .admin-toggle-changes-compact .toggle-changes-title,
+.admin-workspace[data-theme="light"] .admin-toggle-changes-compact .toggle-changes-title {
+  color: #1E293B !important;
+}
+
+html[data-admin-theme="light"] .admin-toggle-changes-compact .toggle-changes-pill,
+.admin-workspace[data-theme="light"] .admin-toggle-changes-compact .toggle-changes-pill {
+  background: #F1F5F9 !important;
+  color: #64748B !important;
+}
+
+html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on,
+.admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on {
+  border-color: #9333ea !important;
+}
+
+html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-badge-dot,
+.admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-badge-dot {
+  background: #9333ea !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-pill,
+.admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-pill {
+  background: #F3E8FF !important;
+  color: #7E22CE !important;
+  border: 1px solid #E9D5FF !important;
+}
+
+html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-count,
+.admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-count {
+  background: #F3E8FF !important;
+  color: #7E22CE !important;
+  border-color: #D8B4FE !important;
 }
 
 

@@ -85,11 +85,12 @@ export class SelectionEngine {
    * @param {Function} options.onSelect - Callback when element is selected (element, metadata)
    * @param {Function} options.onDeselect - Callback when element is deselected
    */
-  constructor(iframe, { onSelect, onDeselect, mode = 'interactive' } = {}) {
+  constructor(iframe, { onSelect, onDeselect, mode = 'interactive', breakpoint = 'universal', showChanges = true } = {}) {
     this.iframe = iframe;
     this.onSelect = onSelect;
     this.onDeselect = onDeselect;
     this.mode = mode; // 'interactive' (Normal) | 'select' (Inspect)
+    this.breakpoint = breakpoint;
     this.selectedElement = null;
     this.hoveredElement = null;
 
@@ -98,11 +99,27 @@ export class SelectionEngine {
     this.hoverBadge = null;
     this.selectedBox = null;
     this.selectedBadge = null;
+    this.changedBoxesContainer = null;
+    this.circuitSvg = null;
+    this.leftTag = null;
+    this.rightTag = null;
+    this.leftTagY = null; // null => centered vertically (50%)
+    this.rightTagY = null;
+    this.isDraggingLeft = false;
+    this.isDraggingRight = false;
+    this.dragStartY = 0;
+    this.dragStartTagY = 0;
+    this.hasMovedDrag = false;
+
+    this.changedElements = new Set();
+    this.showChangesEnabled = Boolean(showChanges);
 
     this._boundOnMouseMove = this._onMouseMove.bind(this);
     this._boundOnClick = this._onClick.bind(this);
     this._boundOnScroll = this._updateBoxes.bind(this);
     this._boundOnResize = this._updateBoxes.bind(this);
+    this._boundOnPointerMove = this._onPointerMove.bind(this);
+    this._boundOnPointerUp = this._onPointerUp.bind(this);
 
     this.init();
   }
@@ -130,6 +147,46 @@ export class SelectionEngine {
     this.overlayRoot.id = 'eko-designer-overlays';
     this.overlayRoot.className = 'eko-designer-overlay-root';
     this.doc.body.appendChild(this.overlayRoot);
+
+    // SVG canvas for futuristic circuit connector traces
+    this.circuitSvg = this.doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    this.circuitSvg.setAttribute('class', 'eko-circuit-canvas');
+    this.circuitSvg.style.pointerEvents = 'none';
+    this.overlayRoot.appendChild(this.circuitSvg);
+
+    // Container for changed elements highlight overlays (rendered below hover & select boxes)
+    this.changedBoxesContainer = this.doc.createElement('div');
+    this.changedBoxesContainer.id = 'eko-changed-boxes-container';
+    this.changedBoxesContainer.style.pointerEvents = 'none';
+    this.overlayRoot.appendChild(this.changedBoxesContainer);
+
+    // Left movable futuristic tag (Compact Circle with Change Count & Snap-to-center on double click)
+    this.leftTag = this.doc.createElement('div');
+    this.leftTag.className = 'eko-circuit-tag left-tag';
+    this.leftTag.style.display = 'none';
+    this.leftTag.setAttribute('title', 'Drag vertically to move • Double-click to snap to center');
+    this.leftTag.innerHTML = `
+      <div class="circuit-tag-circle">
+        <span class="circuit-tag-count" id="circuit-left-count">0</span>
+      </div>
+      <div class="circuit-tag-node"></div>
+    `;
+    this.overlayRoot.appendChild(this.leftTag);
+
+    // Right movable futuristic tag (Compact Circle with Change Count & Snap-to-center on double click)
+    this.rightTag = this.doc.createElement('div');
+    this.rightTag.className = 'eko-circuit-tag right-tag';
+    this.rightTag.style.display = 'none';
+    this.rightTag.setAttribute('title', 'Drag vertically to move • Double-click to snap to center');
+    this.rightTag.innerHTML = `
+      <div class="circuit-tag-node"></div>
+      <div class="circuit-tag-circle">
+        <span class="circuit-tag-count" id="circuit-right-count">0</span>
+      </div>
+    `;
+    this.overlayRoot.appendChild(this.rightTag);
+
+    this._bindTagDragEvents();
 
     // Hover box
     this.hoverBox = this.doc.createElement('div');
@@ -161,6 +218,88 @@ export class SelectionEngine {
     this.doc.addEventListener('click', this._boundOnClick, true);
     this.win.addEventListener('scroll', this._boundOnScroll, { passive: true });
     this.win.addEventListener('resize', this._boundOnResize, { passive: true });
+
+    // Render any already-recorded changed boxes
+    this._renderChangedBoxes();
+  }
+
+  _bindTagDragEvents() {
+    if (!this.leftTag || !this.rightTag) return;
+
+    // Double click to snap to center
+    this.leftTag.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.leftTagY = null; // snaps to center (viewportHeight / 2)
+      this._renderChangedBoxes();
+    });
+
+    this.rightTag.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.rightTagY = null; // snaps to center (viewportHeight / 2)
+      this._renderChangedBoxes();
+    });
+
+    this.leftTag.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.isDraggingLeft = true;
+      this.isDraggingRight = false;
+      this.hasMovedDrag = false;
+      this.dragStartY = e.clientY;
+      const rect = this.leftTag.getBoundingClientRect();
+      this.dragStartTagY = rect.top + rect.height / 2;
+      this.leftTag.setPointerCapture(e.pointerId);
+      this.leftTag.classList.add('is-dragging');
+    });
+
+    this.rightTag.addEventListener('pointerdown', (e) => {
+      const isMobile = this.breakpoint === 'mobile' || (this.iframe && this.iframe.offsetWidth > 0 && this.iframe.offsetWidth <= 520);
+      if (isMobile) return;
+      e.preventDefault();
+      e.stopPropagation();
+      this.isDraggingRight = true;
+      this.isDraggingLeft = false;
+      this.hasMovedDrag = false;
+      this.dragStartY = e.clientY;
+      const rect = this.rightTag.getBoundingClientRect();
+      this.dragStartTagY = rect.top + rect.height / 2;
+      this.rightTag.setPointerCapture(e.pointerId);
+      this.rightTag.classList.add('is-dragging');
+    });
+
+    this.doc.addEventListener('pointermove', this._boundOnPointerMove);
+    this.doc.addEventListener('pointerup', this._boundOnPointerUp);
+    this.doc.addEventListener('pointercancel', this._boundOnPointerUp);
+  }
+
+  _onPointerMove(e) {
+    if (!this.isDraggingLeft && !this.isDraggingRight) return;
+    const viewportHeight = this.win.innerHeight || (this.doc.documentElement && this.doc.documentElement.clientHeight) || 800;
+    const dy = e.clientY - this.dragStartY;
+    if (Math.abs(dy) > 2) {
+      this.hasMovedDrag = true;
+    }
+    let newY = Math.max(30, Math.min(viewportHeight - 30, this.dragStartTagY + dy));
+
+    if (this.isDraggingLeft) {
+      this.leftTagY = newY;
+    } else if (this.isDraggingRight) {
+      this.rightTagY = newY;
+    }
+    this._renderChangedBoxes();
+  }
+
+  _onPointerUp(e) {
+    if (this.isDraggingLeft && this.leftTag) {
+      this.leftTag.classList.remove('is-dragging');
+    }
+    if (this.isDraggingRight && this.rightTag) {
+      this.rightTag.classList.remove('is-dragging');
+    }
+    this.isDraggingLeft = false;
+    this.isDraggingRight = false;
   }
 
   _injectOverlayStyles() {
@@ -170,6 +309,8 @@ export class SelectionEngine {
       styleTag = this.doc.createElement('style');
       styleTag.id = 'eko-overlay-styles';
       styleTag.textContent = `
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
         .eko-designer-overlay-root {
           position: fixed !important;
           top: 0 !important;
@@ -185,6 +326,156 @@ export class SelectionEngine {
           margin: 0 !important;
           padding: 0 !important;
           border: none !important;
+        }
+
+        /* --------------------------------------------------------------------------
+           Futuristic Circuit Overlay Canvas & Movable Side Tags (Iron Man / HUD UI)
+           -------------------------------------------------------------------------- */
+        .eko-circuit-canvas {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          pointer-events: none !important;
+          z-index: 99999980 !important;
+          overflow: visible !important;
+        }
+
+        .eko-circuit-tag {
+          position: fixed !important;
+          display: none !important;
+          align-items: center !important;
+          background: transparent !important;
+          border: none !important;
+          padding: 0 !important;
+          color: #f5f3ff !important;
+          font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+          cursor: ns-resize !important;
+          pointer-events: none !important;
+          user-select: none !important;
+          touch-action: none !important;
+          z-index: 100000000 !important;
+          transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+
+        .eko-circuit-tag.is-active-visible {
+          display: flex !important;
+          pointer-events: auto !important;
+        }
+
+        .eko-circuit-tag:hover,
+        .eko-circuit-tag.is-dragging {
+          transform: translateY(-50%) scale(1.08) !important;
+        }
+
+        .eko-circuit-tag.left-tag {
+          left: 10px !important;
+          gap: 4px !important;
+        }
+
+        .eko-circuit-tag.right-tag {
+          right: 10px !important;
+          gap: 4px !important;
+        }
+
+        .circuit-tag-circle {
+          width: 26px !important;
+          height: 26px !important;
+          border-radius: 50% !important;
+          background: rgba(18, 14, 30, 0.96) !important;
+          border: 1.5px solid #7e22ce !important;
+          box-shadow: inset 0 0 0 1.5px #c084fc, 0 2px 6px rgba(0, 0, 0, 0.45) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          text-align: center !important;
+          backdrop-filter: blur(8px) !important;
+          -webkit-backdrop-filter: blur(8px) !important;
+          transition: all 0.18s ease !important;
+          box-sizing: border-box !important;
+        }
+
+        .eko-circuit-tag:hover .circuit-tag-circle,
+        .eko-circuit-tag.is-dragging .circuit-tag-circle {
+          border-color: #9333ea !important;
+          box-shadow: inset 0 0 0 1.5px #e879f9, 0 3px 8px rgba(0, 0, 0, 0.6) !important;
+          background: rgba(26, 20, 44, 0.98) !important;
+        }
+
+        .circuit-tag-count {
+          font-size: 13px !important;
+          font-weight: 700 !important;
+          color: #ffffff !important;
+          font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+          letter-spacing: 0 !important;
+          line-height: 1 !important;
+          text-align: center !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          width: 100% !important;
+          height: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          -webkit-font-smoothing: antialiased !important;
+          text-shadow: none !important;
+          font-variant-numeric: tabular-nums !important;
+        }
+
+        .circuit-tag-node {
+          width: 5px !important;
+          height: 5px !important;
+          border-radius: 50% !important;
+          background: #c084fc !important;
+          border: 1px solid #f5f3ff !important;
+          box-shadow: none !important;
+          flex-shrink: 0 !important;
+        }
+
+        /* --------------------------------------------------------------------------
+           High-Visibility Changed Element Overlays (Two Sharp Corners + Spaced Dashed Boundary Lines)
+           - Two sharp solid L-corners (Top-Left and Bottom-Right)
+           - Spaced dashed boundary lines matching reference design
+           - Zero glow / completely transparent fill
+           -------------------------------------------------------------------------- */
+        .eko-changed-box {
+          position: absolute !important;
+          border: 1.5px dashed rgba(192, 132, 252, 0.9) !important;
+          background: transparent !important;
+          box-shadow: none !important;
+          pointer-events: none !important;
+          border-radius: 0 !important;
+          box-sizing: border-box !important;
+          z-index: 99999985 !important;
+          transition: width 0.08s ease-out, height 0.08s ease-out, left 0.08s ease-out, top 0.08s ease-out !important;
+        }
+
+        /* Two Sharp Solid L-Corners (Top-Left and Bottom-Right) */
+        .eko-changed-box::before {
+          content: '' !important;
+          position: absolute !important;
+          top: -2px !important;
+          left: -2px !important;
+          width: 8px !important;
+          height: 8px !important;
+          border-top: 2.5px solid #c084fc !important;
+          border-left: 2.5px solid #c084fc !important;
+          pointer-events: none !important;
+          z-index: 2 !important;
+        }
+
+        .eko-changed-box::after {
+          content: '' !important;
+          position: absolute !important;
+          bottom: -2px !important;
+          right: -2px !important;
+          width: 8px !important;
+          height: 8px !important;
+          border-bottom: 2.5px solid #c084fc !important;
+          border-right: 2.5px solid #c084fc !important;
+          pointer-events: none !important;
+          z-index: 2 !important;
         }
 
         .eko-hover-box {
@@ -204,7 +495,7 @@ export class SelectionEngine {
           left: 0;
           background: #ffffff !important;
           color: #0b0f19 !important;
-          font-family: -apple-system, BlinkMacSystemFont, "SF Mono", Monaco, "Work Sans", "DM Sans", sans-serif !important;
+          font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Work Sans", sans-serif !important;
           font-size: 10px !important;
           font-weight: 700 !important;
           padding: 2px 7px !important;
@@ -236,7 +527,7 @@ export class SelectionEngine {
           left: 0;
           background: #ffffff !important;
           color: #090c15 !important;
-          font-family: -apple-system, BlinkMacSystemFont, "SF Mono", Monaco, "Work Sans", "DM Sans", sans-serif !important;
+          font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Work Sans", sans-serif !important;
           font-size: 11px !important;
           font-weight: 700 !important;
           padding: 3px 8px !important;
@@ -254,8 +545,10 @@ export class SelectionEngine {
         .eko-selected-badge .dimensions {
           background: #f1f5f9 !important;
           color: #0066cc !important;
-          font-weight: 600 !important;
-          font-size: 10px !important;
+          font-family: "Manrope", -apple-system, sans-serif !important;
+          font-variant-numeric: tabular-nums !important;
+          font-weight: 700 !important;
+          font-size: 10.5px !important;
           padding: 1px 5px !important;
           border-radius: 2px !important;
           border: 1px solid #e2e8f0 !important;
@@ -362,6 +655,224 @@ export class SelectionEngine {
     if (this.hoveredElement && this.mode === 'select') {
       this._renderBox(this.hoverBox, this.hoverBadge, this.hoveredElement, false);
     }
+    this._renderChangedBoxes();
+  }
+
+  /**
+   * Sets the elements to highlight as changed and updates the overlay boxes
+   * @param {Set<HTMLElement>|Array<HTMLElement>} elementsSet
+   * @param {boolean} isEnabled
+   */
+  setChangedElements(elementsSet, isEnabled = true) {
+    this.changedElements = elementsSet instanceof Set ? elementsSet : new Set(elementsSet || []);
+    this.showChangesEnabled = Boolean(isEnabled);
+    this._renderChangedBoxes();
+  }
+
+  setBreakpoint(newBreakpoint) {
+    this.breakpoint = newBreakpoint || 'universal';
+    this._renderChangedBoxes();
+  }
+
+  /**
+   * Renders high-visibility floating highlight boxes around changed elements,
+   * static/draggable left and right futuristic HUD tags, and clean circuit traces
+   * connecting each tag to its nearest modified elements with zero layout shift.
+   */
+  _renderChangedBoxes() {
+    if (!this.changedBoxesContainer || !this.doc) return;
+
+    // If Show Changes is OFF, hide all highlight boxes, circuit traces, and both tags completely
+    if (!this.showChangesEnabled) {
+      this.changedBoxesContainer.innerHTML = '';
+      if (this.circuitSvg) this.circuitSvg.innerHTML = '';
+      if (this.leftTag) {
+        this.leftTag.classList.remove('is-active-visible');
+        this.leftTag.style.setProperty('display', 'none', 'important');
+        this.leftTag.style.pointerEvents = 'none';
+      }
+      if (this.rightTag) {
+        this.rightTag.classList.remove('is-active-visible');
+        this.rightTag.style.setProperty('display', 'none', 'important');
+        this.rightTag.style.pointerEvents = 'none';
+        this.isDraggingRight = false;
+      }
+      return;
+    }
+
+    const viewportHeight = this.win.innerHeight || (this.doc.documentElement && this.doc.documentElement.clientHeight) || 800;
+    const viewportWidth = this.win.innerWidth || (this.doc.documentElement && this.doc.documentElement.clientWidth) || 1000;
+    const iframeWidth = (this.iframe && this.iframe.offsetWidth) ? this.iframe.offsetWidth : viewportWidth;
+    const isMobileMode = Boolean(this.breakpoint === 'mobile' || iframeWidth <= 520 || viewportWidth <= 520);
+    const midX = viewportWidth / 2;
+
+    this.changedBoxesContainer.innerHTML = '';
+
+    // Collect visible modified elements and their bounding boxes
+    const visibleItems = [];
+
+    if (this.changedElements && this.changedElements.size > 0) {
+      this.changedElements.forEach(el => {
+        if (!el || !el.isConnected) return;
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) return;
+        // Filter out elements scrolled completely outside viewport
+        if (rect.bottom < 0 || rect.top > viewportHeight || rect.right < 0 || rect.left > viewportWidth) return;
+
+        const box = this.doc.createElement('div');
+        box.className = 'eko-changed-box';
+        box.style.display = 'block';
+        box.style.width = `${Math.round(rect.width)}px`;
+        box.style.height = `${Math.round(rect.height)}px`;
+        box.style.left = `${Math.round(rect.left)}px`;
+        box.style.top = `${Math.round(rect.top)}px`;
+        this.changedBoxesContainer.appendChild(box);
+
+        visibleItems.push({
+          el,
+          rect,
+          centerX: rect.left + rect.width / 2,
+          centerY: rect.top + rect.height / 2
+        });
+      });
+    }
+
+    // Partition elements to left or right tag based on closest side (or all to left for mobile mode)
+    const leftItems = [];
+    const rightItems = [];
+
+    visibleItems.forEach(item => {
+      if (isMobileMode || item.centerX <= midX) {
+        leftItems.push(item);
+      } else {
+        rightItems.push(item);
+      }
+    });
+
+    // Tags position: Default to vertically centered (viewportHeight / 2) unless dragged by user
+    const defaultTagY = Math.round(viewportHeight / 2);
+    const leftY = Math.max(20, Math.min(viewportHeight - 20, this.leftTagY !== null ? this.leftTagY : defaultTagY));
+    const rightY = Math.max(20, Math.min(viewportHeight - 20, this.rightTagY !== null ? this.rightTagY : defaultTagY));
+
+    // Position Left Tag (Always displayed when Show Changes is ON; shows count or '-')
+    if (this.leftTag) {
+      this.leftTag.classList.add('is-active-visible');
+      this.leftTag.style.setProperty('display', 'flex', 'important');
+      this.leftTag.style.pointerEvents = 'auto';
+      this.leftTag.style.top = `${leftY}px`;
+      this.leftTag.style.transform = 'translateY(-50%)';
+      const countEl = this.leftTag.querySelector('#circuit-left-count');
+      if (countEl) {
+        countEl.textContent = leftItems.length > 0 ? `${leftItems.length}` : '-';
+      }
+    }
+
+    // Position Right Tag (Always displayed on desktop/universal when Show Changes is ON; completely disabled & hidden in mobile mode)
+    if (this.rightTag) {
+      if (!isMobileMode) {
+        this.rightTag.classList.add('is-active-visible');
+        this.rightTag.style.setProperty('display', 'flex', 'important');
+        this.rightTag.style.pointerEvents = 'auto';
+        this.rightTag.style.top = `${rightY}px`;
+        this.rightTag.style.transform = 'translateY(-50%)';
+        const countEl = this.rightTag.querySelector('#circuit-right-count');
+        if (countEl) {
+          countEl.textContent = rightItems.length > 0 ? `${rightItems.length}` : '-';
+        }
+      } else {
+        this.rightTag.classList.remove('is-active-visible');
+        this.rightTag.style.setProperty('display', 'none', 'important');
+        this.rightTag.style.pointerEvents = 'none';
+        this.isDraggingRight = false;
+      }
+    }
+
+    // If no visible changes, clear the circuit line canvas
+    if (visibleItems.length === 0) {
+      if (this.circuitSvg) this.circuitSvg.innerHTML = '';
+      return;
+    }
+
+    // Draw futuristic circuit lines on SVG
+    if (!this.circuitSvg) return;
+
+    this.circuitSvg.setAttribute('width', `${viewportWidth}`);
+    this.circuitSvg.setAttribute('height', `${viewportHeight}`);
+    this.circuitSvg.setAttribute('viewBox', `0 0 ${viewportWidth} ${viewportHeight}`);
+
+    let svgHtml = `
+      <defs>
+        <linearGradient id="circuitGradLeft" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#c084fc" stop-opacity="0.95" />
+          <stop offset="100%" stop-color="#a855f7" stop-opacity="0.6" />
+        </linearGradient>
+        <linearGradient id="circuitGradRight" x1="100%" y1="0%" x2="0%" y2="0%">
+          <stop offset="0%" stop-color="#c084fc" stop-opacity="0.95" />
+          <stop offset="100%" stop-color="#a855f7" stop-opacity="0.6" />
+        </linearGradient>
+      </defs>
+    `;
+
+    // Coordinates of left and right tag connection nodes
+    const leftTagRect = this.leftTag && this.leftTag.classList.contains('is-active-visible') ? this.leftTag.getBoundingClientRect() : null;
+    const rightTagRect = this.rightTag && !isMobileMode && this.rightTag.classList.contains('is-active-visible') ? this.rightTag.getBoundingClientRect() : null;
+
+    const leftNodeX = leftTagRect ? leftTagRect.right : 100;
+    const leftNodeY = leftTagRect ? leftTagRect.top + leftTagRect.height / 2 : leftY;
+
+    const rightNodeX = rightTagRect ? rightTagRect.left : viewportWidth - 100;
+    const rightNodeY = rightTagRect ? rightTagRect.top + rightTagRect.height / 2 : rightY;
+
+    // Helper: generate circuit trace path (orthogonal / 45-deg futuristic aesthetic)
+    const buildCircuitPath = (startX, startY, targetX, targetY, isLeft) => {
+      // Step 1: horizontal lead from tag
+      const leadDist = Math.min(24, Math.max(10, Math.abs(targetX - startX) * 0.25));
+      const p1X = isLeft ? startX + leadDist : startX - leadDist;
+      const p1Y = startY;
+
+      // Step 2: intermediate orthogonal bus corner
+      const midBusX = isLeft
+        ? Math.max(p1X + 8, Math.min(targetX - 12, p1X + (targetX - p1X) * 0.4))
+        : Math.min(p1X - 8, Math.max(targetX + 12, p1X + (targetX - p1X) * 0.4));
+
+      return `M ${startX.toFixed(1)} ${startY.toFixed(1)} L ${p1X.toFixed(1)} ${p1Y.toFixed(1)} L ${midBusX.toFixed(1)} ${targetY.toFixed(1)} L ${targetX.toFixed(1)} ${targetY.toFixed(1)}`;
+    };
+
+    // Draw traces for Left items
+    if (leftItems.length > 0 && leftTagRect) {
+      leftItems.forEach(item => {
+        // Target anchor point: left edge vertical center of the element's box
+        const targetX = Math.max(leftNodeX + 6, item.rect.left);
+        const targetY = Math.max(10, Math.min(viewportHeight - 10, item.centerY));
+
+        const pathD = buildCircuitPath(leftNodeX, leftNodeY, targetX, targetY, true);
+
+        // Circuit line
+        svgHtml += `
+          <path d="${pathD}" fill="none" stroke="url(#circuitGradLeft)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.9" />
+          <circle cx="${targetX.toFixed(1)}" cy="${targetY.toFixed(1)}" r="2.5" fill="#c084fc" stroke="#f5f3ff" stroke-width="1" />
+        `;
+      });
+    }
+
+    // Draw traces for Right items (only if not mobile mode)
+    if (!isMobileMode && rightItems.length > 0 && rightTagRect) {
+      rightItems.forEach(item => {
+        // Target anchor point: right edge vertical center of the element's box
+        const targetX = Math.min(rightNodeX - 6, item.rect.right);
+        const targetY = Math.max(10, Math.min(viewportHeight - 10, item.centerY));
+
+        const pathD = buildCircuitPath(rightNodeX, rightNodeY, targetX, targetY, false);
+
+        // Circuit line
+        svgHtml += `
+          <path d="${pathD}" fill="none" stroke="url(#circuitGradRight)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.9" />
+          <circle cx="${targetX.toFixed(1)}" cy="${targetY.toFixed(1)}" r="2.5" fill="#c084fc" stroke="#f5f3ff" stroke-width="1" />
+        `;
+      });
+    }
+
+    this.circuitSvg.innerHTML = svgHtml;
   }
 
   _renderBox(boxEl, badgeEl, targetEl, isSelected) {
@@ -555,6 +1066,9 @@ export class SelectionEngine {
     if (this.doc) {
       this.doc.removeEventListener('mousemove', this._boundOnMouseMove);
       this.doc.removeEventListener('click', this._boundOnClick, true);
+      this.doc.removeEventListener('pointermove', this._boundOnPointerMove);
+      this.doc.removeEventListener('pointerup', this._boundOnPointerUp);
+      this.doc.removeEventListener('pointercancel', this._boundOnPointerUp);
       const styleTag = this.doc.getElementById('eko-overlay-styles');
       if (styleTag) styleTag.remove();
     }

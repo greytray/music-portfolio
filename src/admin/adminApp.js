@@ -24,6 +24,7 @@ export class AdminApp {
     this.sidebarPosition = localStorage.getItem('eko_admin_sidebar_pos') || 'right'; // 'right' | 'left'
     this.theme = localStorage.getItem('eko_admin_theme') || 'dark'; // 'dark' | 'light'
     this.isSidebarCollapsed = false;
+    this.showChangesHighlight = localStorage.getItem('eko_admin_show_changes') !== 'false';
     this.rootElement = null;
     this.toastTimer = null;
 
@@ -404,8 +405,10 @@ export class AdminApp {
       setTimeout(() => {
         if (iframe) iframe.style.pointerEvents = '';
         if (this.selectionEngine) {
+          this.selectionEngine.setBreakpoint(this.currentBreakpoint);
           this.selectionEngine._updateBoxes();
         }
+        this.updateChangedElementsHighlight();
       }, 280);
     });
 
@@ -445,8 +448,10 @@ export class AdminApp {
       setTimeout(() => {
         if (iframe) iframe.style.pointerEvents = '';
         if (this.selectionEngine) {
+          this.selectionEngine.setBreakpoint(this.currentBreakpoint);
           this.selectionEngine._updateBoxes();
         }
+        this.updateChangedElementsHighlight();
       }, 280);
     });
 
@@ -777,6 +782,7 @@ export class AdminApp {
                 iDoc.documentElement.setAttribute('data-preview-mode', this.currentBreakpoint);
               }
               applyDesignSchema(restored.schema, iDoc);
+              this.updateChangedElementsHighlight();
             }
 
             // Clear element baselines in side panel and re-inspect
@@ -838,10 +844,13 @@ export class AdminApp {
     // Initialize side panel
     this.sidePanel = new SidePanel(sidepanelContainer, {
       exportSystem: this.exportSystem,
+      onToast: (msg, isErr) => this._showToast(msg, isErr),
       onElementChange: (element, metadata, changeDetail, breakpoint = this.currentBreakpoint) => {
         // Record in Export System with active device breakpoint
         const selector = metadata.selector;
-        this.exportSystem.recordChange(selector, changeDetail, breakpoint);
+        if (!changeDetail.undoRedo) {
+          this.exportSystem.recordChange(selector, changeDetail, breakpoint);
+        }
 
         // Update breadcrumb and publish button indicator
         const publishBtn = this.rootElement.querySelector('#btn-publish-changes');
@@ -857,6 +866,9 @@ export class AdminApp {
         if (this.selectionEngine) {
           this.selectionEngine._updateBoxes();
         }
+
+        // Refresh yellow dotted boundaries on changed elements
+        this.updateChangedElementsHighlight();
       },
       onDeselect: () => {
         if (this.selectionEngine) this.selectionEngine.deselect();
@@ -872,8 +884,46 @@ export class AdminApp {
       },
       onToggleCollapse: () => {
         this.toggleSidebarCollapse();
+      },
+      onToggleShowChanges: (enabled) => {
+        this.setShowChanges(enabled);
       }
     });
+
+    // Keyboard Shortcuts for Sidebar Menu Undo / Redo
+    const handleUndoRedoShortcuts = (e) => {
+      const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+      const isCmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+
+      if (!isCmdOrCtrl) return;
+
+      if (e.key === 'z' || e.key === 'Z') {
+        if (e.shiftKey) {
+          // Redo: Shift + Cmd/Ctrl + Z
+          e.preventDefault();
+          if (this.sidePanel) {
+            const success = this.sidePanel.redo();
+            if (success) this._showToast('↷ Redo applied');
+          }
+        } else {
+          // Undo: Cmd/Ctrl + Z
+          e.preventDefault();
+          if (this.sidePanel) {
+            const success = this.sidePanel.undo();
+            if (success) this._showToast('↶ Undo applied');
+          }
+        }
+      } else if (e.key === 'y' || e.key === 'Y') {
+        // Redo: Cmd/Ctrl + Y
+        e.preventDefault();
+        if (this.sidePanel) {
+          const success = this.sidePanel.redo();
+          if (success) this._showToast('↷ Redo applied');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleUndoRedoShortcuts);
 
     this.sidePanel.setBreakpoint(this.currentBreakpoint);
 
@@ -884,12 +934,20 @@ export class AdminApp {
           iDoc.documentElement.setAttribute('data-preview-mode', this.currentBreakpoint);
         }
         applyDesignSchema(this.exportSystem.serializeSchema(), iDoc);
+        this.updateChangedElementsHighlight();
       } catch (_) {}
     });
 
     iframe.addEventListener('load', () => {
       try {
         const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+        if (iDoc) {
+          iDoc.addEventListener('keydown', handleUndoRedoShortcuts);
+        }
+        if (iframe.contentWindow) {
+          iframe.contentWindow.addEventListener('keydown', handleUndoRedoShortcuts);
+        }
 
         // Apply published schema and preview mode on canvas preview
         if (iDoc && iDoc.documentElement) {
@@ -900,6 +958,8 @@ export class AdminApp {
         // Initialize Selection Engine starting in Normal (interactive / Edit Off) mode
         this.selectionEngine = new SelectionEngine(iframe, {
           mode: this.currentMode,
+          breakpoint: this.currentBreakpoint,
+          showChanges: this.showChangesHighlight,
           onSelect: (element, metadata) => {
             // Update Topbar breadcrumb
             const breadcrumbPrefix = this.rootElement.querySelector('#breadcrumb-prefix');
@@ -929,10 +989,128 @@ export class AdminApp {
         // Ensure engine is set to current mode
         this.selectionEngine.setMode(this.currentMode);
 
+        // Initialize yellow dotted boundaries on changed elements
+        this.updateChangedElementsHighlight();
+
       } catch (err) {
         console.error('[Admin Preview Bridge Init Failed]:', err);
       }
     });
+  }
+
+  /**
+   * Set on/off state for highlighting changed elements on the website
+   */
+  setShowChanges(enabled) {
+    this.showChangesHighlight = Boolean(enabled);
+    try {
+      localStorage.setItem('eko_admin_show_changes', String(this.showChangesHighlight));
+    } catch (_) {}
+    this.updateChangedElementsHighlight();
+    this._showToast(this.showChangesHighlight ? '✓ Changes highlighted on canvas' : 'Changes highlight hidden');
+  }
+
+  /**
+   * Check if a stored element change object has valid modifications across any category:
+   * | TEXTS | SPACING | MEDIA | PROPS |
+   */
+  _hasAnyCategoryChanges(data) {
+    if (!data) return false;
+
+    // 1. Text & Typography category
+    if (data.text !== undefined && data.text !== null && data.text !== '') return true;
+
+    // 2. Styles (Texts, Typography, Colors, Shadows, Borders, Spacing)
+    if (data.styles && typeof data.styles === 'object') {
+      const hasAnyStyle = Object.entries(data.styles).some(([k, v]) => v !== undefined && v !== null && v !== '');
+      if (hasAnyStyle) return true;
+    }
+
+    // 3. Breakpoint-specific overrides (desktop, tablet, mobile)
+    if (data.breakpoints && typeof data.breakpoints === 'object') {
+      const hasBp = Object.values(data.breakpoints).some(bp => {
+        if (!bp || typeof bp !== 'object') return false;
+        if (bp.text !== undefined && bp.text !== null && bp.text !== '') return true;
+        if (bp.media !== undefined && bp.media !== null) return true;
+        return Object.entries(bp).some(([k, v]) => v !== undefined && v !== null && v !== '');
+      });
+      if (hasBp) return true;
+    }
+
+    // 4. Media category (images, audio, videos, background-image)
+    if (data.media !== undefined && data.media !== null) return true;
+    if (data.src !== undefined && data.src !== null) return true;
+
+    // 5. Props category (data-* attributes)
+    if (data.dataAttributes && typeof data.dataAttributes === 'object') {
+      if (Object.keys(data.dataAttributes).length > 0) return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Identifies all elements with modifications across TEXTS, SPACING, MEDIA, or PROPS
+   * and renders inspector-style floating overlay highlight boxes over them with zero layout shift.
+   */
+  updateChangedElementsHighlight() {
+    const iframe = this.rootElement ? this.rootElement.querySelector('#admin-preview-frame') : null;
+    if (!iframe) return;
+    let iDoc = null;
+    try {
+      iDoc = iframe.contentDocument || iframe.contentWindow.document;
+    } catch (_) {
+      return;
+    }
+    if (!iDoc || !iDoc.body) return;
+
+    // Clean up any legacy inline classes or styles if present
+    const legacyStyleTag = iDoc.getElementById('eko-changed-highlight-styles');
+    if (legacyStyleTag) legacyStyleTag.remove();
+    const prevHighlighted = iDoc.querySelectorAll('.eko-changed-highlight');
+    if (prevHighlighted.length > 0) {
+      prevHighlighted.forEach(el => el.classList.remove('eko-changed-highlight'));
+    }
+
+    const changedElements = new Set();
+
+    // Query elements from exportSystem.changesMap
+    if (this.exportSystem && this.exportSystem.changesMap) {
+      this.exportSystem.changesMap.forEach((data, selector) => {
+        if (!data) return;
+        if (this._hasAnyCategoryChanges(data)) {
+          try {
+            const matches = iDoc.querySelectorAll(selector);
+            matches.forEach(el => {
+              if (el.closest('#eko-designer-overlays')) return;
+              changedElements.add(el);
+            });
+          } catch (_) {
+            try {
+              if (selector.startsWith('#')) {
+                const byId = iDoc.getElementById(selector.slice(1));
+                if (byId) changedElements.add(byId);
+              }
+            } catch (_) {}
+          }
+        }
+      });
+    }
+
+    // Check currently active element in side panel
+    if (this.sidePanel && this.sidePanel.activeElement && this.sidePanel.hasActiveElementChanges()) {
+      changedElements.add(this.sidePanel.activeElement);
+    }
+
+    const count = changedElements.size;
+    if (this.sidePanel) {
+      this.sidePanel.updateShowChangesBadge(count, this.showChangesHighlight);
+    }
+
+    // Delegate overlay rendering directly to SelectionEngine
+    if (this.selectionEngine) {
+      this.selectionEngine.setChangedElements(changedElements, this.showChangesHighlight);
+    }
   }
 
   _showToast(message, isError = false) {
