@@ -339,6 +339,10 @@ export class ExportSystem {
     return this.changesMap.size;
   }
 
+  hasChanges() {
+    return this.changesMap.size > 0;
+  }
+
   getSectionCounts() {
     let textCount = 0;
     let spacingCount = 0;

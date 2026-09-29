@@ -21,7 +21,7 @@ export class SidePanel {
    * @param {Function} options.onToggleShowChanges - Called when toggling show/hide changes
    * @param {Function} options.onToast - Optional toast notification trigger
    */
-  constructor(container, { exportSystem, onElementChange, onDeselect, onToggleCollapse, onToggleShowChanges, onToast } = {}) {
+  constructor(container, { exportSystem, onElementChange, onDeselect, onToggleCollapse, onToggleShowChanges, onToast, getIframeDoc } = {}) {
     this.container = container;
     this.exportSystem = exportSystem;
     this.onElementChange = onElementChange;
@@ -29,6 +29,7 @@ export class SidePanel {
     this.onToggleCollapse = onToggleCollapse;
     this.onToggleShowChanges = onToggleShowChanges;
     this.onToast = onToast;
+    this.getIframeDoc = getIframeDoc;
 
     this.showChangesHighlight = localStorage.getItem('eko_admin_show_changes') !== 'false';
     this._lastChangesCount = 0;
@@ -281,10 +282,15 @@ export class SidePanel {
         computedColor: computed ? computed.color : '',
         computedBgColor: computed ? computed.backgroundColor : '',
         computedBorderColor: computed ? computed.borderColor : '',
+        computedBorderWidth: computed ? computed.borderWidth : '',
+        computedBorderRadius: computed ? computed.borderRadius : '',
         computedFontFamily: computed ? computed.fontFamily : '',
         computedFontSize: computed ? computed.fontSize : '',
         computedFontWeight: computed ? computed.fontWeight : '',
+        computedFontStyle: computed ? computed.fontStyle : '',
         computedTextAlign: computed ? computed.textAlign : '',
+        computedTextTransform: computed ? computed.textTransform : '',
+        computedFontVariant: computed ? computed.fontVariant : '',
         computedLineHeight: computed ? computed.lineHeight : '',
         computedLetterSpacing: computed ? computed.letterSpacing : '',
         computedMarginTop: computed ? computed.marginTop : '',
@@ -296,6 +302,8 @@ export class SidePanel {
         computedPaddingLeft: computed ? computed.paddingLeft : '',
         computedPaddingRight: computed ? computed.paddingRight : '',
         computedGap: computed ? computed.gap : '',
+        computedTextShadow: computed ? computed.textShadow : '',
+        computedBoxShadow: computed ? computed.boxShadow : '',
       });
     }
   }
@@ -405,6 +413,21 @@ export class SidePanel {
   }
 
   /**
+   * Undo/Redo: Compares two snapshots to prevent duplicate undo/redo steps
+   */
+  _isSnapshotEqual(snapA, snapB) {
+    if (!snapA || !snapB) return false;
+    if (snapA.selector !== snapB.selector) return false;
+    if (snapA.breakpoint !== snapB.breakpoint) return false;
+    if (JSON.stringify(snapA.exportData) !== JSON.stringify(snapB.exportData)) return false;
+    if (snapA.domStyle !== snapB.domStyle) return false;
+    if (snapA.domDirectText !== snapB.domDirectText) return false;
+    if (JSON.stringify(snapA.dataset) !== JSON.stringify(snapB.dataset)) return false;
+    if (JSON.stringify(snapA.shadowState) !== JSON.stringify(snapB.shadowState)) return false;
+    return true;
+  }
+
+  /**
    * Undo/Redo: Captures snapshot of element and export state before a change
    */
   captureCurrentSnapshot(label = '') {
@@ -430,6 +453,11 @@ export class SidePanel {
     if (this._isUndoingOrRedoing) return;
     const snapshot = this.captureCurrentSnapshot(label);
     if (!snapshot) return;
+
+    // Avoid pushing duplicate snapshots
+    const top = this.undoStack[this.undoStack.length - 1];
+    if (this._isSnapshotEqual(top, snapshot)) return;
+
     this.undoStack.push(snapshot);
     if (this.undoStack.length > 60) {
       this.undoStack.shift();
@@ -450,20 +478,26 @@ export class SidePanel {
     this._isUndoingOrRedoing = true;
     try {
       const currentSnapshot = this.captureCurrentSnapshot('Current State');
-      if (currentSnapshot) {
-        this.redoStack.push(currentSnapshot);
-        if (this.redoStack.length > 60) this.redoStack.shift();
+
+      // Pop until we find a snapshot that is genuinely different from current state (skips duplicate / no-op snapshots)
+      let prev = this.undoStack.pop();
+      while (prev && currentSnapshot && this._isSnapshotEqual(prev, currentSnapshot) && this.undoStack.length > 0) {
+        prev = this.undoStack.pop();
       }
 
-      const prev = this.undoStack.pop();
-      if (prev) {
+      if (prev && (!currentSnapshot || !this._isSnapshotEqual(prev, currentSnapshot))) {
+        if (currentSnapshot) {
+          this.redoStack.push(currentSnapshot);
+          if (this.redoStack.length > 60) this.redoStack.shift();
+        }
         this._restoreSnapshot(prev);
+        return true;
       }
+      return false;
     } finally {
       this._isUndoingOrRedoing = false;
       this.updateUndoRedoButtons();
     }
-    return true;
   }
 
   redo() {
@@ -471,20 +505,26 @@ export class SidePanel {
     this._isUndoingOrRedoing = true;
     try {
       const currentSnapshot = this.captureCurrentSnapshot('Current State');
-      if (currentSnapshot) {
-        this.undoStack.push(currentSnapshot);
-        if (this.undoStack.length > 60) this.undoStack.shift();
+
+      // Pop until we find a snapshot that is genuinely different from current state
+      let next = this.redoStack.pop();
+      while (next && currentSnapshot && this._isSnapshotEqual(next, currentSnapshot) && this.redoStack.length > 0) {
+        next = this.redoStack.pop();
       }
 
-      const next = this.redoStack.pop();
-      if (next) {
+      if (next && (!currentSnapshot || !this._isSnapshotEqual(next, currentSnapshot))) {
+        if (currentSnapshot) {
+          this.undoStack.push(currentSnapshot);
+          if (this.undoStack.length > 60) this.undoStack.shift();
+        }
         this._restoreSnapshot(next);
+        return true;
       }
+      return false;
     } finally {
       this._isUndoingOrRedoing = false;
       this.updateUndoRedoButtons();
     }
-    return true;
   }
 
   _restoreSnapshot(snapshot) {
@@ -499,19 +539,36 @@ export class SidePanel {
       this.exportSystem.changesMap.delete(selector);
       this.exportSystem.sessionUserChangesMap.delete(selector);
     }
+    this.exportSystem.hasUnpublishedChanges = this.exportSystem.changesMap.size > 0;
 
-    // 2. Restore DOM element state
-    const doc = this.activeElement?.ownerDocument || window.document;
-    const targetEl = doc.querySelector(selector) || this.activeElement;
+    // 2. Restore DOM element state in iframe document
+    const doc = (this.activeElement && this.activeElement.ownerDocument)
+      || (typeof this.getIframeDoc === 'function' ? this.getIframeDoc() : null)
+      || document.querySelector('#admin-preview-frame')?.contentDocument
+      || window.document;
+
+    const targetEl = (selector && doc && doc.querySelector) ? (doc.querySelector(selector) || this.activeElement) : this.activeElement;
 
     if (targetEl) {
-      if (snapshot.domStyle !== null) {
+      this.activeElement = targetEl;
+      if (!this.activeMeta || this.activeMeta.selector !== selector) {
+        this.activeMeta = {
+          tagName: targetEl.tagName,
+          id: targetEl.id || '',
+          className: targetEl.className || '',
+          selector: selector,
+          styles: {},
+          dataAttributes: { ...targetEl.dataset }
+        };
+      }
+
+      if (snapshot.domStyle !== null && snapshot.domStyle !== undefined) {
         targetEl.setAttribute('style', snapshot.domStyle);
       } else {
         targetEl.removeAttribute('style');
       }
 
-      if (snapshot.domDirectText !== null) {
+      if (snapshot.domDirectText !== null && snapshot.domDirectText !== undefined) {
         this._updateElementDirectText(targetEl, snapshot.domDirectText);
       }
 
@@ -525,24 +582,39 @@ export class SidePanel {
 
     if (snapshot.shadowState) {
       this.shadowState = { ...snapshot.shadowState };
+    } else {
+      const baseline = this.elementBaselines.get(selector);
+      if (baseline && baseline.shadowState) {
+        this.shadowState = { ...baseline.shadowState };
+      }
     }
 
-    // 3. Re-apply schema to iframe
+    // 3. Re-apply schema dynamically to iframe document
     try {
       applyDesignSchema(this.exportSystem.serializeSchema(), doc);
     } catch (_) {}
 
-    // 4. If current element is selected, update inspector tab
-    if (this.activeMeta && this.activeMeta.selector === selector) {
+    // 4. Update inspector tab, title, and all sidebar sliders/controls
+    if (this.activeElement && this.activeMeta) {
+      const titleEl = this.container.querySelector('#admin-panel-title');
+      if (titleEl) {
+        const friendlyName = getFriendlyName(this.activeElement);
+        titleEl.innerHTML = `<strong>${friendlyName}</strong><span>Selected Component</span>`;
+      }
+
       this._refreshActiveMetaStyles();
-      this._parseExistingShadow();
-      if (snapshot.activeTab) this.activeTab = snapshot.activeTab;
+      if (snapshot.activeTab) {
+        this.activeTab = snapshot.activeTab;
+        this.container.querySelectorAll('.admin-tab-btn').forEach(b => {
+          b.classList.toggle('is-active', b.dataset.tab === this.activeTab);
+        });
+      }
       this._renderActiveTab();
       this.updateTabCounters();
       this._updateResetButtonVisibility();
     }
 
-    // 5. Notify parent app
+    // 5. Notify parent app to reposition selection boxes and update status
     if (typeof this.onElementChange === 'function' && targetEl && this.activeMeta) {
       this.onElementChange(targetEl, this.activeMeta, { undoRedo: true }, snapshot.breakpoint || this.currentBreakpoint);
     }
@@ -636,38 +708,53 @@ export class SidePanel {
       };
 
       const getPropVal = (propKey, computedVal, baselineVal) => {
-        if (!this.isFieldChanged(propKey) && baselineVal) {
+        if (!this.isFieldChanged(propKey) && baselineVal !== undefined && baselineVal !== '') {
           return baselineVal;
         }
-        return computedVal;
+        const override = this.getEffectiveFieldValue(propKey, null);
+        if (override !== null && override !== undefined && override !== '') {
+          return override;
+        }
+        return computedVal || baselineVal || '';
+      };
+
+      const getNumPropVal = (propKey, computedVal, baselineVal) => {
+        if (!this.isFieldChanged(propKey) && baselineVal !== undefined && baselineVal !== '' && baselineVal !== null) {
+          return toNum(baselineVal);
+        }
+        const override = this.getEffectiveFieldValue(propKey, null);
+        if (override !== null && override !== undefined && override !== '') {
+          return toNum(override);
+        }
+        return toNum(computedVal !== undefined ? computedVal : baselineVal);
       };
 
       this.activeMeta.styles = {
         color: getPropVal('color', computed.color, baseline ? baseline.computedColor : ''),
         backgroundColor: getPropVal('backgroundColor', computed.backgroundColor, baseline ? baseline.computedBgColor : ''),
         borderColor: getPropVal('borderColor', computed.borderColor, baseline ? baseline.computedBorderColor : ''),
-        borderWidth: toNum(computed.borderWidth),
-        borderRadius: toNum(computed.borderRadius),
+        borderWidth: getNumPropVal('borderWidth', computed.borderWidth, baseline ? baseline.computedBorderWidth : 0),
+        borderRadius: getNumPropVal('borderRadius', computed.borderRadius, baseline ? baseline.computedBorderRadius : 0),
         fontFamily: getPropVal('fontFamily', computed.fontFamily, baseline ? baseline.computedFontFamily : ''),
-        fontSize: toNum(computed.fontSize),
-        fontWeight: computed.fontWeight,
-        fontStyle: computed.fontStyle,
-        textAlign: computed.textAlign,
-        textShadow: computed.textShadow !== 'none' ? computed.textShadow : '',
-        boxShadow: computed.boxShadow !== 'none' ? computed.boxShadow : '',
-        textTransform: computed.textTransform,
-        fontVariant: computed.fontVariant,
-        marginTop: toNum(computed.marginTop),
-        marginBottom: toNum(computed.marginBottom),
-        marginLeft: toNum(computed.marginLeft),
-        marginRight: toNum(computed.marginRight),
-        paddingTop: toNum(computed.paddingTop),
-        paddingBottom: toNum(computed.paddingBottom),
-        paddingLeft: toNum(computed.paddingLeft),
-        paddingRight: toNum(computed.paddingRight),
-        gap: toNum(computed.gap),
-        letterSpacing: toNum(computed.letterSpacing),
-        lineHeight: computed.lineHeight,
+        fontSize: getNumPropVal('fontSize', computed.fontSize, baseline ? baseline.computedFontSize : 16),
+        fontWeight: getPropVal('fontWeight', computed.fontWeight, baseline ? baseline.computedFontWeight : '400'),
+        fontStyle: getPropVal('fontStyle', computed.fontStyle, baseline ? baseline.computedFontStyle : 'normal'),
+        textAlign: getPropVal('textAlign', computed.textAlign, baseline ? baseline.computedTextAlign : 'left'),
+        textShadow: getPropVal('textShadow', computed.textShadow !== 'none' ? computed.textShadow : '', baseline ? baseline.computedTextShadow : ''),
+        boxShadow: getPropVal('boxShadow', computed.boxShadow !== 'none' ? computed.boxShadow : '', baseline ? baseline.computedBoxShadow : ''),
+        textTransform: getPropVal('textTransform', computed.textTransform, baseline ? baseline.computedTextTransform : 'none'),
+        fontVariant: getPropVal('fontVariant', computed.fontVariant, baseline ? baseline.computedFontVariant : 'normal'),
+        marginTop: getNumPropVal('marginTop', computed.marginTop, baseline ? baseline.computedMarginTop : 0),
+        marginBottom: getNumPropVal('marginBottom', computed.marginBottom, baseline ? baseline.computedMarginBottom : 0),
+        marginLeft: getNumPropVal('marginLeft', computed.marginLeft, baseline ? baseline.computedMarginLeft : 0),
+        marginRight: getNumPropVal('marginRight', computed.marginRight, baseline ? baseline.computedMarginRight : 0),
+        paddingTop: getNumPropVal('paddingTop', computed.paddingTop, baseline ? baseline.computedPaddingTop : 0),
+        paddingBottom: getNumPropVal('paddingBottom', computed.paddingBottom, baseline ? baseline.computedPaddingBottom : 0),
+        paddingLeft: getNumPropVal('paddingLeft', computed.paddingLeft, baseline ? baseline.computedPaddingLeft : 0),
+        paddingRight: getNumPropVal('paddingRight', computed.paddingRight, baseline ? baseline.computedPaddingRight : 0),
+        gap: getNumPropVal('gap', computed.gap, baseline ? baseline.computedGap : 0),
+        letterSpacing: getNumPropVal('letterSpacing', computed.letterSpacing, baseline ? baseline.computedLetterSpacing : 0),
+        lineHeight: getPropVal('lineHeight', computed.lineHeight, baseline ? baseline.computedLineHeight : '1.5'),
       };
     }
   }
@@ -705,6 +792,15 @@ export class SidePanel {
 
   _parseExistingShadow() {
     if (!this.activeElement) return;
+
+    const selector = this.activeMeta ? this.activeMeta.selector : null;
+    const baseline = selector ? this.elementBaselines.get(selector) : null;
+    const hasShadowOverride = this.isFieldChanged('textShadow') || this.isFieldChanged('boxShadow');
+
+    if (!hasShadowOverride && baseline && baseline.shadowState) {
+      this.shadowState = { ...baseline.shadowState };
+      return;
+    }
 
     const isTextTag = /^(H[1-6]|P|SPAN|A|BUTTON|LABEL|STRONG|EM|LI|SMALL|B|I|DIV)$/i.test(this.activeElement.tagName);
     const overrides = this.getElementOverrides();
@@ -1502,32 +1598,67 @@ export class SidePanel {
       textVal = this._getDirectText(this.activeElement);
     }
 
+    const baseFontSize = baseline && baseline.computedFontSize ? parseFloat(baseline.computedFontSize) : (parseFloat(computed.fontSize) || 16);
+    const effectiveFontSize = this.isFieldChanged('fontSize')
+      ? (parseFloat(this.getEffectiveFieldValue('fontSize', baseFontSize)) || baseFontSize)
+      : baseFontSize;
+
+    const baseLineHeight = baseline && baseline.computedLineHeight ? parseFloat(baseline.computedLineHeight) : (parseFloat(computed.lineHeight) || 1.5);
+    let effectiveLineHeight = this.isFieldChanged('lineHeight')
+      ? (parseFloat(this.getEffectiveFieldValue('lineHeight', baseLineHeight)) || baseLineHeight)
+      : baseLineHeight;
+    if (effectiveLineHeight > 10) {
+      effectiveLineHeight = Math.round((effectiveLineHeight / effectiveFontSize) * 100) / 100;
+    }
+
+    const baseLetterSpacing = baseline && baseline.computedLetterSpacing ? parseFloat(baseline.computedLetterSpacing) : (parseFloat(computed.letterSpacing) || 0);
+    const effectiveLetterSpacing = this.isFieldChanged('letterSpacing')
+      ? (parseFloat(this.getEffectiveFieldValue('letterSpacing', baseLetterSpacing)) || baseLetterSpacing)
+      : baseLetterSpacing;
+
+    const baseBorderWidth = baseline && baseline.computedBorderWidth ? parseFloat(baseline.computedBorderWidth) : (parseFloat(computed.borderWidth) || 0);
+    const effectiveBorderWidth = this.isFieldChanged('borderWidth')
+      ? (parseFloat(this.getEffectiveFieldValue('borderWidth', baseBorderWidth)) || baseBorderWidth)
+      : baseBorderWidth;
+
+    const baseBorderRadius = baseline && baseline.computedBorderRadius ? parseFloat(baseline.computedBorderRadius) : (parseFloat(computed.borderRadius) || 0);
+    const effectiveBorderRadius = this.isFieldChanged('borderRadius')
+      ? (parseFloat(this.getEffectiveFieldValue('borderRadius', baseBorderRadius)) || baseBorderRadius)
+      : baseBorderRadius;
+
     const getEffectiveColor = (key, computedVal, baselineVal) => {
-      const eff = this.getEffectiveFieldValue(key, null);
-      if (eff) return eff;
-      return baselineVal || computedVal || s[key];
+      if (this.isFieldChanged(key)) {
+        const eff = this.getEffectiveFieldValue(key, null);
+        if (eff) return eff;
+      }
+      return baselineVal || computedVal || '';
     };
 
     const textColorHex = this._rgbToHex(getEffectiveColor('color', computed.color, baseline ? baseline.computedColor : ''));
     const bgColorHex = this._rgbToHex(getEffectiveColor('backgroundColor', computed.backgroundColor, baseline ? baseline.computedBgColor : ''));
     const borderColorHex = this._rgbToHex(getEffectiveColor('borderColor', computed.borderColor, baseline ? baseline.computedBorderColor : ''));
 
-    const effectiveWeight = this.getEffectiveFieldValue('fontWeight', baseline ? baseline.computedFontWeight : computed.fontWeight);
+    const baseWeight = baseline && baseline.computedFontWeight ? baseline.computedFontWeight : (computed.fontWeight || '400');
+    const effectiveWeight = this.isFieldChanged('fontWeight')
+      ? this.getEffectiveFieldValue('fontWeight', baseWeight)
+      : baseWeight;
     const isBold = effectiveWeight >= 700 || effectiveWeight === 'bold';
-    const effectiveFontStyle = this.getEffectiveFieldValue('fontStyle', computed.fontStyle);
+
+    const baseFontStyle = baseline && baseline.computedFontStyle ? baseline.computedFontStyle : (computed.fontStyle || 'normal');
+    const effectiveFontStyle = this.isFieldChanged('fontStyle')
+      ? this.getEffectiveFieldValue('fontStyle', baseFontStyle)
+      : baseFontStyle;
     const isItalic = effectiveFontStyle === 'italic';
-    const textTransform = this.getEffectiveFieldValue('textTransform', computed.textTransform || 'none');
-    const fontVariant = this.getEffectiveFieldValue('fontVariant', computed.fontVariant || 'normal');
 
-    // Parse Line Height
-    let currentLineHeight = parseFloat(this.getEffectiveFieldValue('lineHeight', computed.lineHeight)) || 1.5;
-    if (currentLineHeight > 10) {
-      const fs = parseFloat(this.getEffectiveFieldValue('fontSize', computed.fontSize)) || 16;
-      currentLineHeight = Math.round((currentLineHeight / fs) * 100) / 100;
-    }
+    const baseTransform = baseline && baseline.computedTextTransform ? baseline.computedTextTransform : (computed.textTransform || 'none');
+    const textTransform = (this.isFieldChanged('textTransform') || this.isFieldChanged('appearance'))
+      ? this.getEffectiveFieldValue('textTransform', baseTransform)
+      : baseTransform;
 
-    // Parse Letter Spacing
-    let currentLetterSpacing = parseFloat(this.getEffectiveFieldValue('letterSpacing', computed.letterSpacing)) || 0;
+    const baseVariant = baseline && baseline.computedFontVariant ? baseline.computedFontVariant : (computed.fontVariant || 'normal');
+    const fontVariant = (this.isFieldChanged('fontVariant') || this.isFieldChanged('appearance'))
+      ? this.getEffectiveFieldValue('fontVariant', baseVariant)
+      : baseVariant;
 
     // Check changed states for dots & reset symbols
     const hasTextChanged = this.isFieldChanged('text');
@@ -1581,7 +1712,7 @@ export class SidePanel {
             <label class="admin-field-label">Font Size</label>
           </div>
           <div class="admin-field-control">
-            ${this._renderSliderRow('font-size', 10, 140, 1, parseFloat(this.getEffectiveFieldValue('fontSize', s.fontSize || computed.fontSize)) || 16, 'px')}
+            ${this._renderSliderRow('font-size', 10, 140, 1, effectiveFontSize, 'px')}
             <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="fontSize" data-tooltip="Reset font size" style="display: ${hasFontSizeChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
@@ -1613,7 +1744,7 @@ export class SidePanel {
             <label class="admin-field-label">Line Spacing</label>
           </div>
           <div class="admin-field-control">
-            ${this._renderSliderRow('line-height', 0.8, 3.5, 0.05, currentLineHeight, 'em')}
+            ${this._renderSliderRow('line-height', 0.8, 3.5, 0.05, effectiveLineHeight, 'em')}
             <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="lineHeight" data-tooltip="Reset line spacing" style="display: ${hasLineHeightChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
@@ -1624,7 +1755,7 @@ export class SidePanel {
             <label class="admin-field-label">Letter Spacing</label>
           </div>
           <div class="admin-field-control">
-            ${this._renderSliderRow('letter-spacing', -3, 24, 0.5, currentLetterSpacing, 'px')}
+            ${this._renderSliderRow('letter-spacing', -3, 24, 0.5, effectiveLetterSpacing, 'px')}
             <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="letterSpacing" data-tooltip="Reset letter spacing" style="display: ${hasLetterSpacingChanged ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
@@ -1850,7 +1981,7 @@ export class SidePanel {
             <span class="field-change-dot" data-field-indicator="borderWidth" style="display: ${this.isFieldChanged('borderWidth') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
-            ${this._renderSliderRow('border-width', 0, 20, 1, parseFloat(this.getEffectiveFieldValue('borderWidth', s.borderWidth || computed.borderWidth)) || 0, 'px')}
+            ${this._renderSliderRow('border-width', 0, 20, 1, effectiveBorderWidth, 'px')}
             <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="borderWidth" data-tooltip="Reset border width" style="display: ${this.isFieldChanged('borderWidth') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
@@ -1862,7 +1993,7 @@ export class SidePanel {
             <span class="field-change-dot" data-field-indicator="borderRadius" style="display: ${this.isFieldChanged('borderRadius') ? 'inline-block' : 'none'};">●</span>
           </div>
           <div class="admin-field-control">
-            ${this._renderSliderRow('border-radius', 0, 48, 1, parseFloat(this.getEffectiveFieldValue('borderRadius', s.borderRadius || computed.borderRadius)) || 0, 'px')}
+            ${this._renderSliderRow('border-radius', 0, 48, 1, effectiveBorderRadius, 'px')}
             <button type="button" class="btn-field-reset" data-reset-type="style" data-reset-key="borderRadius" data-tooltip="Reset border radius" style="display: ${this.isFieldChanged('borderRadius') ? 'inline-flex' : 'none'};">↺</button>
           </div>
         </div>
@@ -1874,23 +2005,25 @@ export class SidePanel {
     // 1. Text Content Live Edit
     const textInput = container.querySelector('#ctrl-text-content');
     if (textInput) {
-      textInput.addEventListener('focus', () => {
-        this.pushUndoSnapshot('Text Content');
-      });
+      let textInteracting = false;
       textInput.addEventListener('input', () => {
+        if (!textInteracting) {
+          textInteracting = true;
+          this.pushUndoSnapshot('Text Content');
+        }
         const newVal = textInput.value;
         this._updateElementDirectText(this.activeElement, newVal);
         this._notifyChange({ text: newVal });
         this.updateTabCounters();
+      });
+      textInput.addEventListener('blur', () => {
+        textInteracting = false;
       });
     }
 
     // 2. Font Family
     const fontSelect = container.querySelector('#ctrl-font-family');
     if (fontSelect) {
-      fontSelect.addEventListener('focus', () => {
-        this.pushUndoSnapshot('Font Family');
-      });
       const computed = window.getComputedStyle ? window.getComputedStyle(this.activeElement) : {};
       const currentFamily = this.activeElement.style.fontFamily || (this.activeMeta.styles && this.activeMeta.styles.fontFamily) || computed.fontFamily || '';
       let matched = false;
@@ -1915,6 +2048,7 @@ export class SidePanel {
       }
 
       fontSelect.addEventListener('change', () => {
+        this.pushUndoSnapshot('Font Family');
         this.activeElement.style.removeProperty('font-family');
         this._notifyChange({ styleKey: 'fontFamily', val: fontSelect.value });
         this.updateTabCounters();
@@ -1931,9 +2065,6 @@ export class SidePanel {
     // 4. Font Weight
     const weightSelect = container.querySelector('#ctrl-font-weight');
     if (weightSelect) {
-      weightSelect.addEventListener('focus', () => {
-        this.pushUndoSnapshot('Font Weight');
-      });
       const computed = window.getComputedStyle ? window.getComputedStyle(this.activeElement) : {};
       const rawWeight = this.activeElement.style.fontWeight || (this.activeMeta.styles && this.activeMeta.styles.fontWeight) || computed.fontWeight || '400';
       let normWeight = '400';
@@ -1954,6 +2085,7 @@ export class SidePanel {
       }
 
       weightSelect.addEventListener('change', () => {
+        this.pushUndoSnapshot('Font Weight');
         this.activeElement.style.removeProperty('font-weight');
         this._notifyChange({ styleKey: 'fontWeight', val: weightSelect.value });
         this.updateTabCounters();
@@ -2018,6 +2150,7 @@ export class SidePanel {
     const boldBtn = container.querySelector('#btn-toggle-bold');
     if (boldBtn) {
       boldBtn.addEventListener('click', () => {
+        this.pushUndoSnapshot('Toggle Bold');
         const isBold = boldBtn.classList.toggle('is-active');
         const val = isBold ? '700' : '400';
         this.activeElement.style.removeProperty('font-weight');
@@ -2030,6 +2163,7 @@ export class SidePanel {
     const italicBtn = container.querySelector('#btn-toggle-italic');
     if (italicBtn) {
       italicBtn.addEventListener('click', () => {
+        this.pushUndoSnapshot('Toggle Italic');
         const isItalic = italicBtn.classList.toggle('is-active');
         const val = isItalic ? 'italic' : 'normal';
         this.activeElement.style.removeProperty('font-style');
@@ -2129,6 +2263,7 @@ export class SidePanel {
     // Target switcher (Text Glow vs Box Shadow)
     container.querySelectorAll('#shadow-target-group [data-shadow-type]').forEach(btn => {
       btn.addEventListener('click', () => {
+        this.pushUndoSnapshot('Shadow Target');
         container.querySelectorAll('#shadow-target-group [data-shadow-type]').forEach(b => b.classList.remove('is-active'));
         btn.classList.add('is-active');
         this.shadowState.type = btn.dataset.shadowType;
@@ -2168,7 +2303,20 @@ export class SidePanel {
     // Opacity
     const opacityInput = container.querySelector('#num-shadow-opacity');
     if (opacityInput) {
+      let isOpacityInteracting = false;
+      const startOpacityInteraction = () => {
+        if (!isOpacityInteracting) {
+          isOpacityInteracting = true;
+          this.pushUndoSnapshot('Shadow Opacity');
+        }
+      };
+      const endOpacityInteraction = () => {
+        isOpacityInteracting = false;
+      };
+
+      opacityInput.addEventListener('blur', endOpacityInteraction);
       opacityInput.addEventListener('input', () => {
+        startOpacityInteraction();
         this.shadowState.opacity = parseInt(opacityInput.value, 10) || 0;
         applyShadowToElement();
       });
@@ -2176,6 +2324,7 @@ export class SidePanel {
       // Stepper arrows for opacity
       container.querySelectorAll('.stepper-btn[data-step-target="num-shadow-opacity"]').forEach(btn => {
         btn.addEventListener('click', () => {
+          this.pushUndoSnapshot('Shadow Opacity');
           const dir = parseInt(btn.dataset.dir, 10) || 1;
           let current = parseInt(opacityInput.value, 10) || 0;
           current = Math.max(0, Math.min(100, current + (dir * 5)));
@@ -2190,6 +2339,7 @@ export class SidePanel {
     container.querySelectorAll('.shadow-preset-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const preset = btn.dataset.preset;
+        this.pushUndoSnapshot(`Shadow Preset ${preset}`);
         if (preset === 'none') {
           this.shadowState = { ...this.shadowState, x: 0, y: 0, blur: 0, spread: 0, opacity: 0 };
           this.activeElement.style.boxShadow = 'none';
@@ -2228,32 +2378,28 @@ export class SidePanel {
 
     const getSpacingValue = (key) => {
       // 1. Check if user has an explicit override (device-scoped or universal)
-      const overrideVal = this.getEffectiveFieldValue(key, null);
-      if (overrideVal !== null && overrideVal !== undefined && overrideVal !== '') {
-        const n = parseFloat(overrideVal);
-        if (!isNaN(n)) return Math.round(n);
-      }
-
-      // 2. Check metadata styles snapshot extracted when element was inspected
-      if (s && s[key] !== undefined && s[key] !== null && s[key] !== '') {
-        const n = parseFloat(s[key]);
-        if (!isNaN(n)) return Math.round(n);
-      }
-
-      // 3. Check live computed style from iframe element
-      if (computed) {
-        const compVal = computed[key];
-        if (compVal !== undefined && compVal !== null && compVal !== '' && compVal !== 'normal' && compVal !== 'auto') {
-          const n = parseFloat(compVal);
+      if (this.isFieldChanged(key)) {
+        const overrideVal = this.getEffectiveFieldValue(key, null);
+        if (overrideVal !== null && overrideVal !== undefined && overrideVal !== '') {
+          const n = parseFloat(overrideVal);
           if (!isNaN(n)) return Math.round(n);
         }
       }
 
-      // 4. Check baseline computed property
+      // 2. Check pristine baseline property (before any edits)
       if (baseline) {
         const baseKey = `computed${key.charAt(0).toUpperCase() + key.slice(1)}`;
         if (baseline[baseKey] !== undefined && baseline[baseKey] !== '' && baseline[baseKey] !== 'normal' && baseline[baseKey] !== 'auto') {
           const n = parseFloat(baseline[baseKey]);
+          if (!isNaN(n)) return Math.round(n);
+        }
+      }
+
+      // 3. Fallback to computed style from iframe element
+      if (computed) {
+        const compVal = computed[key];
+        if (compVal !== undefined && compVal !== null && compVal !== '' && compVal !== 'normal' && compVal !== 'auto') {
+          const n = parseFloat(compVal);
           if (!isNaN(n)) return Math.round(n);
         }
       }
@@ -2667,6 +2813,7 @@ export class SidePanel {
   }
 
   _applyMediaUrl(url) {
+    this.pushUndoSnapshot('Media Asset');
     const isImg = this.activeElement.tagName === 'IMG';
     const isAudio = this.activeElement.hasAttribute('data-audio') || this.activeElement.closest('[data-audio]');
 
@@ -2741,6 +2888,7 @@ export class SidePanel {
     // Edit existing props
     container.querySelectorAll('.prop-val-input').forEach(input => {
       input.addEventListener('change', () => {
+        this.pushUndoSnapshot(`Edit Prop ${input.dataset.prop}`);
         const prop = input.dataset.prop;
         const val = input.value.trim();
         this.activeElement.dataset[prop] = val;
@@ -2754,6 +2902,7 @@ export class SidePanel {
     container.querySelectorAll('.btn-remove-prop').forEach(btn => {
       btn.addEventListener('click', () => {
         const prop = btn.dataset.prop;
+        this.pushUndoSnapshot(`Remove Prop ${prop}`);
         delete this.activeElement.dataset[prop];
         delete this.activeMeta.dataAttributes[prop];
         this._notifyChange({ removeDataAttr: prop });
@@ -2773,6 +2922,7 @@ export class SidePanel {
         const val = valInput.value.trim();
         if (!name) return;
 
+        this.pushUndoSnapshot('Add Prop');
         const camel = name.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
         this.activeElement.dataset[camel] = val;
         this.activeMeta.dataAttributes[camel] = val;
@@ -2899,13 +3049,24 @@ export class SidePanel {
       isInteracting = false;
     };
 
-    slider.addEventListener('pointerdown', startInteraction);
-    slider.addEventListener('keydown', startInteraction);
+    slider.addEventListener('pointerdown', (e) => {
+      if (e.button === 0) startInteraction();
+    });
     slider.addEventListener('pointerup', endInteraction);
     slider.addEventListener('change', endInteraction);
+    slider.addEventListener('blur', endInteraction);
 
-    num.addEventListener('focus', startInteraction);
-    num.addEventListener('blur', endInteraction);
+    slider.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) {
+        startInteraction();
+      }
+    });
+    slider.addEventListener('keyup', (e) => {
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) {
+        endInteraction();
+      }
+    });
 
     const updateVal = (val) => {
       slider.value = val;
@@ -2914,14 +3075,18 @@ export class SidePanel {
     };
 
     slider.addEventListener('input', () => {
+      startInteraction();
       num.value = slider.value;
       onChange(Number(slider.value));
     });
 
     num.addEventListener('input', () => {
+      startInteraction();
       slider.value = num.value;
       onChange(Number(num.value));
     });
+    num.addEventListener('blur', endInteraction);
+    num.addEventListener('change', endInteraction);
 
     // Handle modern sleek stepper up/down arrow buttons
     container.querySelectorAll(`.stepper-btn[data-step-target="num-${prefix}"]`).forEach(btn => {
@@ -3385,7 +3550,23 @@ export class SidePanel {
         });
       }
 
+      let colorInteracting = false;
+      const startColorInteraction = () => {
+        if (!colorInteracting) {
+          colorInteracting = true;
+          this.pushUndoSnapshot(`Color ${prefix}`);
+        }
+      };
+      const endColorInteraction = () => {
+        colorInteracting = false;
+      };
+
+      native.addEventListener('pointerdown', startColorInteraction);
+      native.addEventListener('change', endColorInteraction);
+      hex.addEventListener('blur', endColorInteraction);
+
       native.addEventListener('input', () => {
+        startColorInteraction();
         const hexVal = native.value.toUpperCase();
         hex.value = hexVal;
         if (previewWrap) previewWrap.style.backgroundColor = hexVal;

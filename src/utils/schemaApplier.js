@@ -213,27 +213,24 @@ export function applyDesignSchema(schema, doc = document) {
   }
 
   if (!schema || !schema.elements || Object.keys(schema.elements).length === 0) {
-    // Only wipe styleTag if explicitly requested by a reset operation (e.g. restoring v0 checkpoint)
-    if (schema && schema.isExplicitReset) {
-      if (styleTag) styleTag.textContent = '';
-      if (doc.__ekoOverriddenElements) {
-        doc.__ekoOverriddenElements.forEach(el => {
-          if (el.__ekoOriginalText !== undefined) {
-            if (el.children.length === 0) {
-              el.textContent = el.__ekoOriginalText;
-            } else {
-              el.innerHTML = el.__ekoOriginalHtml !== undefined ? el.__ekoOriginalHtml : el.__ekoOriginalText;
-            }
+    if (styleTag) styleTag.textContent = '';
+    if (doc.__ekoOverriddenElements) {
+      doc.__ekoOverriddenElements.forEach(el => {
+        if (el.__ekoOriginalText !== undefined) {
+          if (el.children.length === 0) {
+            el.textContent = el.__ekoOriginalText;
+          } else {
+            el.innerHTML = el.__ekoOriginalHtml !== undefined ? el.__ekoOriginalHtml : el.__ekoOriginalText;
           }
-          if (el.__ekoOriginalSrc !== undefined) {
-            el.src = el.__ekoOriginalSrc;
-          }
-          if (el.__ekoOriginalBg !== undefined) {
-            el.style.backgroundImage = el.__ekoOriginalBg;
-          }
-        });
-        doc.__ekoOverriddenElements.clear();
-      }
+        }
+        if (el.__ekoOriginalSrc !== undefined) {
+          el.src = el.__ekoOriginalSrc;
+        }
+        if (el.__ekoOriginalBg !== undefined) {
+          el.style.backgroundImage = el.__ekoOriginalBg;
+        }
+      });
+      doc.__ekoOverriddenElements.clear();
     }
     return;
   }

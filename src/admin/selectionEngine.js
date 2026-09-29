@@ -434,15 +434,16 @@ export class SelectionEngine {
         }
 
         /* --------------------------------------------------------------------------
-           High-Visibility Changed Element Overlays (Two Sharp Corners + Spaced Dashed Boundary Lines)
-           - Two sharp solid L-corners (Top-Left and Bottom-Right)
-           - Spaced dashed boundary lines matching reference design
-           - Zero glow / completely transparent fill
+           High-Visibility Changed Element Overlays (Precision Viewfinder Framing)
+           - Precision outer corner L-brackets with clean outward standoff framing
+           - Thicker, spaced dashed boundary lines matching high-contrast design
+           - Clean separation so corner brackets and dashed lines never overlap or cut
            -------------------------------------------------------------------------- */
         .eko-changed-box {
           position: absolute !important;
-          border: 1.5px dashed rgba(192, 132, 252, 0.9) !important;
-          background: transparent !important;
+          border: none !important;
+          background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' stroke='%23c084fc' stroke-width='2' stroke-dasharray='7%2c 5' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e") !important;
+          background-color: transparent !important;
           box-shadow: none !important;
           pointer-events: none !important;
           border-radius: 0 !important;
@@ -451,30 +452,35 @@ export class SelectionEngine {
           transition: width 0.08s ease-out, height 0.08s ease-out, left 0.08s ease-out, top 0.08s ease-out !important;
         }
 
-        /* Two Sharp Solid L-Corners (Top-Left and Bottom-Right) */
+        /* Framing Corner L-Brackets with Clean Outward Standoff:
+           Positioned with a clean 4px clearance outside the dashed box
+           so they frame the element like a precision viewfinder reticle
+           without overlapping or cutting through the dashed perimeter */
         .eko-changed-box::before {
           content: '' !important;
           position: absolute !important;
-          top: -2px !important;
-          left: -2px !important;
-          width: 8px !important;
-          height: 8px !important;
-          border-top: 2.5px solid #c084fc !important;
-          border-left: 2.5px solid #c084fc !important;
+          top: -4px !important;
+          left: -4px !important;
+          width: 10px !important;
+          height: 10px !important;
+          border-top: 2px solid #c084fc !important;
+          border-left: 2px solid #c084fc !important;
           pointer-events: none !important;
+          box-sizing: border-box !important;
           z-index: 2 !important;
         }
 
         .eko-changed-box::after {
           content: '' !important;
           position: absolute !important;
-          bottom: -2px !important;
-          right: -2px !important;
-          width: 8px !important;
-          height: 8px !important;
-          border-bottom: 2.5px solid #c084fc !important;
-          border-right: 2.5px solid #c084fc !important;
+          bottom: -4px !important;
+          right: -4px !important;
+          width: 10px !important;
+          height: 10px !important;
+          border-bottom: 2px solid #c084fc !important;
+          border-right: 2px solid #c084fc !important;
           pointer-events: none !important;
+          box-sizing: border-box !important;
           z-index: 2 !important;
         }
 

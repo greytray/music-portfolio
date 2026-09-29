@@ -844,6 +844,7 @@ export class AdminApp {
     // Initialize side panel
     this.sidePanel = new SidePanel(sidepanelContainer, {
       exportSystem: this.exportSystem,
+      getIframeDoc: () => (iframe.contentDocument || iframe.contentWindow?.document),
       onToast: (msg, isErr) => this._showToast(msg, isErr),
       onElementChange: (element, metadata, changeDetail, breakpoint = this.currentBreakpoint) => {
         // Record in Export System with active device breakpoint
@@ -854,7 +855,20 @@ export class AdminApp {
 
         // Update breadcrumb and publish button indicator
         const publishBtn = this.rootElement.querySelector('#btn-publish-changes');
-        if (publishBtn) publishBtn.classList.add('has-changes');
+        if (publishBtn) {
+          if (this.exportSystem && this.exportSystem.hasChanges()) {
+            publishBtn.classList.add('has-changes');
+          } else {
+            publishBtn.classList.remove('has-changes');
+          }
+        }
+
+        if (changeDetail.undoRedo && element) {
+          const breadcrumbTarget = this.rootElement.querySelector('#breadcrumb-target');
+          if (breadcrumbTarget) {
+            breadcrumbTarget.textContent = getFriendlyName(element);
+          }
+        }
 
         // Apply updated schema styles dynamically in iframe DOM
         try {
@@ -864,6 +878,9 @@ export class AdminApp {
 
         // Reposition selection highlight box
         if (this.selectionEngine) {
+          if (changeDetail.undoRedo && element) {
+            this.selectionEngine.selectedElement = element;
+          }
           this.selectionEngine._updateBoxes();
         }
 
@@ -898,16 +915,16 @@ export class AdminApp {
       if (!isCmdOrCtrl) return;
 
       if (e.key === 'z' || e.key === 'Z') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
         if (e.shiftKey) {
           // Redo: Shift + Cmd/Ctrl + Z
-          e.preventDefault();
           if (this.sidePanel) {
             const success = this.sidePanel.redo();
             if (success) this._showToast('↷ Redo applied');
           }
         } else {
           // Undo: Cmd/Ctrl + Z
-          e.preventDefault();
           if (this.sidePanel) {
             const success = this.sidePanel.undo();
             if (success) this._showToast('↶ Undo applied');
@@ -916,6 +933,7 @@ export class AdminApp {
       } else if (e.key === 'y' || e.key === 'Y') {
         // Redo: Cmd/Ctrl + Y
         e.preventDefault();
+        e.stopImmediatePropagation();
         if (this.sidePanel) {
           const success = this.sidePanel.redo();
           if (success) this._showToast('↷ Redo applied');
@@ -944,9 +962,6 @@ export class AdminApp {
 
         if (iDoc) {
           iDoc.addEventListener('keydown', handleUndoRedoShortcuts);
-        }
-        if (iframe.contentWindow) {
-          iframe.contentWindow.addEventListener('keydown', handleUndoRedoShortcuts);
         }
 
         // Apply published schema and preview mode on canvas preview
