@@ -286,8 +286,8 @@ export const FAKE_CHROME_ERROR_HTML = `<!doctype html>
   <div id="fake-chrome-error-screen" class="chrome-error-wrapper">
     <div class="chrome-error-container">
       <div class="sad-file-wrapper" id="sad-file-trigger" oncontextmenu="return false;" ondragstart="return false;" onselectstart="return false;" title="">
-        <!-- Using icon from assets/icons/sad_file_fixed.svg -->
-        <img id="sad-file-icon" src="/assets/icons/sad_file_fixed.svg" alt="" width="50" height="57" draggable="false" oncontextmenu="return false;" ondragstart="return false;" />
+        <!-- Using icon from assets/icons/final.svg -->
+        <img id="sad-file-icon" src="/assets/icons/final.svg" alt="" width="50" height="57" draggable="false" oncontextmenu="return false;" ondragstart="return false;" />
         <div id="sad-file-shield" class="sad-file-shield" oncontextmenu="return false;" ondragstart="return false;" onselectstart="return false;"></div>
       </div>
       <h1 class="chrome-error-title">This site can’t be reached</h1>
