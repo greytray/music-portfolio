@@ -1755,7 +1755,7 @@ html[data-admin-theme="light"] .admin-picker-hex-input,
   padding: 6px 14px;
   height: 32px;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--admin-border-strong);
+  border: 1.5px solid var(--admin-border-strong);
   border-radius: var(--admin-radius-md);
   cursor: pointer;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1769,12 +1769,28 @@ html[data-admin-theme="light"] .admin-picker-hex-input,
   white-space: nowrap;
 }
 
+html[data-admin-theme="light"] .admin-toggle-changes-compact,
+.admin-workspace[data-theme="light"] .admin-toggle-changes-compact {
+  background: #FFFFFF;
+  border-color: #CBD5E1;
+  color: #0F172A;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
 .admin-toggle-changes-compact:hover {
   background: rgba(255, 255, 255, 0.12);
-  border-color: #FFFF00;
+  border: 1.5px solid #FFFF00;
   color: #ffffff;
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+html[data-admin-theme="light"] .admin-toggle-changes-compact:hover,
+.admin-workspace[data-theme="light"] .admin-toggle-changes-compact:hover {
+  background: #FFFFF0;
+  border-color: #000000;
+  color: #000000;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .admin-toggle-changes-compact:active {
@@ -1805,6 +1821,11 @@ html[data-admin-theme="light"] .admin-picker-hex-input,
   box-shadow: 0 0 0 1px #ffffff;
 }
 
+html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-badge-dot,
+.admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-badge-dot {
+  box-shadow: 0 0 0 1px #000000;
+}
+
 .admin-toggle-changes-compact .toggle-changes-title {
   font-size: 12px;
   font-weight: 500;
@@ -1812,24 +1833,35 @@ html[data-admin-theme="light"] .admin-picker-hex-input,
   letter-spacing: 0.01em;
 }
 
+html[data-admin-theme="light"] .admin-toggle-changes-compact .toggle-changes-title,
+.admin-workspace[data-theme="light"] .admin-toggle-changes-compact .toggle-changes-title {
+  color: #0F172A;
+}
+
+html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-title,
+.admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-title {
+  color: #000000;
+  font-weight: 600;
+}
+
 .admin-toggle-changes-compact .toggle-changes-count {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  text-align: center !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   min-width: 18px;
   height: 18px;
   padding: 0 4px;
   border-radius: 9999px;
-  background: #FFFF00 !important;
-  color: #000000 !important;
-  border: 1px solid #000000 !important;
+  background: #FFFF00;
+  color: #000000;
+  border: 1.5px solid #000000;
   font-size: 11px;
   font-weight: 700;
-  font-family: var(--admin-font-number), "Manrope", sans-serif !important;
+  font-family: var(--admin-font-number), "Manrope", sans-serif;
   font-variant-numeric: tabular-nums;
-  line-height: 1 !important;
-  box-sizing: border-box !important;
+  line-height: 1;
+  box-sizing: border-box;
   box-shadow: none;
   letter-spacing: 0;
   margin: 0;
@@ -1844,22 +1876,37 @@ html[data-admin-theme="light"] .admin-picker-hex-input,
   border-radius: var(--admin-radius-sm);
   background: rgba(255, 255, 255, 0.08);
   color: var(--admin-text-muted);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
   letter-spacing: 0.02em;
   transition: all 0.18s ease;
 }
 
+html[data-admin-theme="light"] .admin-toggle-changes-compact .toggle-changes-pill,
+.admin-workspace[data-theme="light"] .admin-toggle-changes-compact .toggle-changes-pill {
+  background: #F1F5F9;
+  color: #64748B;
+  border: 1.5px solid #CBD5E1;
+}
+
 .admin-toggle-changes-compact.is-on .toggle-changes-pill {
-  background: #FFFF00 !important;
-  color: #000000 !important;
-  border: 1px solid #000000 !important;
-  text-shadow: none !important;
-  font-weight: 700 !important;
+  background: #FFFF00;
+  color: #000000;
+  border: 1.5px solid #000000;
+  text-shadow: none;
+  font-weight: 700;
 }
 
 .admin-toggle-changes-compact.is-on {
   background: rgba(255, 255, 0, 0.08);
-  border-color: #FFFF00;
+  border: 1.5px solid #FFFF00;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on,
+.admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on {
+  background: rgba(255, 255, 0, 0.16);
+  border: 1.5px solid #000000;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 /* --------------------------------------------------------------------------
@@ -3036,76 +3083,6 @@ html[data-admin-theme="light"] .admin-field-row.is-modified .admin-range-input::
 html[data-admin-theme="light"] .admin-field-row.is-modified .admin-range-input::-moz-range-track,
 .admin-workspace[data-theme="light"] .admin-field-row.is-modified .admin-range-input::-moz-range-track {
   background: rgba(217, 119, 6, 0.32) !important;
-}
-
-/* Light Mode: Compact Show/Hide Changes Button in Sidepanel Footer */
-html[data-admin-theme="light"] .admin-toggle-changes-compact,
-.admin-workspace[data-theme="light"] .admin-toggle-changes-compact {
-  background: #FFFFFF !important;
-  border: 1px solid #CBD5E1 !important;
-  color: #0F172A !important;
-  font-weight: 500 !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
-}
-
-html[data-admin-theme="light"] .admin-toggle-changes-compact:hover,
-.admin-workspace[data-theme="light"] .admin-toggle-changes-compact:hover {
-  background: #FFFFF0 !important;
-  border-color: #000000 !important;
-  color: #000000 !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
-}
-
-html[data-admin-theme="light"] .admin-toggle-changes-compact .toggle-changes-title,
-.admin-workspace[data-theme="light"] .admin-toggle-changes-compact .toggle-changes-title {
-  color: #0F172A !important;
-  font-weight: 500 !important;
-}
-
-html[data-admin-theme="light"] .admin-toggle-changes-compact .toggle-changes-pill,
-.admin-workspace[data-theme="light"] .admin-toggle-changes-compact .toggle-changes-pill {
-  background: #F1F5F9 !important;
-  color: #64748B !important;
-  border: 1px solid #E2E8F0 !important;
-  font-weight: 600 !important;
-}
-
-html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on,
-.admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on {
-  border: 1.5px solid #000000 !important;
-  background: rgba(255, 255, 0, 0.16) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
-}
-
-html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-badge-dot,
-.admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-badge-dot {
-  background: #FFFF00 !important;
-  border: 1.5px solid #000000 !important;
-  box-shadow: 0 0 0 1px #000000 !important;
-}
-
-html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-title,
-.admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-title {
-  color: #000000 !important;
-  font-weight: 600 !important;
-}
-
-html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-pill,
-.admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-pill {
-  background: #FFFF00 !important;
-  color: #000000 !important;
-  border: 1px solid #000000 !important;
-  font-weight: 700 !important;
-  text-shadow: none !important;
-}
-
-html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-count,
-.admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-count {
-  background: #FFFF00 !important;
-  color: #000000 !important;
-  border: 1px solid #000000 !important;
-  font-weight: 700 !important;
-  text-shadow: none !important;
 }
 
 /* Light Mode: Change indicator numbers on sidebar menu (Pure Black background with Pure White text) */

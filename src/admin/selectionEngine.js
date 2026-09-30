@@ -1125,16 +1125,16 @@ export class SelectionEngine {
     const leftTagRect = this.leftTag && this.leftTag.classList.contains('is-active-visible') ? this.leftTag.getBoundingClientRect() : null;
     const rightTagRect = this.rightTag && !isMobileMode && this.rightTag.classList.contains('is-active-visible') ? this.rightTag.getBoundingClientRect() : null;
 
-    const leftNodeX = leftTagRect ? leftTagRect.right : 100;
+    const leftNodeX = leftTagRect ? leftTagRect.right - 2.5 : 100;
     const leftNodeY = leftTagRect ? leftTagRect.top + leftTagRect.height / 2 : leftY;
 
-    const rightNodeX = rightTagRect ? rightTagRect.left : viewportWidth - 100;
+    const rightNodeX = rightTagRect ? rightTagRect.left + 2.5 : viewportWidth - 100;
     const rightNodeY = rightTagRect ? rightTagRect.top + rightTagRect.height / 2 : rightY;
 
     // Standoff clearance distance between the terminal dot and the highlighted box edge
     const STANDOFF_GAP = 14;
-    // Disconnect gap (1 dash cycle) between dots and dashed line endpoints
-    const DASH_GAP = 9;
+    // Disconnect gap between dots and dashed line endpoints
+    const DASH_GAP = 7;
 
     // Helper: calculate evenly spaced dash array so no dashes are cut off midway
     const getEvenDashArray = (length) => {
@@ -1147,9 +1147,9 @@ export class SelectionEngine {
     };
 
     // Helper: render a single disconnected dashed segment between two points with complete even dashes
-    const renderCircuitSegment = (x1, y1, x2, y2, gradId) => {
+    const renderCircuitSegment = (x1, y1, x2, y2) => {
       const dist = Math.hypot(x2 - x1, y2 - y1);
-      if (dist <= DASH_GAP * 2 + 4) return ''; // Distance too short for dashes
+      if (dist <= DASH_GAP * 2 + 2) return ''; // Distance too short for dashes
 
       const ux = (x2 - x1) / dist;
       const uy = (y2 - y1) / dist;
@@ -1175,8 +1175,8 @@ export class SelectionEngine {
       <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="2.5" fill="#FFFF00" stroke="#FFFFFF" stroke-width="1" />
     `;
 
-    // Helper: render traces for a side (implements two-line root branching architecture)
-    const renderTracesForSide = (items, rootX, rootY, isLeft, gradId) => {
+    // Helper: render separate circuit lines for each changed element originating directly from root
+    const renderTracesForSide = (items, rootX, rootY, isLeft) => {
       if (!items || items.length === 0) return '';
       let markup = '';
 
@@ -1184,125 +1184,67 @@ export class SelectionEngine {
       const prepared = items.map(item => {
         const targetY = Math.max(10, Math.min(viewportHeight - 10, item.centerY));
         const endDotX = isLeft
-          ? Math.max(rootX + 30, item.rect.left - STANDOFF_GAP)
-          : Math.min(rootX - 30, item.rect.right + STANDOFF_GAP);
+          ? Math.max(rootX + 35, item.rect.left - STANDOFF_GAP)
+          : Math.min(rootX - 35, item.rect.right + STANDOFF_GAP);
         return { item, targetY, endDotX };
       });
 
-      // If only 1 item on this side, render a direct single trace
-      if (prepared.length === 1) {
-        const { targetY, endDotX } = prepared[0];
+      // Render single root dot at the tag connection point (never duplicated or overlapping)
+      markup += renderJointDot(rootX, rootY);
+
+      // Separate circuit line for each changed element originating directly from the root node
+      prepared.forEach(({ item, targetY, endDotX }, idx) => {
         const isDirect = Math.abs(targetY - rootY) < 6;
+
         if (isDirect) {
-          markup += renderCircuitSegment(rootX, rootY, endDotX, targetY, gradId);
+          // Direct horizontal trace from root to terminal dot
+          markup += renderCircuitSegment(rootX, rootY, endDotX, targetY);
           markup += renderJointDot(endDotX, targetY);
         } else {
-          const leadDist = Math.min(24, Math.max(12, Math.abs(endDotX - rootX) * 0.25));
-          const p1X = isLeft ? rootX + leadDist : rootX - leadDist;
-          const midBusX = isLeft
-            ? Math.max(p1X + 10, Math.min(endDotX - 12, p1X + (endDotX - p1X) * 0.45))
-            : Math.min(p1X - 10, Math.max(endDotX + 12, p1X + (endDotX - p1X) * 0.45));
+          // Dedicated circuit trace angled from root to horizontal lead level
+          const minX = isLeft ? rootX + 24 : endDotX + 16;
+          const maxX = isLeft ? endDotX - 16 : rootX - 24;
 
-          markup += renderCircuitSegment(rootX, rootY, p1X, rootY, gradId);
-          markup += renderCircuitSegment(p1X, rootY, midBusX, targetY, gradId);
-          markup += renderCircuitSegment(midBusX, targetY, endDotX, targetY, gradId);
-          markup += renderJointDot(p1X, rootY);
-          markup += renderJointDot(midBusX, targetY);
+          let cornerX;
+          if (isLeft) {
+            cornerX = rootX + (endDotX - rootX) * 0.4 + (idx * 8);
+            if (maxX > minX) {
+              cornerX = Math.max(minX, Math.min(maxX, cornerX));
+            } else {
+              cornerX = (rootX + endDotX) / 2;
+            }
+          } else {
+            cornerX = rootX - (rootX - endDotX) * 0.4 - (idx * 8);
+            if (maxX > minX) {
+              cornerX = Math.max(minX, Math.min(maxX, cornerX));
+            } else {
+              cornerX = (rootX + endDotX) / 2;
+            }
+          }
+
+          // 2 clean non-overlapping segments:
+          // 1. Direct diagonal trace from root node to the element's turn point
+          markup += renderCircuitSegment(rootX, rootY, cornerX, targetY);
+          // 2. Horizontal trace from turn point to terminal dot
+          markup += renderCircuitSegment(cornerX, targetY, endDotX, targetY);
+
+          // Place joint dot at corner and terminal dot at highlighted box
+          markup += renderJointDot(cornerX, targetY);
           markup += renderJointDot(endDotX, targetY);
         }
-        return markup;
-      }
-
-      // MULTIPLE ITEMS: Tree-Branching Architecture
-      // Exactly two lines leave the root dot: one up and one down.
-      // Other lines branch directly from those two trunk lines wherever necessary.
-      const minX = isLeft
-        ? Math.min(...prepared.map(p => p.endDotX))
-        : Math.max(...prepared.map(p => p.endDotX));
-      const leadOffset = isLeft
-        ? Math.min(28, Math.max(14, (minX - rootX) * 0.35))
-        : Math.min(28, Math.max(14, (rootX - minX) * 0.35));
-      const trunkX = isLeft ? rootX + leadOffset : rootX - leadOffset;
-
-      // Group into up items (< rootY) and down items (>= rootY)
-      const upList = prepared
-        .filter(p => p.targetY < rootY)
-        .sort((a, b) => b.targetY - a.targetY); // descending: closest to rootY first
-
-      const downList = prepared
-        .filter(p => p.targetY >= rootY)
-        .sort((a, b) => a.targetY - b.targetY); // ascending: closest to rootY first
-
-      // Helper to process directional branch (one trunk line leaves root dot, branches to each item)
-      const processBranchList = (list) => {
-        if (!list || list.length === 0) return;
-
-        // Group elements that are at virtually the same Y level to avoid 0-length vertical links
-        const grouped = [];
-        list.forEach(p => {
-          const existing = grouped.find(g => Math.abs(g.targetY - p.targetY) < 6);
-          if (existing) {
-            existing.items.push(p);
-          } else {
-            grouped.push({ targetY: p.targetY, items: [p] });
-          }
-        });
-
-        // 1. Initial line leaving the root dot to the first joint
-        const firstGroup = grouped[0];
-        const j0X = trunkX;
-        const j0Y = firstGroup.targetY;
-
-        markup += renderCircuitSegment(rootX, rootY, j0X, j0Y, gradId);
-        markup += renderJointDot(j0X, j0Y);
-
-        // Branch out horizontally to each item in the first group
-        firstGroup.items.forEach(p => {
-          markup += renderCircuitSegment(j0X, j0Y, p.endDotX, p.targetY, gradId);
-          markup += renderJointDot(p.endDotX, p.targetY);
-        });
-
-        // 2. Continue trunk sequentially to each subsequent group
-        let prevX = j0X;
-        let prevY = j0Y;
-
-        for (let i = 1; i < grouped.length; i++) {
-          const group = grouped[i];
-          const currX = trunkX;
-          const currY = group.targetY;
-
-          // Vertical trunk continuation segment
-          markup += renderCircuitSegment(prevX, prevY, currX, currY, gradId);
-          markup += renderJointDot(currX, currY);
-
-          // Branch out horizontally from this joint to each item
-          group.items.forEach(p => {
-            markup += renderCircuitSegment(currX, currY, p.endDotX, p.targetY, gradId);
-            markup += renderJointDot(p.endDotX, p.targetY);
-          });
-
-          prevX = currX;
-          prevY = currY;
-        }
-      };
-
-      // Process UP branch (only one line leaves root dot going up)
-      processBranchList(upList);
-
-      // Process DOWN branch (only one line leaves root dot going down)
-      processBranchList(downList);
+      });
 
       return markup;
     };
 
     // Draw traces for Left items
     if (leftItems.length > 0 && leftTagRect) {
-      svgHtml += renderTracesForSide(leftItems, leftNodeX, leftNodeY, true, 'circuitGradLeft');
+      svgHtml += renderTracesForSide(leftItems, leftNodeX, leftNodeY, true);
     }
 
     // Draw traces for Right items (only if not mobile mode)
     if (!isMobileMode && rightItems.length > 0 && rightTagRect) {
-      svgHtml += renderTracesForSide(rightItems, rightNodeX, rightNodeY, false, 'circuitGradRight');
+      svgHtml += renderTracesForSide(rightItems, rightNodeX, rightNodeY, false);
     }
 
     this.circuitSvg.innerHTML = svgHtml;
