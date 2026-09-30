@@ -304,6 +304,8 @@ function triggerBackgroundBuild() {
 
 function getDeploymentFiles() {
   const filePaths = [
+    'package.json',
+    'package-lock.json',
     'index.html',
     'src/styles/custom-design.css',
     'src/data/publishedSchema.json',

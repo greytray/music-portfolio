@@ -1175,78 +1175,134 @@ export class SelectionEngine {
       <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="2.5" fill="#FFFF00" stroke="#FFFFFF" stroke-width="1" />
     `;
 
+    // Helper: render traces for a side (implements two-line root branching architecture)
+    const renderTracesForSide = (items, rootX, rootY, isLeft, gradId) => {
+      if (!items || items.length === 0) return '';
+      let markup = '';
+
+      // Prepare items with clamped viewport boundaries and standoff clearances
+      const prepared = items.map(item => {
+        const targetY = Math.max(10, Math.min(viewportHeight - 10, item.centerY));
+        const endDotX = isLeft
+          ? Math.max(rootX + 30, item.rect.left - STANDOFF_GAP)
+          : Math.min(rootX - 30, item.rect.right + STANDOFF_GAP);
+        return { item, targetY, endDotX };
+      });
+
+      // If only 1 item on this side, render a direct single trace
+      if (prepared.length === 1) {
+        const { targetY, endDotX } = prepared[0];
+        const isDirect = Math.abs(targetY - rootY) < 6;
+        if (isDirect) {
+          markup += renderCircuitSegment(rootX, rootY, endDotX, targetY, gradId);
+          markup += renderJointDot(endDotX, targetY);
+        } else {
+          const leadDist = Math.min(24, Math.max(12, Math.abs(endDotX - rootX) * 0.25));
+          const p1X = isLeft ? rootX + leadDist : rootX - leadDist;
+          const midBusX = isLeft
+            ? Math.max(p1X + 10, Math.min(endDotX - 12, p1X + (endDotX - p1X) * 0.45))
+            : Math.min(p1X - 10, Math.max(endDotX + 12, p1X + (endDotX - p1X) * 0.45));
+
+          markup += renderCircuitSegment(rootX, rootY, p1X, rootY, gradId);
+          markup += renderCircuitSegment(p1X, rootY, midBusX, targetY, gradId);
+          markup += renderCircuitSegment(midBusX, targetY, endDotX, targetY, gradId);
+          markup += renderJointDot(p1X, rootY);
+          markup += renderJointDot(midBusX, targetY);
+          markup += renderJointDot(endDotX, targetY);
+        }
+        return markup;
+      }
+
+      // MULTIPLE ITEMS: Tree-Branching Architecture
+      // Exactly two lines leave the root dot: one up and one down.
+      // Other lines branch directly from those two trunk lines wherever necessary.
+      const minX = isLeft
+        ? Math.min(...prepared.map(p => p.endDotX))
+        : Math.max(...prepared.map(p => p.endDotX));
+      const leadOffset = isLeft
+        ? Math.min(28, Math.max(14, (minX - rootX) * 0.35))
+        : Math.min(28, Math.max(14, (rootX - minX) * 0.35));
+      const trunkX = isLeft ? rootX + leadOffset : rootX - leadOffset;
+
+      // Group into up items (< rootY) and down items (>= rootY)
+      const upList = prepared
+        .filter(p => p.targetY < rootY)
+        .sort((a, b) => b.targetY - a.targetY); // descending: closest to rootY first
+
+      const downList = prepared
+        .filter(p => p.targetY >= rootY)
+        .sort((a, b) => a.targetY - b.targetY); // ascending: closest to rootY first
+
+      // Helper to process directional branch (one trunk line leaves root dot, branches to each item)
+      const processBranchList = (list) => {
+        if (!list || list.length === 0) return;
+
+        // Group elements that are at virtually the same Y level to avoid 0-length vertical links
+        const grouped = [];
+        list.forEach(p => {
+          const existing = grouped.find(g => Math.abs(g.targetY - p.targetY) < 6);
+          if (existing) {
+            existing.items.push(p);
+          } else {
+            grouped.push({ targetY: p.targetY, items: [p] });
+          }
+        });
+
+        // 1. Initial line leaving the root dot to the first joint
+        const firstGroup = grouped[0];
+        const j0X = trunkX;
+        const j0Y = firstGroup.targetY;
+
+        markup += renderCircuitSegment(rootX, rootY, j0X, j0Y, gradId);
+        markup += renderJointDot(j0X, j0Y);
+
+        // Branch out horizontally to each item in the first group
+        firstGroup.items.forEach(p => {
+          markup += renderCircuitSegment(j0X, j0Y, p.endDotX, p.targetY, gradId);
+          markup += renderJointDot(p.endDotX, p.targetY);
+        });
+
+        // 2. Continue trunk sequentially to each subsequent group
+        let prevX = j0X;
+        let prevY = j0Y;
+
+        for (let i = 1; i < grouped.length; i++) {
+          const group = grouped[i];
+          const currX = trunkX;
+          const currY = group.targetY;
+
+          // Vertical trunk continuation segment
+          markup += renderCircuitSegment(prevX, prevY, currX, currY, gradId);
+          markup += renderJointDot(currX, currY);
+
+          // Branch out horizontally from this joint to each item
+          group.items.forEach(p => {
+            markup += renderCircuitSegment(currX, currY, p.endDotX, p.targetY, gradId);
+            markup += renderJointDot(p.endDotX, p.targetY);
+          });
+
+          prevX = currX;
+          prevY = currY;
+        }
+      };
+
+      // Process UP branch (only one line leaves root dot going up)
+      processBranchList(upList);
+
+      // Process DOWN branch (only one line leaves root dot going down)
+      processBranchList(downList);
+
+      return markup;
+    };
+
     // Draw traces for Left items
     if (leftItems.length > 0 && leftTagRect) {
-      leftItems.forEach(item => {
-        const startX = leftNodeX;
-        const startY = leftNodeY;
-        const endDotX = Math.max(startX + 30, item.rect.left - STANDOFF_GAP);
-        const endDotY = Math.max(10, Math.min(viewportHeight - 10, item.centerY));
-
-        const leadDist = Math.min(24, Math.max(12, Math.abs(endDotX - startX) * 0.25));
-        const p1X = startX + leadDist;
-        const p1Y = startY;
-
-        const isDirect = Math.abs(endDotY - startY) < 6;
-
-        if (isDirect) {
-          // Direct horizontal trace: Start -> Terminal Dot
-          svgHtml += renderCircuitSegment(startX, startY, endDotX, endDotY, 'circuitGradLeft');
-          svgHtml += renderJointDot(endDotX, endDotY);
-        } else {
-          // 2-joint orthogonal trace: Start -> Joint 1 -> Joint 2 -> Terminal Dot
-          const midBusX = Math.max(p1X + 10, Math.min(endDotX - 12, p1X + (endDotX - p1X) * 0.45));
-          const p2X = midBusX;
-          const p2Y = endDotY;
-
-          // Disconnected dashed segments between joints
-          svgHtml += renderCircuitSegment(startX, startY, p1X, p1Y, 'circuitGradLeft');
-          svgHtml += renderCircuitSegment(p1X, p1Y, p2X, p2Y, 'circuitGradLeft');
-          svgHtml += renderCircuitSegment(p2X, p2Y, endDotX, endDotY, 'circuitGradLeft');
-
-          // Glowing dots at every joint and terminal endpoint
-          svgHtml += renderJointDot(p1X, p1Y);
-          svgHtml += renderJointDot(p2X, p2Y);
-          svgHtml += renderJointDot(endDotX, endDotY);
-        }
-      });
+      svgHtml += renderTracesForSide(leftItems, leftNodeX, leftNodeY, true, 'circuitGradLeft');
     }
 
     // Draw traces for Right items (only if not mobile mode)
     if (!isMobileMode && rightItems.length > 0 && rightTagRect) {
-      rightItems.forEach(item => {
-        const startX = rightNodeX;
-        const startY = rightNodeY;
-        const endDotX = Math.min(startX - 30, item.rect.right + STANDOFF_GAP);
-        const endDotY = Math.max(10, Math.min(viewportHeight - 10, item.centerY));
-
-        const leadDist = Math.min(24, Math.max(12, Math.abs(startX - endDotX) * 0.25));
-        const p1X = startX - leadDist;
-        const p1Y = startY;
-
-        const isDirect = Math.abs(endDotY - startY) < 6;
-
-        if (isDirect) {
-          // Direct horizontal trace: Start -> Terminal Dot
-          svgHtml += renderCircuitSegment(startX, startY, endDotX, endDotY, 'circuitGradRight');
-          svgHtml += renderJointDot(endDotX, endDotY);
-        } else {
-          // 2-joint orthogonal trace: Start -> Joint 1 -> Joint 2 -> Terminal Dot
-          const midBusX = Math.min(p1X - 10, Math.max(endDotX + 12, p1X + (endDotX - p1X) * 0.45));
-          const p2X = midBusX;
-          const p2Y = endDotY;
-
-          // Disconnected dashed segments between joints
-          svgHtml += renderCircuitSegment(startX, startY, p1X, p1Y, 'circuitGradRight');
-          svgHtml += renderCircuitSegment(p1X, p1Y, p2X, p2Y, 'circuitGradRight');
-          svgHtml += renderCircuitSegment(p2X, p2Y, endDotX, endDotY, 'circuitGradRight');
-
-          // Glowing dots at every joint and terminal endpoint
-          svgHtml += renderJointDot(p1X, p1Y);
-          svgHtml += renderJointDot(p2X, p2Y);
-          svgHtml += renderJointDot(endDotX, endDotY);
-        }
-      });
+      svgHtml += renderTracesForSide(rightItems, rightNodeX, rightNodeY, false, 'circuitGradRight');
     }
 
     this.circuitSvg.innerHTML = svgHtml;
