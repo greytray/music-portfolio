@@ -122,6 +122,18 @@ export class ExportSystem {
       delete existing.dataAttributes[changeData.removeDataAttr];
     }
 
+    if (changeData.html !== undefined) {
+      if (breakpoint === 'universal') {
+        existing.html = changeData.html;
+        if (existing.breakpoints.desktop) delete existing.breakpoints.desktop.html;
+        if (existing.breakpoints.tablet) delete existing.breakpoints.tablet.html;
+        if (existing.breakpoints.mobile) delete existing.breakpoints.mobile.html;
+      } else {
+        if (!existing.breakpoints[breakpoint]) existing.breakpoints[breakpoint] = {};
+        existing.breakpoints[breakpoint].html = changeData.html;
+      }
+    }
+
     if (changeData.media) {
       if (breakpoint === 'universal') {
         existing.media = changeData.media;
@@ -151,6 +163,22 @@ export class ExportSystem {
       } else {
         if (!userExisting.breakpoints[breakpoint]) userExisting.breakpoints[breakpoint] = {};
         userExisting.breakpoints[breakpoint].text = changeData.text;
+      }
+    }
+    if (changeData.html !== undefined) {
+      if (breakpoint === 'universal') {
+        userExisting.html = changeData.html;
+      } else {
+        if (!userExisting.breakpoints[breakpoint]) userExisting.breakpoints[breakpoint] = {};
+        userExisting.breakpoints[breakpoint].html = changeData.html;
+      }
+    }
+    if (changeData.media) {
+      if (breakpoint === 'universal') {
+        userExisting.media = changeData.media;
+      } else {
+        if (!userExisting.breakpoints[breakpoint]) userExisting.breakpoints[breakpoint] = {};
+        userExisting.breakpoints[breakpoint].media = changeData.media;
       }
     }
     if (changeData.styleKey && changeData.val !== undefined) {

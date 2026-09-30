@@ -906,8 +906,71 @@ function adminDesignModePlugin() {
       }
     }
 
-    // 3. POST /api/media/upload or POST /api/media - Direct upload to Hugging Face RawStorage pipe + local cache
-    if ((parsedUrl.pathname === '/api/media/upload' || parsedUrl.pathname === '/api/media') && req.method === 'POST') {
+    // 2i. GET /api/media/list - List available project images and audio tracks for Media Management
+    if (parsedUrl.pathname === '/api/media/list' || (parsedUrl.pathname === '/api/media' && parsedUrl.searchParams.get('action') === 'list')) {
+      const imagesDir = path.resolve(process.cwd(), 'assets', 'images');
+      const bgDir = path.resolve(process.cwd(), 'assets', 'backgrounds');
+      const foundImages = [];
+      
+      const humanize = (fname) => {
+        return fname
+          .replace(/_[0-9]+(\.[a-z]+)$/i, '$1')
+          .replace(/\.[a-z0-9]+$/i, '')
+          .replace(/[_\-]+/g, ' ')
+          .replace(/\b\w/g, c => c.toUpperCase());
+      };
+
+      if (fs.existsSync(imagesDir)) {
+        try {
+          fs.readdirSync(imagesDir).forEach(file => {
+            const ext = path.extname(file).toLowerCase();
+            if (['.jpg', '.jpeg', '.png', '.webp', '.svg', '.gif'].includes(ext)) {
+              foundImages.push({
+                name: humanize(file),
+                fileName: file,
+                src: `./assets/images/${file}`,
+                category: file.includes('dsp') || file.includes('eq') || file.includes('reverb') || file.includes('tuning') ? 'Plugins' : 'Studio'
+              });
+            }
+          });
+        } catch (_) {}
+      }
+
+      if (fs.existsSync(bgDir)) {
+        try {
+          fs.readdirSync(bgDir).forEach(file => {
+            const ext = path.extname(file).toLowerCase();
+            if (['.gif', '.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
+              foundImages.push({
+                name: humanize(file),
+                fileName: file,
+                src: `./assets/backgrounds/${file}`,
+                category: 'Backgrounds'
+              });
+            }
+          });
+        } catch (_) {}
+      }
+
+      const audioTracks = [
+        { id: 'feeling_mello', title: 'Feeling Mello', style: 'Original production', duration: '0:44', file: 'audio/feeling mello.mp3', src: '/api/media?file=audio/feeling mello.mp3' },
+        { id: 'broken_jar', title: 'Broken Jar', style: 'Mastered production', duration: '0:38', file: 'audio/broken jar mastered.mp3', src: '/api/media?file=audio/broken jar mastered.mp3' },
+        { id: 'kpop_beat', title: 'Kpop Beat', style: 'K-Pop production', duration: '1:14', file: 'audio/Kpop beat.mp3', src: '/api/media?file=audio/Kpop beat.mp3' },
+        { id: 'kensuke', title: 'Kensuke', style: 'Original production', duration: '0:45', file: 'audio/Kensuke.mp3', src: '/api/media?file=audio/Kensuke.mp3' },
+        { id: 'kpop_post_fx', title: 'K-Pop Post FX', style: 'Post-production mix', duration: '0:14', file: 'audio/K-Pop post fx.mp3', src: '/api/media?file=audio/K-Pop post fx.mp3' },
+        { id: 'aiobahn', title: 'Aiobahn Maybe Last Mix', style: 'Final mix', duration: '0:53', file: 'audio/Aiobahn maybe last mix.mp3', src: '/api/media?file=audio/Aiobahn maybe last mix.mp3' }
+      ];
+
+      res.setHeader('Content-Type', 'application/json');
+      return res.end(JSON.stringify({
+        success: true,
+        images: foundImages,
+        audio: audioTracks
+      }));
+    }
+
+    // 3. POST /api/media/upload or POST /api/media or POST /api/upload - Direct upload to Hugging Face RawStorage pipe + local cache
+    if ((parsedUrl.pathname === '/api/media/upload' || parsedUrl.pathname === '/api/media' || parsedUrl.pathname === '/api/upload') && req.method === 'POST') {
       try {
         const { json, buffer } = await readRequestBody(req);
         let fileName = '';

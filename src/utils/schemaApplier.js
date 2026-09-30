@@ -313,12 +313,14 @@ export function applyDesignSchema(schema, doc = document) {
       } else if (item.text !== undefined && typeof item.text === 'string') {
         targetText = item.text;
         targetHtml = item.html;
+      } else if (item.html !== undefined && typeof item.html === 'string') {
+        targetHtml = item.html;
       }
 
-      if (targetText !== null) {
-        if (targetHtml) {
-          el.innerHTML = targetHtml;
-        } else if (el.children.length === 0) {
+      if (targetHtml !== null && targetHtml !== undefined) {
+        el.innerHTML = targetHtml;
+      } else if (targetText !== null) {
+        if (el.children.length === 0) {
           el.textContent = targetText;
         } else {
           // Has child elements (e.g. <small>Original production</small>, <span>, icons): safely update direct text node

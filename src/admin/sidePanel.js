@@ -10,6 +10,36 @@
 
 import { getFriendlyName, findSimilarCardElements, getEnclosingSectionName } from './selectionEngine.js';
 
+export const DEFAULT_PROJECT_IMAGES = [
+  { name: 'Curved DAW Monitor', src: './assets/images/curved_daw_monitor_1789336964825.jpg', category: 'Studio Gear' },
+  { name: 'Digital EQ & Compressor', src: './assets/images/digital_eq_compressor_1789337007076.jpg', category: 'Plugins' },
+  { name: 'Digital Reverb DSP', src: './assets/images/digital_reverb_dsp_1789337033441.jpg', category: 'Plugins' },
+  { name: 'MIDI Beat Arranger', src: './assets/images/midi_beat_arranger_1789337019783.jpg', category: 'Production' },
+  { name: 'Spectral Cleanup DSP', src: './assets/images/spectral_cleanup_dsp_1789336993282.jpg', category: 'Plugins' },
+  { name: 'Vocal Tuning Plugin', src: './assets/images/vocal_tuning_plugin_1789336979208.jpg', category: 'Plugins' },
+  { name: 'Studio Mixing Desk', src: './assets/images/studio_mixing_desk_1789325845543.jpg', category: 'Studio Gear' },
+  { name: 'Studio Acoustic Monitors', src: './assets/images/studio_acoustic_monitors_1789331401789.jpg', category: 'Hardware' },
+  { name: 'Studio Drum Pads', src: './assets/images/studio_drum_pads_1789331427695.jpg', category: 'Production' },
+  { name: 'Studio Headphones', src: './assets/images/studio_headphones_1789331438637.jpg', category: 'Hardware' },
+  { name: 'Studio Rack Gear', src: './assets/images/studio_rack_gear_1789331450217.jpg', category: 'Hardware' },
+  { name: 'Studio Sound Waves', src: './assets/images/studio_sound_waves_1789325859183.jpg', category: 'Audio' },
+  { name: 'Studio Synth Keys', src: './assets/images/studio_synth_keys_1789325893151.jpg', category: 'Instruments' },
+  { name: 'Studio Tape Reel', src: './assets/images/studio_tape_reel_1789331415391.jpg', category: 'Vintage' },
+  { name: 'Studio Vocal Booth', src: './assets/images/studio_vocal_booth_1789331461100.jpg', category: 'Recording' },
+  { name: 'Studio Vocal Mic', src: './assets/images/studio_vocal_mic_1789325878081.jpg', category: 'Recording' },
+  { name: 'Futuristic Grid Loop', src: './assets/backgrounds/gif2.gif', category: 'Backgrounds' },
+  { name: 'Waveform Visualizer Loop', src: './assets/backgrounds/c1.gif', category: 'Backgrounds' }
+];
+
+export const DEFAULT_PROJECT_AUDIO = [
+  { id: 'feeling_mello', title: 'Feeling Mello', style: 'Original production', duration: '0:44', file: 'audio/feeling mello.mp3', src: '/api/media?file=audio/feeling mello.mp3' },
+  { id: 'broken_jar', title: 'Broken Jar', style: 'Mastered production', duration: '0:38', file: 'audio/broken jar mastered.mp3', src: '/api/media?file=audio/broken jar mastered.mp3' },
+  { id: 'kpop_beat', title: 'Kpop Beat', style: 'K-Pop production', duration: '1:14', file: 'audio/Kpop beat.mp3', src: '/api/media?file=audio/Kpop beat.mp3' },
+  { id: 'kensuke', title: 'Kensuke', style: 'Original production', duration: '0:45', file: 'audio/Kensuke.mp3', src: '/api/media?file=audio/Kensuke.mp3' },
+  { id: 'kpop_post_fx', title: 'K-Pop Post FX', style: 'Post-production mix', duration: '0:14', file: 'audio/K-Pop post fx.mp3', src: '/api/media?file=audio/K-Pop post fx.mp3' },
+  { id: 'aiobahn', title: 'Aiobahn Maybe Last Mix', style: 'Final mix', duration: '0:53', file: 'audio/Aiobahn maybe last mix.mp3', src: '/api/media?file=audio/Aiobahn maybe last mix.mp3' }
+];
+
 export class SidePanel {
   /**
    * @param {HTMLElement} container
@@ -46,6 +76,22 @@ export class SidePanel {
     this.linkMargins = false;
     this.linkPaddings = false;
     this.previewAudio = null;
+
+    // Media Studio State (Images & Audio Management)
+    this.mediaSubMode = null; // 'image' | 'audio' (auto-detected if null)
+    this.availableImages = [...DEFAULT_PROJECT_IMAGES];
+    this.availableAudioTracks = [...DEFAULT_PROJECT_AUDIO];
+    this.imageTransformState = {
+      flipH: false,
+      flipV: false,
+      scale: 100,
+      width: '',
+      height: '',
+      objectFit: 'cover'
+    };
+    this.currentPlayingAuditionSrc = null;
+    this.auditionAudioElement = null;
+    this._loadAvailableMedia();
 
     // Element baselines: stores snapshot BEFORE any sidebar edits (selector -> { style, text, isTextOnly, dataset })
     this.elementBaselines = new Map();
@@ -265,7 +311,7 @@ export class SidePanel {
         this.container.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('is-active'));
         btn.classList.add('is-active');
         this.activeTab = btn.dataset.tab;
-        if (this.activeElement && this.activeMeta) {
+        if (this.activeTab === 'media' || (this.activeElement && this.activeMeta)) {
           this._renderActiveTab();
           this.updateTabCounters();
           this._updateResetButtonVisibility();
@@ -316,6 +362,12 @@ export class SidePanel {
         computedGap: computed ? computed.gap : '',
         computedTextShadow: computed ? computed.textShadow : '',
         computedBoxShadow: computed ? computed.boxShadow : '',
+        src: (this.activeElement.tagName === 'IMG' || this.activeElement.tagName === 'AUDIO') ? (this.activeElement.getAttribute('src') || '') : '',
+        audio: this.activeElement.dataset ? (this.activeElement.dataset.audio || this.activeElement.dataset.src || '') : '',
+        computedTransform: computed ? computed.transform : '',
+        computedWidth: computed ? computed.width : '',
+        computedHeight: computed ? computed.height : '',
+        computedObjectFit: computed ? computed.objectFit : '',
       });
     }
   }
@@ -940,6 +992,7 @@ export class SidePanel {
     this._captureBaselineIfNeeded();
     this._refreshActiveMetaStyles();
     this._parseExistingShadow();
+    this._parseExistingMediaState();
 
     const titleEl = this.container.querySelector('#admin-panel-title');
     const footerEl = this.container.querySelector('#admin-panel-footer');
@@ -1050,6 +1103,11 @@ export class SidePanel {
     this.activeElement = null;
     this.activeMeta = null;
     this.currentSimilarElements = [];
+    if (this.auditionAudioElement) {
+      this.auditionAudioElement.pause();
+      this.auditionAudioElement = null;
+      this.currentPlayingAuditionSrc = null;
+    }
     if (this.selectionEngine) {
       this.selectionEngine.setLinkedElements([]);
     }
@@ -1066,7 +1124,9 @@ export class SidePanel {
     }
     this._updateResetButtonVisibility();
 
-    if (contentEl) {
+    if (this.activeTab === 'media') {
+      this._renderActiveTab();
+    } else if (contentEl) {
       contentEl.innerHTML = `
         <div class="admin-empty-notice" style="text-align: center; padding: 48px 20px; color: var(--admin-text-secondary); width: 100%; box-sizing: border-box;">
           <div class="empty-cursor-icon-wrap" style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: rgba(0, 127, 255, 0.08); border: 1px solid rgba(0, 127, 255, 0.22); margin-bottom: 16px; margin-inline: auto;">
@@ -1218,9 +1278,9 @@ export class SidePanel {
 
     if (fieldKey === 'media') {
       if (this.currentBreakpoint === 'universal') {
-        return data.media !== undefined;
+        return data.media !== undefined || Boolean(data.styles && (data.styles.transform || data.styles.width || data.styles.height || data.styles.objectFit || data.styles.backgroundImage));
       }
-      const hasBpMedia = Boolean(data.breakpoints && data.breakpoints[this.currentBreakpoint] && data.breakpoints[this.currentBreakpoint].media !== undefined);
+      const hasBpMedia = Boolean(data.breakpoints && data.breakpoints[this.currentBreakpoint] && (data.breakpoints[this.currentBreakpoint].media !== undefined || data.breakpoints[this.currentBreakpoint].transform || data.breakpoints[this.currentBreakpoint].width || data.breakpoints[this.currentBreakpoint].height || data.breakpoints[this.currentBreakpoint].objectFit || data.breakpoints[this.currentBreakpoint].backgroundImage));
       return hasBpMedia || (data.media !== undefined);
     }
 
@@ -1284,6 +1344,12 @@ export class SidePanel {
 
     let mediaCount = 0;
     if (this.isFieldChanged('media') || this.isFieldChanged('src') || this.isFieldChanged('audio') || this.isFieldChanged('backgroundImage')) {
+      mediaCount++;
+    }
+    if (this.isFieldChanged('transform')) {
+      mediaCount++;
+    }
+    if (this.isFieldChanged('width') || this.isFieldChanged('height') || this.isFieldChanged('objectFit')) {
       mediaCount++;
     }
 
@@ -1390,7 +1456,8 @@ export class SidePanel {
 
   _renderActiveTab() {
     const contentEl = this.container.querySelector('#admin-tab-content');
-    if (!contentEl || !this.activeElement || !this.activeMeta) return;
+    if (!contentEl) return;
+    if (this.activeTab !== 'media' && (!this.activeElement || !this.activeMeta)) return;
 
     if (this.activeTab === 'text') {
       contentEl.innerHTML = this._buildTextTabHtml();
@@ -1699,20 +1766,67 @@ export class SidePanel {
       }
     } else if (type === 'media' || key === 'media') {
       if (this.activeElement.tagName === 'IMG') {
-        if (baseline && baseline.dataset && baseline.dataset.src) {
+        if (baseline && baseline.src) {
+          this.activeElement.setAttribute('src', baseline.src);
+        } else if (baseline && baseline.dataset && baseline.dataset.src) {
           this.activeElement.setAttribute('src', baseline.dataset.src);
         }
       }
       if (this.activeElement.dataset.audio) {
         delete this.activeElement.dataset.audio;
       }
+      if (baseline && baseline.audio) {
+        this.activeElement.dataset.audio = baseline.audio;
+      }
       this.activeElement.style.removeProperty('background-image');
+      this.activeElement.style.removeProperty('transform');
+      this.activeElement.style.removeProperty('width');
+      this.activeElement.style.removeProperty('height');
+      this.activeElement.style.removeProperty('object-fit');
+      this.imageTransformState = {
+        flipH: false,
+        flipV: false,
+        scale: 100,
+        width: '',
+        height: '',
+        objectFit: 'cover'
+      };
       if (this.exportSystem) {
         this.exportSystem.removeChange(selector, 'media', 'src', 'all');
         this.exportSystem.removeChange(selector, 'media', 'audio', 'all');
         this.exportSystem.removeChange(selector, 'dataAttr', 'audio', 'all');
+        this.exportSystem.removeChange(selector, 'dataAttr', 'src', 'all');
+        this.exportSystem.removeChange(selector, 'dataAttr', 'title', 'all');
         this.exportSystem.removeChange(selector, 'style', 'backgroundImage', 'all');
+        this.exportSystem.removeChange(selector, 'style', 'transform', 'all');
+        this.exportSystem.removeChange(selector, 'style', 'width', 'all');
+        this.exportSystem.removeChange(selector, 'style', 'height', 'all');
+        this.exportSystem.removeChange(selector, 'style', 'objectFit', 'all');
       }
+    } else if (type === 'flips' || key === 'flips') {
+      this.imageTransformState.flipH = false;
+      this.imageTransformState.flipV = false;
+      this._applyImageTransform();
+      return;
+    } else if (type === 'scale' || key === 'scale') {
+      this.imageTransformState.scale = 100;
+      this._applyImageTransform();
+      return;
+    } else if (type === 'sizing' || key === 'sizing') {
+      this.imageTransformState.width = '';
+      this.imageTransformState.height = '';
+      this.imageTransformState.objectFit = 'cover';
+      this.activeElement.style.removeProperty('width');
+      this.activeElement.style.removeProperty('height');
+      this.activeElement.style.removeProperty('object-fit');
+      if (this.exportSystem) {
+        this.exportSystem.removeChange(selector, 'style', 'width', 'all');
+        this.exportSystem.removeChange(selector, 'style', 'height', 'all');
+        this.exportSystem.removeChange(selector, 'style', 'objectFit', 'all');
+      }
+      this._notifyChange({ reset: true });
+      this._renderActiveTab();
+      return;
     } else if (type === 'dataAttr') {
       delete this.activeElement.dataset[key];
       if (this.exportSystem) {
@@ -2934,144 +3048,1050 @@ export class SidePanel {
   }
 
   // ==========================================================================
-  // TAB 3: MEDIA DROP ZONES (Audio & Images routed via /api/upload)
+  // TAB 3: MEDIA MANAGEMENT (Image & Audio Studio)
   // ==========================================================================
-  _buildMediaTabHtml() {
-    const isImg = this.activeElement.tagName === 'IMG';
-    const isAudioTarget = this.activeElement.hasAttribute('data-audio') || this.activeElement.closest('[data-audio]');
-    const currentSrc = isImg ? this.activeElement.getAttribute('src') : (this.activeElement.dataset.audio || '');
-
-    const hasMediaChanged = this.isFieldChanged('media') || this.isFieldChanged('backgroundImage');
-    const mediaTitle = isAudioTarget ? 'Audio Track Replacement' : (isImg ? 'Image Asset Replacement' : 'Background Image');
-
-    return `
-      <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-media') ? 'is-collapsed' : ''} ${hasMediaChanged ? 'is-modified' : ''}">
-        ${this._renderSectionHeader('sec-media', mediaTitle, ['media', 'backgroundImage'], 'media')}
-
-        <div class="admin-dropzone" id="media-dropzone">
-          <input type="file" id="media-file-input" style="display: none;" accept="${isAudioTarget ? 'audio/*' : 'image/*'}">
-          <div class="dropzone-icon">
-            ${isAudioTarget ? `
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-            ` : `
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            `}
-          </div>
-          <div style="font-size: 11px; font-weight: 600; color: #fff;">
-            Drag & Drop ${isAudioTarget ? 'WAV / MP3 file' : 'Image (PNG/JPG/WebP)'}
-          </div>
-          <div style="font-size: 10px; color: var(--admin-text-secondary);">or click to browse local files</div>
-        </div>
-
-        <!-- Current URL / Audio Preview -->
-        <div class="admin-field-row" style="margin-top: 12px; margin-bottom: 0;">
-          <div class="admin-field-label-wrap">
-            <label class="admin-field-label">Current URL</label>
-          </div>
-          <div class="admin-field-control">
-            <input type="text" class="admin-input" id="media-url-input" value="${currentSrc || ''}" placeholder="https://...">
-          </div>
-        </div>
-
-        ${isAudioTarget && currentSrc ? `
-          <div style="margin-top: 10px;">
-            <audio controls src="${currentSrc}" style="width: 100%; height: 32px; border-radius: 4px;"></audio>
-          </div>
-        ` : ''}
-      </div>
-    `;
+  async _loadAvailableMedia() {
+    try {
+      const res = await fetch('/api/media/list');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.success) {
+        if (Array.isArray(data.images) && data.images.length > 0) {
+          const existingSrcs = new Set(this.availableImages.map(img => img.src));
+          data.images.forEach(img => {
+            if (!existingSrcs.has(img.src)) {
+              this.availableImages.push(img);
+              existingSrcs.add(img.src);
+            }
+          });
+        }
+        if (Array.isArray(data.audio) && data.audio.length > 0) {
+          const existingFiles = new Set(this.availableAudioTracks.map(t => t.file || t.src));
+          data.audio.forEach(track => {
+            if (!existingFiles.has(track.file || track.src)) {
+              this.availableAudioTracks.push(track);
+              existingFiles.add(track.file || track.src);
+            }
+          });
+        }
+        if (this.activeTab === 'media') {
+          this._renderActiveTab();
+        }
+      }
+    } catch (_) {}
   }
 
-  _bindMediaTabControls(container) {
-    const dropzone = container.querySelector('#media-dropzone');
-    const fileInput = container.querySelector('#media-file-input');
-    const urlInput = container.querySelector('#media-url-input');
+  _parseExistingMediaState() {
+    if (!this.activeElement) {
+      if (!this.mediaSubMode) this.mediaSubMode = 'image';
+      return;
+    }
 
-    if (dropzone && fileInput) {
-      dropzone.addEventListener('click', () => fileInput.click());
+    const isImg = this.activeElement.tagName === 'IMG';
+    const isAudio = Boolean(
+      this.activeElement.hasAttribute('data-audio') ||
+      this.activeElement.closest('[data-audio]') ||
+      this.activeElement.classList.contains('track') ||
+      this.activeElement.closest('.track') ||
+      this.activeElement.tagName === 'AUDIO'
+    );
 
-      dropzone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropzone.classList.add('is-dragover');
-      });
+    if (this.mediaSubMode === null) {
+      this.mediaSubMode = isAudio ? 'audio' : 'image';
+    }
 
-      ['dragleave', 'drop'].forEach(ev => {
-        dropzone.addEventListener(ev, () => dropzone.classList.remove('is-dragover'));
-      });
+    let flipH = false;
+    let flipV = false;
+    let scale = 100;
 
-      dropzone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-          this._handleMediaUpload(e.dataTransfer.files[0]);
+    const inlineTransform = (this.activeElement.style.transform || '').trim();
+    const overrides = this.getElementOverrides();
+    const overrideTransform = (overrides.styles && overrides.styles.transform) || '';
+    const win = this.activeElement.ownerDocument ? this.activeElement.ownerDocument.defaultView : window;
+    const computed = win ? win.getComputedStyle(this.activeElement) : null;
+    const computedTransform = (computed && computed.transform && computed.transform !== 'none') ? computed.transform : '';
+
+    const effectiveTransform = inlineTransform || overrideTransform || computedTransform;
+
+    if (effectiveTransform && effectiveTransform !== 'none') {
+      if (/scaleX\(\s*-1\s*\)/i.test(effectiveTransform)) flipH = true;
+      if (/scaleY\(\s*-1\s*\)/i.test(effectiveTransform)) flipV = true;
+
+      const scaleMatch = effectiveTransform.match(/scale\(\s*([-\d.]+)(?:\s*,\s*([-\d.]+))?\s*\)/i);
+      if (scaleMatch) {
+        const sx = parseFloat(scaleMatch[1]);
+        const sy = scaleMatch[2] !== undefined ? parseFloat(scaleMatch[2]) : sx;
+        if (sx < 0) flipH = true;
+        if (sy < 0) flipV = true;
+        const mag = Math.abs(sx);
+        if (!isNaN(mag) && mag > 0) {
+          scale = Math.round(mag * 100);
         }
-      });
-
-      fileInput.addEventListener('change', () => {
-        if (fileInput.files && fileInput.files[0]) {
-          this._handleMediaUpload(fileInput.files[0]);
+      } else if (effectiveTransform.startsWith('matrix(')) {
+        const parts = effectiveTransform.replace(/^matrix\(|\)$/g, '').split(',').map(s => parseFloat(s.trim()));
+        if (parts.length >= 4) {
+          const a = parts[0];
+          const b = parts[1];
+          const c = parts[2];
+          const d = parts[3];
+          if (a < 0) flipH = true;
+          if (d < 0) flipV = true;
+          const mag = Math.round(Math.hypot(a, b) * 100);
+          if (!isNaN(mag) && mag > 0) scale = mag;
         }
+      }
+    }
+
+    const currentWidth = this.activeElement.style.width || (overrides.styles && overrides.styles.width) || '';
+    const currentHeight = this.activeElement.style.height || (overrides.styles && overrides.styles.height) || '';
+    const currentObjectFit = this.activeElement.style.objectFit || (overrides.styles && overrides.styles.objectFit) || (computed ? computed.objectFit : 'cover') || 'cover';
+
+    this.imageTransformState = {
+      flipH,
+      flipV,
+      scale,
+      width: currentWidth,
+      height: currentHeight,
+      objectFit: currentObjectFit
+    };
+  }
+
+  _applyImageTransform() {
+    if (!this.activeElement) return;
+    this.pushUndoSnapshot('Image Transform');
+
+    const S = (this.imageTransformState.scale || 100) / 100;
+    const sx = this.imageTransformState.flipH ? -S : S;
+    const sy = this.imageTransformState.flipV ? -S : S;
+
+    let transformVal = '';
+    if (this.imageTransformState.flipH || this.imageTransformState.flipV || this.imageTransformState.scale !== 100) {
+      transformVal = `scale(${sx}, ${sy})`;
+    }
+
+    if (transformVal) {
+      this.activeElement.style.transform = transformVal;
+      this._notifyChange({ styleKey: 'transform', val: transformVal });
+    } else {
+      this.activeElement.style.removeProperty('transform');
+      if (this.exportSystem && this.activeMeta) {
+        this.exportSystem.removeChange(this.activeMeta.selector, 'style', 'transform', this.currentBreakpoint);
+      }
+      this._notifyChange({ styleKey: 'transform', val: '' });
+    }
+
+    this._renderActiveTab();
+    this.updateTabCounters();
+  }
+
+  _applyImageSizing(key, val) {
+    if (!this.activeElement) return;
+    this.pushUndoSnapshot(`Image ${key}`);
+
+    if (val && val !== 'initial' && val !== 'inherit') {
+      this.activeElement.style[key] = val;
+      this._notifyChange({ styleKey: key, val: val });
+    } else {
+      this.activeElement.style.removeProperty(this._camelToKebab(key));
+      if (this.exportSystem && this.activeMeta) {
+        this.exportSystem.removeChange(this.activeMeta.selector, 'style', key, this.currentBreakpoint);
+      }
+      this._notifyChange({ styleKey: key, val: '' });
+    }
+
+    this.imageTransformState[key] = val;
+    this.updateTabCounters();
+  }
+
+  _swapImage(newSrc, newName) {
+    if (!this.activeElement) {
+      if (typeof this.onToast === 'function') {
+        this.onToast(`Selected image: ${newName || 'image'}. Click an element in preview to apply it.`);
+      }
+      return;
+    }
+    this.pushUndoSnapshot('Swap Image');
+
+    const isImg = this.activeElement.tagName === 'IMG';
+    if (isImg) {
+      this.activeElement.setAttribute('src', newSrc);
+      this._notifyChange({ media: { src: newSrc, type: 'image' } });
+    } else {
+      this.activeElement.style.backgroundImage = `url('${newSrc}')`;
+      this._notifyChange({ styleKey: 'backgroundImage', val: `url('${newSrc}')`, media: { src: newSrc, type: 'image' } });
+    }
+
+    if (typeof this.onToast === 'function') {
+      this.onToast(`Swapped image to ${newName || 'selected image'}`);
+    }
+
+    this._renderActiveTab();
+    this.updateTabCounters();
+  }
+
+  _swapAudio(newSrc, newTitle) {
+    if (!this.activeElement) {
+      if (typeof this.onToast === 'function') {
+        this.onToast(`Selected audio: ${newTitle || 'track'}. Click a track on canvas to apply it.`);
+      }
+      return;
+    }
+    this.pushUndoSnapshot('Swap Audio');
+
+    const trackBtn = this.activeElement.classList.contains('track') ? this.activeElement : this.activeElement.closest('.track');
+    const catalogBtn = this.activeElement.hasAttribute('data-audio') ? this.activeElement : this.activeElement.closest('[data-audio]');
+    const audioEl = this.activeElement.tagName === 'AUDIO' ? this.activeElement : null;
+
+    if (trackBtn) {
+      trackBtn.dataset.src = newSrc;
+      trackBtn.dataset.audioFile = newSrc.replace('/api/media?file=', '');
+      if (newTitle) {
+        trackBtn.dataset.title = newTitle;
+        const nameSpan = trackBtn.querySelector('.track-name');
+        if (nameSpan) {
+          const small = nameSpan.querySelector('small');
+          const styleText = small ? small.textContent : '';
+          nameSpan.innerHTML = `${newTitle}${styleText ? `<small>${styleText}</small>` : ''}`;
+        }
+      }
+      this._notifyChange({
+        dataAttr: { src: newSrc, title: newTitle || trackBtn.dataset.title || '' },
+        media: { src: newSrc, type: 'audio' }
+      });
+    } else if (catalogBtn) {
+      catalogBtn.dataset.audio = newSrc;
+      if (newTitle) catalogBtn.dataset.title = newTitle;
+      this._notifyChange({
+        dataAttr: { audio: newSrc, title: newTitle || catalogBtn.dataset.title || '' },
+        media: { src: newSrc, type: 'audio' }
+      });
+    } else if (audioEl) {
+      audioEl.src = newSrc;
+      audioEl.load();
+      this._notifyChange({ media: { src: newSrc, type: 'audio' } });
+    } else {
+      this.activeElement.dataset.audio = newSrc;
+      if (newTitle) this.activeElement.dataset.title = newTitle;
+      this._notifyChange({
+        dataAttr: { audio: newSrc, title: newTitle || '' },
+        media: { src: newSrc, type: 'audio' }
       });
     }
 
-    if (urlInput) {
-      urlInput.addEventListener('change', () => {
-        const val = urlInput.value.trim();
-        this._applyMediaUrl(val);
-      });
+    const iframeDoc = this.getIframeDoc ? this.getIframeDoc() : document;
+    if (iframeDoc) {
+      const mainAudio = iframeDoc.querySelector('#audio');
+      if (mainAudio && (trackBtn?.classList.contains('active') || mainAudio.src.includes(newSrc))) {
+        mainAudio.src = newSrc;
+        mainAudio.load();
+      }
     }
 
-    this._bindResetButtons(container);
+    if (typeof this.onToast === 'function') {
+      this.onToast(`Swapped audio track to "${newTitle || 'selected audio'}"`);
+    }
+
+    this._renderActiveTab();
+    this.updateTabCounters();
   }
 
-  async _handleMediaUpload(file) {
-    const isImg = this.activeElement.tagName === 'IMG';
-    const isAudio = this.activeElement.hasAttribute('data-audio') || this.activeElement.closest('[data-audio]') || file.type.startsWith('audio/');
+  _handleAudition(src, btnEl) {
+    if (!src) return;
+
+    if (this.currentPlayingAuditionSrc === src && this.auditionAudioElement && !this.auditionAudioElement.paused) {
+      this.auditionAudioElement.pause();
+      this.currentPlayingAuditionSrc = null;
+      if (btnEl) {
+        btnEl.classList.remove('is-playing');
+        btnEl.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Audition`;
+      }
+      return;
+    }
+
+    if (this.auditionAudioElement) {
+      this.auditionAudioElement.pause();
+    }
+
+    this.auditionAudioElement = new Audio(src);
+    this.currentPlayingAuditionSrc = src;
+
+    this.container.querySelectorAll('.btn-audition').forEach(b => {
+      b.classList.remove('is-playing');
+      b.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Audition`;
+    });
+
+    if (btnEl) {
+      btnEl.classList.add('is-playing');
+      btnEl.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause`;
+    }
+
+    this.auditionAudioElement.play().catch(() => {});
+
+    this.auditionAudioElement.addEventListener('ended', () => {
+      this.currentPlayingAuditionSrc = null;
+      if (btnEl) {
+        btnEl.classList.remove('is-playing');
+        btnEl.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Audition`;
+      }
+    });
+  }
+
+  _handleReorderPlaylist(currentIndex, targetIndex) {
+    const iframeDoc = this.getIframeDoc ? this.getIframeDoc() : document;
+    if (!iframeDoc) return;
+
+    const playlistEl = iframeDoc.querySelector('#playlist') || iframeDoc.querySelector('.playlist');
+    if (!playlistEl) {
+      if (typeof this.onToast === 'function') {
+        this.onToast('Playlist container not found in current view', true);
+      }
+      return;
+    }
+
+    const tracks = Array.from(playlistEl.querySelectorAll('.track'));
+    if (currentIndex < 0 || currentIndex >= tracks.length || targetIndex < 0 || targetIndex >= tracks.length) {
+      return;
+    }
+
+    this.pushUndoSnapshot('Reorder Playlist Tracks');
+
+    const movingEl = tracks[currentIndex];
+    const targetEl = tracks[targetIndex];
+
+    if (targetIndex > currentIndex) {
+      playlistEl.insertBefore(movingEl, targetEl.nextSibling);
+    } else {
+      playlistEl.insertBefore(movingEl, targetEl);
+    }
+
+    const reorderedTracks = Array.from(playlistEl.querySelectorAll('.track'));
+    reorderedTracks.forEach((t, i) => {
+      const numSpan = t.querySelector('.track-number');
+      if (numSpan) {
+        numSpan.textContent = String(i + 1).padStart(2, '0');
+      }
+    });
+
+    if (this.exportSystem) {
+      this.exportSystem.recordChange('#playlist', { html: playlistEl.innerHTML }, 'universal');
+      this.exportSystem.hasUnpublishedChanges = true;
+    }
+
+    const trackTitle = movingEl.dataset.title || movingEl.querySelector('.track-name')?.firstChild?.textContent?.trim() || `Track ${currentIndex + 1}`;
+    const direction = targetIndex < currentIndex ? 'up' : 'down';
+    if (typeof this.onToast === 'function') {
+      this.onToast(`Moved "${trackTitle}" ${direction} in playlist`);
+    }
+
+    this._renderActiveTab();
+    this.updateTabCounters();
+  }
+
+  async _handleMediaUpload(file, forcedType = null) {
+    const isImg = forcedType ? forcedType === 'image' : (this.activeElement?.tagName === 'IMG' || file.type.startsWith('image/'));
+    const isAudio = forcedType ? forcedType === 'audio' : (!isImg || file.type.startsWith('audio/'));
 
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', isAudio ? 'audio' : 'image');
 
-    try {
-      const dropzone = this.container.querySelector('#media-dropzone');
-      if (dropzone) {
-        dropzone.innerHTML = `<div style="font-size: 11px; color: var(--admin-accent-cyan);">Uploading asset...</div>`;
-      }
+    const dropzone = this.container.querySelector('#media-dropzone') || this.container.querySelector('.admin-dropzone');
+    if (dropzone) {
+      dropzone.innerHTML = `<div style="font-size: 11px; color: var(--admin-accent-cyan);">Uploading ${file.name}...</div>`;
+    }
 
+    let finalUrl = '';
+    try {
       const res = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       });
-
-      if (!res.ok) throw new Error('Upload server error');
-      const data = await res.json();
-      const finalUrl = data.url || URL.createObjectURL(file);
-
-      this._applyMediaUrl(finalUrl);
+      if (res.ok) {
+        const data = await res.json();
+        finalUrl = data.url || URL.createObjectURL(file);
+      } else {
+        finalUrl = URL.createObjectURL(file);
+      }
     } catch {
-      // Fallback to local Blob URL
-      const localUrl = URL.createObjectURL(file);
-      this._applyMediaUrl(localUrl);
+      finalUrl = URL.createObjectURL(file);
+    }
+
+    const cleanTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[_\-]+/g, ' ');
+
+    if (isAudio) {
+      const newAudioItem = {
+        id: `uploaded_${Date.now()}`,
+        title: cleanTitle,
+        style: 'Custom upload',
+        duration: '0:30',
+        file: file.name,
+        src: finalUrl
+      };
+      this.availableAudioTracks.unshift(newAudioItem);
+
+      const probe = new Audio(finalUrl);
+      probe.addEventListener('loadedmetadata', () => {
+        const m = Math.floor(probe.duration / 60);
+        const s = Math.floor(probe.duration % 60);
+        newAudioItem.duration = `${m}:${s < 10 ? '0' : ''}${s}`;
+        if (this.activeTab === 'media') this._renderActiveTab();
+      });
+
+      if (this.activeElement) {
+        this._swapAudio(finalUrl, cleanTitle);
+      } else {
+        if (typeof this.onToast === 'function') {
+          this.onToast(`Audio "${cleanTitle}" uploaded to project library`);
+        }
+        this._renderActiveTab();
+      }
+    } else {
+      const newImgItem = {
+        name: cleanTitle,
+        fileName: file.name,
+        src: finalUrl,
+        category: 'Uploaded'
+      };
+      this.availableImages.unshift(newImgItem);
+
+      if (this.activeElement) {
+        this._swapImage(finalUrl, cleanTitle);
+      } else {
+        if (typeof this.onToast === 'function') {
+          this.onToast(`Image "${cleanTitle}" uploaded to project library`);
+        }
+        this._renderActiveTab();
+      }
     }
   }
 
   _applyMediaUrl(url) {
+    if (!this.activeElement) return;
     this.pushUndoSnapshot('Media Asset');
     const isImg = this.activeElement.tagName === 'IMG';
     const isAudio = this.activeElement.hasAttribute('data-audio') || this.activeElement.closest('[data-audio]');
 
     if (isImg) {
       this.activeElement.setAttribute('src', url);
-      this._notifyChange({ media: { src: url } });
+      this._notifyChange({ media: { src: url, type: 'image' } });
     } else if (isAudio) {
       this.activeElement.dataset.audio = url;
-      this._notifyChange({ dataAttr: { audio: url }, media: { audio: url } });
+      this._notifyChange({ dataAttr: { audio: url }, media: { audio: url, type: 'audio' } });
     } else {
       this.activeElement.style.backgroundImage = `url('${url}')`;
-      this._notifyChange({ styleKey: 'backgroundImage', val: `url('${url}')` });
+      this._notifyChange({ styleKey: 'backgroundImage', val: `url('${url}')`, media: { src: url, type: 'image' } });
     }
 
     this._renderActiveTab();
     this.updateTabCounters();
+  }
+
+  _buildMediaTabHtml() {
+    const isImg = Boolean(this.activeElement && this.activeElement.tagName === 'IMG');
+    const isAudioTarget = Boolean(
+      this.activeElement && (
+        this.activeElement.hasAttribute('data-audio') ||
+        this.activeElement.closest('[data-audio]') ||
+        this.activeElement.classList.contains('track') ||
+        this.activeElement.closest('.track') ||
+        this.activeElement.tagName === 'AUDIO'
+      )
+    );
+
+    const mode = this.mediaSubMode || (isAudioTarget ? 'audio' : 'image');
+
+    const currentImgSrc = isImg
+      ? (this.activeElement?.getAttribute('src') || '')
+      : (this.activeElement ? (this.activeElement.style.backgroundImage || '').replace(/^url\(['"]?|['"]?\)$/g, '') : '');
+
+    const currentAudioSrc = isAudioTarget
+      ? (this.activeElement?.dataset?.audio || this.activeElement?.getAttribute('data-src') || this.activeElement?.dataset?.src || this.activeElement?.getAttribute('src') || '')
+      : '';
+
+    const currentAudioTitle = isAudioTarget
+      ? (this.activeElement?.dataset?.title || this.activeElement?.getAttribute('data-title') || this.activeElement?.querySelector?.('.track-name')?.firstChild?.textContent?.trim() || 'Active Track')
+      : '';
+
+    // Check changed states
+    const hasFlipChanged = Boolean(this.imageTransformState.flipH || this.imageTransformState.flipV);
+    const hasScaleChanged = this.imageTransformState.scale !== 100;
+    const hasSizingChanged = Boolean(this.imageTransformState.width || this.imageTransformState.height || (this.imageTransformState.objectFit && this.imageTransformState.objectFit !== 'cover'));
+    const hasMediaChanged = this.isFieldChanged('media') || this.isFieldChanged('backgroundImage') || this.isFieldChanged('transform') || this.isFieldChanged('width') || this.isFieldChanged('height');
+
+    // Retrieve live playlist tracks for Arrangement feature
+    const iframeDoc = this.getIframeDoc ? this.getIframeDoc() : document;
+    const playlistEl = iframeDoc ? (iframeDoc.querySelector('#playlist') || iframeDoc.querySelector('.playlist')) : null;
+    const playlistTracks = playlistEl ? Array.from(playlistEl.querySelectorAll('.track')) : [];
+
+    return `
+      <!-- Sub-category Mode Switcher: Images vs Audio -->
+      <div class="admin-media-mode-bar">
+        <button type="button" class="admin-media-mode-btn ${mode === 'image' ? 'is-active' : ''}" data-media-mode="image">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span>Image Management</span>
+        </button>
+        <button type="button" class="admin-media-mode-btn ${mode === 'audio' ? 'is-active' : ''}" data-media-mode="audio">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          <span>Audio Management</span>
+        </button>
+      </div>
+
+      ${mode === 'image' ? `
+        <!-- ================= IMAGE MANAGEMENT ================= -->
+
+        <!-- Active Image Overview Card -->
+        ${currentImgSrc ? `
+          <div class="admin-asset-overview-box">
+            <img src="${currentImgSrc}" class="admin-asset-thumb-mini" alt="Selected Preview">
+            <div class="admin-asset-info-col">
+              <div class="admin-asset-info-title">${currentImgSrc.split('/').pop() || 'Selected Image'}</div>
+              <div class="admin-asset-info-sub">${this.activeMeta?.selector || 'Element Image'}</div>
+            </div>
+            ${hasMediaChanged ? `
+              <button type="button" class="btn-field-reset" data-reset-type="media" data-tooltip="Reset image and transforms" style="flex-shrink: 0;">↺ Reset</button>
+            ` : ''}
+          </div>
+        ` : `
+          <div style="padding: 10px 12px; margin-bottom: 12px; background: rgba(0, 127, 255, 0.06); border: 1px dashed rgba(0, 127, 255, 0.25); border-radius: var(--admin-radius-sm); font-size: 11px; color: var(--admin-text-secondary); line-height: 1.5;">
+            <strong style="color: var(--admin-accent-cyan);">Image Studio</strong>: Select any image or background element on canvas to flip, scale, or swap it. Or upload and explore project assets below.
+          </div>
+        `}
+
+        <!-- 1. Horizontal and Vertical Flip Options -->
+        <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-media-flips') ? 'is-collapsed' : ''} ${hasFlipChanged ? 'is-modified' : ''}">
+          ${this._renderSectionHeader('sec-media-flips', 'Orientation & Flips', ['transform'], 'flips', null)}
+          
+          <div class="admin-field-row" style="margin-bottom: 4px;">
+            <div class="admin-flip-group">
+              <button type="button" class="btn-flip-toggle ${this.imageTransformState.flipH ? 'is-active' : ''}" id="btn-flip-h" data-tooltip="Mirror horizontally">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M8 7l-5 5 5 5V7z"/><path d="M16 7l5 5-5 5V7z"/><line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="2 2"/>
+                </svg>
+                <span>Flip Horizontal</span>
+              </button>
+              <button type="button" class="btn-flip-toggle ${this.imageTransformState.flipV ? 'is-active' : ''}" id="btn-flip-v" data-tooltip="Mirror vertically">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M7 8l5-5 5 5H7z"/><path d="M7 16l5 5 5-5H7z"/><line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="2 2"/>
+                </svg>
+                <span>Flip Vertical</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Basic Scaling and Resizing Options -->
+        <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-media-scaling') ? 'is-collapsed' : ''} ${(hasScaleChanged || hasSizingChanged) ? 'is-modified' : ''}">
+          ${this._renderSectionHeader('sec-media-scaling', 'Scaling & Resizing', ['transform', 'width', 'height', 'objectFit'], 'sizing', null)}
+
+          <!-- Zoom / Scale Slider & Steppers -->
+          <div class="admin-field-row ${hasScaleChanged ? 'is-modified' : ''}">
+            <div class="admin-field-label-wrap">
+              <label class="admin-field-label">Scale / Zoom</label>
+              <span class="admin-field-val-badge" id="val-badge-scale">${this.imageTransformState.scale}%</span>
+            </div>
+            <div class="admin-field-control" style="display: flex; align-items: center; gap: 6px;">
+              <button type="button" class="btn-stepper" id="btn-scale-dec" data-tooltip="Zoom out -5%">-</button>
+              <input type="range" class="admin-slider" id="img-scale-slider" min="25" max="200" step="5" value="${this.imageTransformState.scale}" style="flex: 1;">
+              <button type="button" class="btn-stepper" id="btn-scale-inc" data-tooltip="Zoom in +5%">+</button>
+              <button type="button" class="btn-field-reset" id="btn-reset-scale" data-reset-type="scale" data-tooltip="Reset scale to 100%" style="display: ${hasScaleChanged ? 'inline-flex' : 'none'};">↺</button>
+            </div>
+          </div>
+
+          <!-- Scale Preset Pills -->
+          <div class="admin-preset-pills-row" style="margin-top: 4px; margin-bottom: 12px;">
+            ${[50, 75, 100, 125, 150, 200].map(s => `
+              <button type="button" class="btn-preset-pill btn-preset-scale ${this.imageTransformState.scale === s ? 'is-active' : ''}" data-scale="${s}">${s}%</button>
+            `).join('')}
+          </div>
+
+          <!-- Resizing: Width & Height -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <div class="admin-field-col">
+              <label class="admin-field-label" style="font-size: 10px; margin-bottom: 4px; display: block;">Width</label>
+              <input type="text" class="admin-input" id="img-width-input" value="${this.imageTransformState.width || ''}" placeholder="e.g. 100%, 320px, auto">
+            </div>
+            <div class="admin-field-col">
+              <label class="admin-field-label" style="font-size: 10px; margin-bottom: 4px; display: block;">Height</label>
+              <input type="text" class="admin-input" id="img-height-input" value="${this.imageTransformState.height || ''}" placeholder="e.g. 240px, auto">
+            </div>
+          </div>
+
+          <!-- Resizing: Object Fit -->
+          <div class="admin-field-row" style="margin-bottom: 6px;">
+            <div class="admin-field-label-wrap">
+              <label class="admin-field-label">Object Fit</label>
+            </div>
+            <div class="admin-field-control">
+              <select class="admin-select" id="img-object-fit-select">
+                <option value="cover" ${this.imageTransformState.objectFit === 'cover' ? 'selected' : ''}>Cover (Fill frame)</option>
+                <option value="contain" ${this.imageTransformState.objectFit === 'contain' ? 'selected' : ''}>Contain (Full image)</option>
+                <option value="fill" ${this.imageTransformState.objectFit === 'fill' ? 'selected' : ''}>Fill (Stretch to fit)</option>
+                <option value="scale-down" ${this.imageTransformState.objectFit === 'scale-down' ? 'selected' : ''}>Scale Down</option>
+                <option value="none" ${this.imageTransformState.objectFit === 'none' ? 'selected' : ''}>None (Natural size)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Dimension Preset Quick Pills -->
+          <div class="admin-preset-pills-row" style="margin-top: 4px;">
+            <button type="button" class="btn-preset-pill btn-preset-size" data-width="auto" data-height="auto">Auto</button>
+            <button type="button" class="btn-preset-pill btn-preset-size" data-width="100%" data-height="auto">100% Width</button>
+            <button type="button" class="btn-preset-pill btn-preset-size" data-width="300px" data-height="auto">300px</button>
+            <button type="button" class="btn-preset-pill btn-preset-size" data-width="400px" data-height="auto">400px</button>
+            <button type="button" class="btn-preset-pill btn-preset-size" data-width="300px" data-height="300px">1:1 Square</button>
+          </div>
+        </div>
+
+        <!-- 3. Swapping with Existing Image or Through Upload -->
+        <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-media-swap') ? 'is-collapsed' : ''}">
+          ${this._renderSectionHeader('sec-media-swap', 'Image Source & Swapping', ['media', 'src', 'backgroundImage'], 'media')}
+
+          <!-- Upload Option -->
+          <div class="admin-dropzone" id="media-dropzone" style="margin-bottom: 12px;">
+            <input type="file" id="media-file-input" style="display: none;" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif">
+            <div class="dropzone-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <div style="font-size: 11px; font-weight: 600; color: #fff;">
+              Upload New Image (PNG / JPG / WebP / SVG)
+            </div>
+            <div style="font-size: 10px; color: var(--admin-text-secondary); margin-top: 2px;">
+              Drag & Drop file or click to browse
+            </div>
+          </div>
+
+          <!-- Direct URL Input -->
+          <div class="admin-field-row" style="margin-bottom: 14px;">
+            <div class="admin-field-label-wrap">
+              <label class="admin-field-label">Custom Image URL</label>
+            </div>
+            <div class="admin-field-control">
+              <input type="text" class="admin-input" id="media-url-input" value="${currentImgSrc}" placeholder="https://... or ./assets/images/...">
+            </div>
+          </div>
+
+          <!-- Existing Images Gallery -->
+          <div class="admin-gallery-section" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--admin-border-subtle);">
+            <div class="admin-gallery-header">
+              <div class="admin-gallery-title">
+                <span>Swap with Existing Project Images</span>
+              </div>
+              <span class="admin-gallery-count">${this.availableImages.length} images</span>
+            </div>
+
+            <!-- Category Filter Pills -->
+            <div class="admin-preset-pills-row" id="img-gallery-categories" style="margin-bottom: 8px;">
+              <button type="button" class="btn-preset-pill btn-gallery-cat is-active" data-cat="all">All</button>
+              <button type="button" class="btn-preset-pill btn-gallery-cat" data-cat="Studio Gear">Studio</button>
+              <button type="button" class="btn-preset-pill btn-gallery-cat" data-cat="Plugins">Plugins</button>
+              <button type="button" class="btn-preset-pill btn-gallery-cat" data-cat="Hardware">Hardware</button>
+              <button type="button" class="btn-preset-pill btn-gallery-cat" data-cat="Backgrounds">Loops</button>
+              <button type="button" class="btn-preset-pill btn-gallery-cat" data-cat="Uploaded">Uploaded</button>
+            </div>
+
+            <!-- Search Filter -->
+            <input type="text" class="admin-input" id="img-gallery-search" placeholder="Search images by name..." style="margin-bottom: 8px; font-size: 10.5px; height: 26px;">
+
+            <!-- Gallery Cards Grid -->
+            <div class="admin-gallery-grid" id="img-gallery-grid">
+              ${this.availableImages.map(img => {
+                const isActive = currentImgSrc && (currentImgSrc.includes(img.src.replace(/^\.\//, '')) || img.src.includes(currentImgSrc.replace(/^\.\//, '')));
+                return `
+                  <button type="button" class="admin-gallery-card ${isActive ? 'is-active' : ''}" data-src="${img.src}" data-name="${img.name}" data-category="${img.category || 'General'}" title="Click to swap with ${img.name}">
+                    <div class="admin-gallery-thumb-wrap">
+                      <img src="${img.src}" alt="${img.name}" loading="lazy">
+                      ${isActive ? `<span class="admin-gallery-card-badge">Active</span>` : ''}
+                    </div>
+                    <div class="admin-gallery-meta">
+                      <span class="admin-gallery-name">${img.name}</span>
+                    </div>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+
+      ` : `
+        <!-- ================= AUDIO MANAGEMENT ================= -->
+
+        <!-- Active Audio Overview & Audition Player -->
+        ${currentAudioSrc ? `
+          <div class="admin-asset-overview-box">
+            <div style="width: 44px; height: 44px; border-radius: var(--admin-radius-sm); background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--admin-accent-cyan);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            </div>
+            <div class="admin-asset-info-col">
+              <div class="admin-asset-info-title">${currentAudioTitle}</div>
+              <div class="admin-asset-info-sub">${currentAudioSrc.split('/').pop() || 'Audio Track'}</div>
+            </div>
+            <button type="button" class="btn-audio-action btn-audition" data-src="${currentAudioSrc}" style="flex-shrink: 0;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Audition
+            </button>
+          </div>
+        ` : `
+          <div style="padding: 10px 12px; margin-bottom: 12px; background: rgba(0, 229, 255, 0.06); border: 1px dashed rgba(0, 229, 255, 0.25); border-radius: var(--admin-radius-sm); font-size: 11px; color: var(--admin-text-secondary); line-height: 1.5;">
+            <strong style="color: var(--admin-accent-cyan);">Audio Studio</strong>: Audition, swap, upload, and arrange tracks below. You can also click any track or play button on canvas to swap its audio.
+          </div>
+        `}
+
+        <!-- 1. Audio Track Swapping (Library) -->
+        <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-audio-tracks') ? 'is-collapsed' : ''}">
+          ${this._renderSectionHeader('sec-audio-tracks', 'Audio Tracks Library', ['media', 'audio'], 'media')}
+
+          <div class="admin-audio-track-list">
+            ${this.availableAudioTracks.map(t => {
+              const isActive = currentAudioSrc && (currentAudioSrc.includes(t.file) || currentAudioSrc === t.src);
+              return `
+                <div class="admin-audio-track-row ${isActive ? 'is-active' : ''}">
+                  <div class="admin-audio-track-info">
+                    <div class="admin-audio-track-title">${t.title}</div>
+                    <div class="admin-audio-track-meta">
+                      <span>${t.style || 'Track'}</span>
+                      <span>•</span>
+                      <span>${t.duration || '--:--'}</span>
+                      ${isActive ? `<span style="color: var(--admin-accent-cyan); font-weight: 700;">(Active)</span>` : ''}
+                    </div>
+                  </div>
+                  <div class="admin-audio-track-actions">
+                    <button type="button" class="btn-audio-action btn-audition" data-src="${t.src}" title="Audition this track">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Audition
+                    </button>
+                    <button type="button" class="btn-audio-action btn-swap-audio" data-src="${t.src}" data-title="${t.title}" title="Assign this track to the active component">
+                      Swap
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <!-- Direct Audio URL Input -->
+          <div class="admin-field-row" style="margin-top: 10px; margin-bottom: 0;">
+            <div class="admin-field-label-wrap">
+              <label class="admin-field-label">Custom Audio URL</label>
+            </div>
+            <div class="admin-field-control">
+              <input type="text" class="admin-input" id="audio-url-input" value="${currentAudioSrc}" placeholder="/api/media?file=audio/... or https://...">
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Audio Upload Option -->
+        <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-audio-upload') ? 'is-collapsed' : ''}">
+          ${this._renderSectionHeader('sec-audio-upload', 'Upload Audio File', ['media'], 'media')}
+
+          <div class="admin-dropzone" id="audio-dropzone">
+            <input type="file" id="audio-file-input" style="display: none;" accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/aac,audio/flac">
+            <div class="dropzone-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            </div>
+            <div style="font-size: 11px; font-weight: 600; color: #fff;">
+              Upload New Audio (MP3 / WAV / OGG / M4A)
+            </div>
+            <div style="font-size: 10px; color: var(--admin-text-secondary); margin-top: 2px;">
+              Drag & Drop file or click to browse local files
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Playlist Arrangement Feature -->
+        <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-audio-arrangement') ? 'is-collapsed' : ''}">
+          ${this._renderSectionHeader('sec-audio-arrangement', 'Playlist Arrangement', ['html'], 'text')}
+
+          <div style="font-size: 10.5px; color: var(--admin-text-secondary); margin-bottom: 8px; line-height: 1.4;">
+            Reorder the track list live on the storefront. Use the arrow buttons to arrange tracks up or down.
+          </div>
+
+          <div class="admin-arrange-box">
+            ${playlistTracks.length > 0 ? playlistTracks.map((t, idx) => {
+              const title = t.dataset.title || t.querySelector('.track-name')?.firstChild?.textContent?.trim() || `Track ${idx + 1}`;
+              const style = t.dataset.style || t.querySelector('.track-name small')?.textContent?.trim() || '';
+              const isSelected = this.activeElement && (this.activeElement === t || this.activeElement.closest('.track') === t);
+
+              return `
+                <div class="admin-arrange-item ${isSelected ? 'is-selected-track' : ''}">
+                  <span class="admin-arrange-index">${String(idx + 1).padStart(2, '0')}</span>
+                  <div class="admin-arrange-name">
+                    <strong>${title}</strong>
+                    ${style ? `<span style="font-size: 9.5px; color: var(--admin-text-muted); margin-left: 4px;">(${style})</span>` : ''}
+                  </div>
+                  <div class="admin-arrange-btn-group">
+                    <button type="button" class="btn-arrange-move btn-arrange-up" data-index="${idx}" ${idx === 0 ? 'disabled' : ''} title="Move Up">▲</button>
+                    <button type="button" class="btn-arrange-move btn-arrange-down" data-index="${idx}" ${idx === playlistTracks.length - 1 ? 'disabled' : ''} title="Move Down">▼</button>
+                  </div>
+                </div>
+              `;
+            }).join('') : `
+              <div style="font-size: 11px; color: var(--admin-text-muted); text-align: center; padding: 12px 0;">
+                Navigate to the Beats Showcase view to arrange tracks.
+              </div>
+            `}
+          </div>
+        </div>
+      `}
+    `;
+  }
+
+  _bindMediaTabControls(container) {
+    // 1. Sub-mode switcher (Images vs Audio)
+    container.querySelectorAll('.admin-media-mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.mediaSubMode = btn.dataset.mediaMode;
+        this._renderActiveTab();
+      });
+    });
+
+    // 2. Flip toggles (Horizontal & Vertical)
+    const flipHBtn = container.querySelector('#btn-flip-h');
+    if (flipHBtn) {
+      flipHBtn.addEventListener('click', () => {
+        this.imageTransformState.flipH = !this.imageTransformState.flipH;
+        this._applyImageTransform();
+      });
+    }
+
+    const flipVBtn = container.querySelector('#btn-flip-v');
+    if (flipVBtn) {
+      flipVBtn.addEventListener('click', () => {
+        this.imageTransformState.flipV = !this.imageTransformState.flipV;
+        this._applyImageTransform();
+      });
+    }
+
+    // 3. Scaling: Slider & Steppers & Pills
+    const scaleSlider = container.querySelector('#img-scale-slider');
+    const scaleBadge = container.querySelector('#val-badge-scale');
+    if (scaleSlider) {
+      scaleSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        this.imageTransformState.scale = val;
+        if (scaleBadge) scaleBadge.textContent = `${val}%`;
+        this._applyImageTransform();
+      });
+    }
+
+    const scaleDecBtn = container.querySelector('#btn-scale-dec');
+    if (scaleDecBtn) {
+      scaleDecBtn.addEventListener('click', () => {
+        const current = this.imageTransformState.scale || 100;
+        this.imageTransformState.scale = Math.max(25, current - 5);
+        if (scaleSlider) scaleSlider.value = this.imageTransformState.scale;
+        if (scaleBadge) scaleBadge.textContent = `${this.imageTransformState.scale}%`;
+        this._applyImageTransform();
+      });
+    }
+
+    const scaleIncBtn = container.querySelector('#btn-scale-inc');
+    if (scaleIncBtn) {
+      scaleIncBtn.addEventListener('click', () => {
+        const current = this.imageTransformState.scale || 100;
+        this.imageTransformState.scale = Math.min(200, current + 5);
+        if (scaleSlider) scaleSlider.value = this.imageTransformState.scale;
+        if (scaleBadge) scaleBadge.textContent = `${this.imageTransformState.scale}%`;
+        this._applyImageTransform();
+      });
+    }
+
+    container.querySelectorAll('.btn-preset-scale').forEach(pill => {
+      pill.addEventListener('click', () => {
+        const targetScale = parseInt(pill.dataset.scale, 10);
+        this.imageTransformState.scale = targetScale;
+        if (scaleSlider) scaleSlider.value = targetScale;
+        if (scaleBadge) scaleBadge.textContent = `${targetScale}%`;
+        this._applyImageTransform();
+      });
+    });
+
+    // 4. Resizing: Width, Height, Object Fit & Presets
+    const widthInput = container.querySelector('#img-width-input');
+    if (widthInput) {
+      widthInput.addEventListener('change', () => {
+        this._applyImageSizing('width', widthInput.value.trim());
+      });
+    }
+
+    const heightInput = container.querySelector('#img-height-input');
+    if (heightInput) {
+      heightInput.addEventListener('change', () => {
+        this._applyImageSizing('height', heightInput.value.trim());
+      });
+    }
+
+    const fitSelect = container.querySelector('#img-object-fit-select');
+    if (fitSelect) {
+      fitSelect.addEventListener('change', () => {
+        this._applyImageSizing('objectFit', fitSelect.value);
+      });
+    }
+
+    container.querySelectorAll('.btn-preset-size').forEach(pill => {
+      pill.addEventListener('click', () => {
+        const w = pill.dataset.width;
+        const h = pill.dataset.height;
+        if (w) {
+          if (widthInput) widthInput.value = w;
+          this._applyImageSizing('width', w);
+        }
+        if (h) {
+          if (heightInput) heightInput.value = h;
+          this._applyImageSizing('height', h);
+        }
+      });
+    });
+
+    // 5. Image Dropzone & File Input
+    const imgDropzone = container.querySelector('#media-dropzone');
+    const imgFileInput = container.querySelector('#media-file-input');
+    const imgUrlInput = container.querySelector('#media-url-input');
+
+    if (imgDropzone && imgFileInput) {
+      imgDropzone.addEventListener('click', () => imgFileInput.click());
+
+      imgDropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        imgDropzone.classList.add('is-dragover');
+      });
+
+      ['dragleave', 'drop'].forEach(ev => {
+        imgDropzone.addEventListener(ev, () => imgDropzone.classList.remove('is-dragover'));
+      });
+
+      imgDropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          this._handleMediaUpload(e.dataTransfer.files[0], 'image');
+        }
+      });
+
+      imgFileInput.addEventListener('change', () => {
+        if (imgFileInput.files && imgFileInput.files[0]) {
+          this._handleMediaUpload(imgFileInput.files[0], 'image');
+        }
+      });
+    }
+
+    if (imgUrlInput) {
+      imgUrlInput.addEventListener('change', () => {
+        const val = imgUrlInput.value.trim();
+        if (val) this._swapImage(val, 'custom URL');
+      });
+    }
+
+    // 6. Existing Image Gallery: Category Filtering & Search & Click Swapping
+    const catButtons = container.querySelectorAll('.btn-gallery-cat');
+    const searchInput = container.querySelector('#img-gallery-search');
+    const galleryCards = container.querySelectorAll('.admin-gallery-card');
+
+    const filterGallery = () => {
+      const activeCatBtn = container.querySelector('.btn-gallery-cat.is-active');
+      const activeCat = activeCatBtn ? activeCatBtn.dataset.cat : 'all';
+      const query = (searchInput?.value || '').toLowerCase().trim();
+
+      galleryCards.forEach(card => {
+        const name = (card.dataset.name || '').toLowerCase();
+        const cat = card.dataset.category || '';
+        const matchesCat = activeCat === 'all' || cat.toLowerCase().includes(activeCat.toLowerCase()) || activeCat.toLowerCase().includes(cat.toLowerCase());
+        const matchesSearch = !query || name.includes(query);
+
+        card.style.display = (matchesCat && matchesSearch) ? 'flex' : 'none';
+      });
+    };
+
+    catButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        catButtons.forEach(b => b.classList.remove('is-active'));
+        btn.classList.add('is-active');
+        filterGallery();
+      });
+    });
+
+    if (searchInput) {
+      searchInput.addEventListener('input', () => filterGallery());
+    }
+
+    galleryCards.forEach(card => {
+      card.addEventListener('click', () => {
+        const src = card.dataset.src;
+        const name = card.dataset.name;
+        this._swapImage(src, name);
+      });
+    });
+
+    // 7. Audio: Audition Player
+    container.querySelectorAll('.btn-audition').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const src = btn.dataset.src;
+        this._handleAudition(src, btn);
+      });
+    });
+
+    // 8. Audio: Track Swapping
+    container.querySelectorAll('.btn-swap-audio').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const src = btn.dataset.src;
+        const title = btn.dataset.title;
+        this._swapAudio(src, title);
+      });
+    });
+
+    // 9. Audio: Direct URL Input
+    const audioUrlInput = container.querySelector('#audio-url-input');
+    if (audioUrlInput) {
+      audioUrlInput.addEventListener('change', () => {
+        const val = audioUrlInput.value.trim();
+        if (val) this._swapAudio(val, 'custom URL track');
+      });
+    }
+
+    // 10. Audio: Upload Dropzone
+    const audioDropzone = container.querySelector('#audio-dropzone');
+    const audioFileInput = container.querySelector('#audio-file-input');
+    if (audioDropzone && audioFileInput) {
+      audioDropzone.addEventListener('click', () => audioFileInput.click());
+
+      audioDropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        audioDropzone.classList.add('is-dragover');
+      });
+
+      ['dragleave', 'drop'].forEach(ev => {
+        audioDropzone.addEventListener(ev, () => audioDropzone.classList.remove('is-dragover'));
+      });
+
+      audioDropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          this._handleMediaUpload(e.dataTransfer.files[0], 'audio');
+        }
+      });
+
+      audioFileInput.addEventListener('change', () => {
+        if (audioFileInput.files && audioFileInput.files[0]) {
+          this._handleMediaUpload(audioFileInput.files[0], 'audio');
+        }
+      });
+    }
+
+    // 11. Playlist Arrangement: Move Up & Move Down
+    container.querySelectorAll('.btn-arrange-up').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.index, 10);
+        this._handleReorderPlaylist(idx, idx - 1);
+      });
+    });
+
+    container.querySelectorAll('.btn-arrange-down').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.index, 10);
+        this._handleReorderPlaylist(idx, idx + 1);
+      });
+    });
+
+    // 12. Reset buttons
+    this._bindResetButtons(container);
   }
 
   // ==========================================================================

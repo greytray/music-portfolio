@@ -1706,6 +1706,480 @@ html[data-admin-theme="light"] .admin-picker-hex-input,
   object-fit: cover;
 }
 
+/* ==========================================================================
+   Media Studio: Easy Image & Audio Management Styles
+   ========================================================================== */
+
+/* Sub-category Switcher (Images vs Audio) */
+.admin-media-mode-bar {
+  display: flex;
+  background: var(--admin-bg-base);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: var(--admin-radius-md);
+  padding: 3px;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.admin-media-mode-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--admin-radius-sm);
+  background: transparent;
+  color: var(--admin-text-secondary);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-media-mode-btn:hover {
+  color: var(--admin-text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.admin-media-mode-btn.is-active {
+  background: var(--admin-bg-card);
+  color: var(--admin-accent-cyan);
+  border-color: var(--admin-border-strong);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Media Asset Overview Card */
+.admin-asset-overview-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--admin-bg-base);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: var(--admin-radius-md);
+  margin-bottom: 12px;
+}
+
+.admin-asset-thumb-mini {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--admin-radius-sm);
+  object-fit: cover;
+  background: #000;
+  border: 1px solid var(--admin-border-subtle);
+  flex-shrink: 0;
+}
+
+.admin-asset-info-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-asset-info-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-asset-info-sub {
+  font-size: 10px;
+  color: var(--admin-text-muted);
+  font-family: var(--admin-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* Flip Options Row */
+.admin-flip-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+}
+
+.btn-flip-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--admin-bg-base);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text-secondary);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btn-flip-toggle:hover {
+  background: var(--admin-bg-card);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-accent-cyan);
+}
+
+.btn-flip-toggle.is-active {
+  background: rgba(0, 229, 255, 0.10);
+  border-color: var(--admin-accent-cyan);
+  color: var(--admin-accent-cyan);
+  box-shadow: 0 0 0 1px var(--admin-accent-cyan);
+}
+
+.btn-flip-toggle svg {
+  flex-shrink: 0;
+}
+
+/* Preset Pills (Scaling & Sizes) */
+.admin-preset-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.btn-preset-pill {
+  padding: 3px 8px;
+  background: var(--admin-bg-base);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.btn-preset-pill:hover {
+  background: var(--admin-bg-card);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-border-strong);
+}
+
+.btn-preset-pill.is-active {
+  background: rgba(0, 229, 255, 0.12);
+  color: var(--admin-accent-cyan);
+  border-color: var(--admin-accent-cyan);
+}
+
+.btn-gallery-cat {
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 500;
+  border-radius: 4px;
+}
+
+.btn-gallery-cat.is-active {
+  background: rgba(0, 229, 255, 0.16);
+  color: var(--admin-accent-cyan);
+  border-color: var(--admin-accent-cyan);
+}
+
+/* Existing Image Project Gallery */
+.admin-gallery-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--admin-border-subtle);
+}
+
+.admin-gallery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.admin-gallery-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-gallery-count {
+  font-size: 10px;
+  color: var(--admin-text-muted);
+  font-family: var(--admin-mono);
+}
+
+.admin-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 12px;
+}
+
+.admin-gallery-grid::-webkit-scrollbar {
+  width: 4px;
+}
+.admin-gallery-grid::-webkit-scrollbar-thumb {
+  background: var(--admin-border-strong);
+  border-radius: 2px;
+}
+
+.admin-gallery-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--admin-bg-base);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: var(--admin-radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  padding: 0;
+}
+
+.admin-gallery-card:hover {
+  border-color: var(--admin-accent-cyan);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.admin-gallery-card.is-active {
+  border-color: var(--admin-accent-cyan);
+  box-shadow: 0 0 0 1.5px var(--admin-accent-cyan);
+}
+
+.admin-gallery-thumb-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: #000;
+  overflow: hidden;
+}
+
+.admin-gallery-thumb-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.admin-gallery-card:hover .admin-gallery-thumb-wrap img {
+  transform: scale(1.05);
+}
+
+.admin-gallery-card-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: var(--admin-accent-cyan);
+  color: #000;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.admin-gallery-meta {
+  padding: 5px 6px;
+}
+
+.admin-gallery-name {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--admin-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+/* Audio Track Items in Audio Library */
+.admin-audio-track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 12px;
+}
+
+.admin-audio-track-list::-webkit-scrollbar {
+  width: 4px;
+}
+.admin-audio-track-list::-webkit-scrollbar-thumb {
+  background: var(--admin-border-strong);
+  border-radius: 2px;
+}
+
+.admin-audio-track-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--admin-bg-base);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: var(--admin-radius-sm);
+  transition: all 0.15s ease;
+}
+
+.admin-audio-track-row:hover {
+  border-color: var(--admin-border-strong);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.admin-audio-track-row.is-active {
+  border-color: var(--admin-accent-cyan);
+  background: rgba(0, 229, 255, 0.04);
+}
+
+.admin-audio-track-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-audio-track-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-audio-track-meta {
+  font-size: 10px;
+  color: var(--admin-text-muted);
+  font-family: var(--admin-mono);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 1px;
+}
+
+.admin-audio-track-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.btn-audio-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border-subtle);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.btn-audio-action:hover {
+  background: var(--admin-accent-cyan);
+  border-color: var(--admin-accent-cyan);
+  color: #000;
+}
+
+.btn-audio-action.btn-audition.is-playing {
+  background: var(--admin-accent-magenta);
+  border-color: var(--admin-accent-magenta);
+  color: #fff;
+}
+
+/* Playlist Arrangement List */
+.admin-arrange-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.admin-arrange-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--admin-bg-base);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: var(--admin-radius-sm);
+  transition: all 0.15s ease;
+}
+
+.admin-arrange-item:hover {
+  border-color: var(--admin-border-strong);
+}
+
+.admin-arrange-item.is-selected-track {
+  border-color: var(--admin-accent-cyan);
+  background: rgba(0, 229, 255, 0.05);
+}
+
+.admin-arrange-index {
+  font-family: var(--admin-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--admin-accent-cyan);
+  min-width: 22px;
+}
+
+.admin-arrange-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--admin-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-arrange-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.btn-arrange-move {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: 3px;
+  color: var(--admin-text-secondary);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  padding: 0;
+}
+
+.btn-arrange-move:hover:not(:disabled) {
+  background: var(--admin-accent-cyan);
+  border-color: var(--admin-accent-cyan);
+  color: #000;
+}
+
+.btn-arrange-move:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 /* --------------------------------------------------------------------------
    Data Attributes Live Table
    -------------------------------------------------------------------------- */

@@ -107,6 +107,51 @@ export async function onRequest(context) {
 
   const url = new URL(request.url);
 
+  // Handle action=list for media library listing
+  if (url.searchParams.get('action') === 'list' || url.pathname.endsWith('/list')) {
+    const defaultImages = [
+      { name: 'Curved DAW Monitor', src: './assets/images/curved_daw_monitor_1789336964825.jpg', category: 'Studio Gear' },
+      { name: 'Digital EQ & Compressor', src: './assets/images/digital_eq_compressor_1789337007076.jpg', category: 'Plugins' },
+      { name: 'Digital Reverb DSP', src: './assets/images/digital_reverb_dsp_1789337033441.jpg', category: 'Plugins' },
+      { name: 'MIDI Beat Arranger', src: './assets/images/midi_beat_arranger_1789337019783.jpg', category: 'Production' },
+      { name: 'Spectral Cleanup DSP', src: './assets/images/spectral_cleanup_dsp_1789336993282.jpg', category: 'Plugins' },
+      { name: 'Vocal Tuning Plugin', src: './assets/images/vocal_tuning_plugin_1789336979208.jpg', category: 'Plugins' },
+      { name: 'Studio Mixing Desk', src: './assets/images/studio_mixing_desk_1789325845543.jpg', category: 'Studio Gear' },
+      { name: 'Studio Acoustic Monitors', src: './assets/images/studio_acoustic_monitors_1789331401789.jpg', category: 'Hardware' },
+      { name: 'Studio Drum Pads', src: './assets/images/studio_drum_pads_1789331427695.jpg', category: 'Production' },
+      { name: 'Studio Headphones', src: './assets/images/studio_headphones_1789331438637.jpg', category: 'Hardware' },
+      { name: 'Studio Rack Gear', src: './assets/images/studio_rack_gear_1789331450217.jpg', category: 'Hardware' },
+      { name: 'Studio Sound Waves', src: './assets/images/studio_sound_waves_1789325859183.jpg', category: 'Audio' },
+      { name: 'Studio Synth Keys', src: './assets/images/studio_synth_keys_1789325893151.jpg', category: 'Instruments' },
+      { name: 'Studio Tape Reel', src: './assets/images/studio_tape_reel_1789331415391.jpg', category: 'Vintage' },
+      { name: 'Studio Vocal Booth', src: './assets/images/studio_vocal_booth_1789331461100.jpg', category: 'Recording' },
+      { name: 'Studio Vocal Mic', src: './assets/images/studio_vocal_mic_1789325878081.jpg', category: 'Recording' },
+      { name: 'Futuristic Grid Loop', src: './assets/backgrounds/gif2.gif', category: 'Backgrounds' },
+      { name: 'Waveform Visualizer Loop', src: './assets/backgrounds/c1.gif', category: 'Backgrounds' }
+    ];
+
+    const defaultAudio = [
+      { id: 'feeling_mello', title: 'Feeling Mello', style: 'Original production', duration: '0:44', file: 'audio/feeling mello.mp3', src: '/api/media?file=audio/feeling mello.mp3' },
+      { id: 'broken_jar', title: 'Broken Jar', style: 'Mastered production', duration: '0:38', file: 'audio/broken jar mastered.mp3', src: '/api/media?file=audio/broken jar mastered.mp3' },
+      { id: 'kpop_beat', title: 'Kpop Beat', style: 'K-Pop production', duration: '1:14', file: 'audio/Kpop beat.mp3', src: '/api/media?file=audio/Kpop beat.mp3' },
+      { id: 'kensuke', title: 'Kensuke', style: 'Original production', duration: '0:45', file: 'audio/Kensuke.mp3', src: '/api/media?file=audio/Kensuke.mp3' },
+      { id: 'kpop_post_fx', title: 'K-Pop Post FX', style: 'Post-production mix', duration: '0:14', file: 'audio/K-Pop post fx.mp3', src: '/api/media?file=audio/K-Pop post fx.mp3' },
+      { id: 'aiobahn', title: 'Aiobahn Maybe Last Mix', style: 'Final mix', duration: '0:53', file: 'audio/Aiobahn maybe last mix.mp3', src: '/api/media?file=audio/Aiobahn maybe last mix.mp3' }
+    ];
+
+    return new Response(JSON.stringify({
+      success: true,
+      images: defaultImages,
+      audio: defaultAudio
+    }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+  }
+
   // Read target file path from query parameter (?file=showcase/song.mp3) or subpath
   let rawFile = url.searchParams.get('file') || url.pathname.replace(/^\/api\/media\/?/, '');
 
