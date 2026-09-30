@@ -429,8 +429,13 @@ export class SidePanel {
    */
   _isSnapshotEqual(snapA, snapB) {
     if (!snapA || !snapB) return false;
-    if (snapA.selector !== snapB.selector) return false;
     if (snapA.breakpoint !== snapB.breakpoint) return false;
+    if (snapA.selector !== snapB.selector) {
+      // If both snapshots belong to the same linked group of elements, don't reject them solely due to selection navigation
+      const aHasB = snapA.linkedSnapshots && snapA.linkedSnapshots.some(s => s && s.selector === snapB.selector);
+      const bHasA = snapB.linkedSnapshots && snapB.linkedSnapshots.some(s => s && s.selector === snapA.selector);
+      if (!aHasB || !bHasA) return false;
+    }
     if (JSON.stringify(snapA.exportData) !== JSON.stringify(snapB.exportData)) return false;
     if (snapA.domStyle !== snapB.domStyle) return false;
     if (snapA.domDirectText !== snapB.domDirectText) return false;
@@ -447,6 +452,11 @@ export class SidePanel {
     if (!this.activeMeta || !this.exportSystem) return null;
     const selector = this.activeMeta.selector;
     const el = this.activeElement;
+
+    // Ensure similar elements are detected and up-to-date
+    if ((!this.currentSimilarElements || this.currentSimilarElements.length === 0) && el) {
+      this.currentSimilarElements = findSimilarCardElements(el);
+    }
 
     const linkedSnapshots = (this.currentSimilarElements && this.currentSimilarElements.length > 1)
       ? this.currentSimilarElements.map(itemEl => {
@@ -476,6 +486,7 @@ export class SidePanel {
       dataset: el ? { ...el.dataset } : {},
       shadowState: { ...this.shadowState },
       linkedSnapshots,
+      linkedSubcategories: Array.from(this.linkedSubcategories || []),
       timestamp: Date.now()
     };
   }
@@ -579,16 +590,27 @@ export class SidePanel {
     // 2. Restore linked items in exportSystem and DOM
     if (snapshot.linkedSnapshots && Array.isArray(snapshot.linkedSnapshots)) {
       snapshot.linkedSnapshots.forEach(item => {
-        if (!item || item.selector === selector) return;
-        if (item.exportData) {
-          this.exportSystem.changesMap.set(item.selector, JSON.parse(JSON.stringify(item.exportData)));
-          this.exportSystem.sessionUserChangesMap.set(item.selector, JSON.parse(JSON.stringify(item.exportData)));
-        } else {
-          this.exportSystem.changesMap.delete(item.selector);
-          this.exportSystem.sessionUserChangesMap.delete(item.selector);
+        if (!item) return;
+        if (item.selector !== selector) {
+          if (item.exportData) {
+            this.exportSystem.changesMap.set(item.selector, JSON.parse(JSON.stringify(item.exportData)));
+            this.exportSystem.sessionUserChangesMap.set(item.selector, JSON.parse(JSON.stringify(item.exportData)));
+          } else {
+            this.exportSystem.changesMap.delete(item.selector);
+            this.exportSystem.sessionUserChangesMap.delete(item.selector);
+          }
         }
 
-        const linkedEl = (item.selector && doc && doc.querySelector) ? doc.querySelector(item.selector) : null;
+        let linkedEl = (item.selector && doc && doc.querySelector) ? doc.querySelector(item.selector) : null;
+        if (!linkedEl && this.currentSimilarElements) {
+          linkedEl = this.currentSimilarElements.find(el => {
+            if (!el || !el.isConnected) return false;
+            const meta = this.selectionEngine ? this.selectionEngine.extractElementMetadata(el) : null;
+            const s = meta ? meta.selector : this._generateFallbackSelector(el);
+            return s === item.selector;
+          });
+        }
+
         if (linkedEl) {
           if (item.domStyle !== null && item.domStyle !== undefined) {
             linkedEl.setAttribute('style', item.domStyle);
@@ -596,7 +618,9 @@ export class SidePanel {
             linkedEl.removeAttribute('style');
           }
 
-          if (item.domDirectText !== null && item.domDirectText !== undefined) {
+          if (item.domHtml !== null && item.domHtml !== undefined && item.domHtml.includes('<')) {
+            linkedEl.innerHTML = item.domHtml;
+          } else if (item.domDirectText !== null && item.domDirectText !== undefined) {
             this._updateElementDirectText(linkedEl, item.domDirectText);
           }
 
@@ -605,11 +629,6 @@ export class SidePanel {
             Object.entries(item.dataset).forEach(([k, v]) => {
               linkedEl.dataset[k] = v;
             });
-          }
-
-          if (typeof this.onElementChange === 'function') {
-            const itemMeta = this.selectionEngine ? this.selectionEngine.extractElementMetadata(linkedEl) : { selector: item.selector };
-            this.onElementChange(linkedEl, itemMeta, { undoRedo: true }, snapshot.breakpoint || this.currentBreakpoint);
           }
         }
       });
@@ -621,25 +640,15 @@ export class SidePanel {
     const targetEl = (selector && doc && doc.querySelector) ? (doc.querySelector(selector) || this.activeElement) : this.activeElement;
 
     if (targetEl) {
-      this.activeElement = targetEl;
-      if (!this.activeMeta || this.activeMeta.selector !== selector) {
-        this.activeMeta = {
-          tagName: targetEl.tagName,
-          id: targetEl.id || '',
-          className: targetEl.className || '',
-          selector: selector,
-          styles: {},
-          dataAttributes: { ...targetEl.dataset }
-        };
-      }
-
       if (snapshot.domStyle !== null && snapshot.domStyle !== undefined) {
         targetEl.setAttribute('style', snapshot.domStyle);
       } else {
         targetEl.removeAttribute('style');
       }
 
-      if (snapshot.domDirectText !== null && snapshot.domDirectText !== undefined) {
+      if (snapshot.domHtml !== null && snapshot.domHtml !== undefined && snapshot.domHtml.includes('<')) {
+        targetEl.innerHTML = snapshot.domHtml;
+      } else if (snapshot.domDirectText !== null && snapshot.domDirectText !== undefined) {
         this._updateElementDirectText(targetEl, snapshot.domDirectText);
       }
 
@@ -660,12 +669,46 @@ export class SidePanel {
       }
     }
 
+    // Restore linked subcategories state if recorded
+    if (snapshot.linkedSubcategories && Array.isArray(snapshot.linkedSubcategories)) {
+      this.linkedSubcategories = new Set(snapshot.linkedSubcategories);
+    }
+
     // 4. Re-apply schema dynamically to iframe document
     try {
       applyDesignSchema(this.exportSystem.serializeSchema(), doc);
     } catch (_) {}
 
-    // 5. Update inspector tab, title, and all sidebar sliders/controls
+    // 5. Active element preservation:
+    // If the currently inspected element is connected and belongs to this linked group, keep it active!
+    const activeSelector = this.activeMeta ? this.activeMeta.selector : null;
+    const isCurrentActiveInGroup = Boolean(
+      this.activeElement && this.activeElement.isConnected && (
+        activeSelector === selector ||
+        (snapshot.linkedSnapshots && snapshot.linkedSnapshots.some(s => s && s.selector === activeSelector))
+      )
+    );
+
+    const effectiveActiveEl = isCurrentActiveInGroup ? this.activeElement : (targetEl || this.activeElement);
+    if (effectiveActiveEl) {
+      this.activeElement = effectiveActiveEl;
+      if (this.selectionEngine) {
+        this.activeMeta = this.selectionEngine.extractElementMetadata(this.activeElement);
+      } else {
+        const sel = this._generateFallbackSelector(this.activeElement);
+        this.activeMeta = {
+          tagName: this.activeElement.tagName,
+          id: this.activeElement.id || '',
+          className: this.activeElement.className || '',
+          selector: sel,
+          styles: {},
+          dataAttributes: { ...this.activeElement.dataset }
+        };
+      }
+      this.currentSimilarElements = findSimilarCardElements(this.activeElement);
+    }
+
+    // 6. Update inspector tab, title, and all sidebar sliders/controls
     if (this.activeElement && this.activeMeta) {
       const titleEl = this.container.querySelector('#admin-panel-title');
       if (titleEl) {
@@ -685,9 +728,32 @@ export class SidePanel {
       this._updateResetButtonVisibility();
     }
 
-    // 6. Notify parent app to reposition selection boxes and update status
-    if (typeof this.onElementChange === 'function' && targetEl && this.activeMeta) {
-      this.onElementChange(targetEl, this.activeMeta, { undoRedo: true }, snapshot.breakpoint || this.currentBreakpoint);
+    // 7. Update selectionEngine & linked indicators
+    if (this.selectionEngine && this.activeElement) {
+      this.selectionEngine.selectedElement = this.activeElement;
+      this.selectionEngine._updateBoxes();
+      if (this.linkedSubcategories && this.linkedSubcategories.size > 0 && this.currentSimilarElements && this.currentSimilarElements.length > 1) {
+        this.selectionEngine.setLinkedElements(this.currentSimilarElements);
+      } else {
+        this.selectionEngine.setLinkedElements([]);
+      }
+    }
+
+    // 8. Notify parent app to update status for active and linked elements
+    if (typeof this.onElementChange === 'function') {
+      if (this.activeElement && this.activeMeta) {
+        this.onElementChange(this.activeElement, this.activeMeta, { undoRedo: true }, snapshot.breakpoint || this.currentBreakpoint);
+      }
+      if (this.currentSimilarElements && this.currentSimilarElements.length > 1) {
+        this.currentSimilarElements.forEach(el => {
+          if (el && el.isConnected && el !== this.activeElement) {
+            const meta = this.selectionEngine ? this.selectionEngine.extractElementMetadata(el) : null;
+            if (meta) {
+              this.onElementChange(el, meta, { undoRedo: true }, snapshot.breakpoint || this.currentBreakpoint);
+            }
+          }
+        });
+      }
     }
   }
 
@@ -703,47 +769,68 @@ export class SidePanel {
       this.exportSystem.resetSection(currentTab, targetSelector);
     }
 
-    if (this.activeElement && this.activeMeta) {
-      const selector = this.activeMeta.selector;
-      const baseline = this.elementBaselines.get(selector);
+    const isLinkedActive = Boolean(
+      this.linkedSubcategories &&
+      this.linkedSubcategories.size > 0 &&
+      this.currentSimilarElements &&
+      this.currentSimilarElements.length > 1
+    );
+
+    const elementsToReset = isLinkedActive
+      ? this.currentSimilarElements.filter(el => el && el.isConnected)
+      : (this.activeElement ? [this.activeElement] : []);
+
+    const textStyleList = [
+      'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing',
+      'textAlign', 'fontStyle', 'textTransform', 'fontVariant', 'textShadow',
+      'boxShadow', 'color', 'backgroundColor', 'borderColor', 'borderWidth',
+      'borderRadius', 'opacity'
+    ];
+    const spacingStyleList = [
+      'margin-top', 'margin-bottom', 'margin-left', 'margin-right',
+      'padding-top', 'padding-bottom', 'padding-left', 'padding-right', 'gap'
+    ];
+
+    elementsToReset.forEach(el => {
+      const meta = this.selectionEngine ? this.selectionEngine.extractElementMetadata(el) : null;
+      const sel = meta ? meta.selector : this._generateFallbackSelector(el);
+      const baseline = this.elementBaselines.get(sel);
+
+      if (this.exportSystem && sel !== targetSelector) {
+        this.exportSystem.resetSection(currentTab, sel);
+      }
 
       if (currentTab === 'text') {
-        const textStyleList = [
-          'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing',
-          'textAlign', 'fontStyle', 'textTransform', 'fontVariant', 'textShadow',
-          'boxShadow', 'color', 'backgroundColor', 'borderColor', 'borderWidth',
-          'borderRadius', 'opacity'
-        ];
         textStyleList.forEach(k => {
-          this.activeElement.style.removeProperty(this._camelToKebab(k));
+          el.style.removeProperty(this._camelToKebab(k));
         });
         if (baseline && baseline.text !== undefined) {
           if (baseline.isTextOnly) {
-            this.activeElement.textContent = baseline.text;
+            el.textContent = baseline.text;
           } else {
-            this.activeElement.innerHTML = baseline.text;
+            el.innerHTML = baseline.text;
           }
         }
       } else if (currentTab === 'spacing') {
-        const spacingStyleList = [
-          'margin-top', 'margin-bottom', 'margin-left', 'margin-right',
-          'padding-top', 'padding-bottom', 'padding-left', 'padding-right', 'gap'
-        ];
-        spacingStyleList.forEach(k => this.activeElement.style.removeProperty(k));
+        spacingStyleList.forEach(k => el.style.removeProperty(k));
       } else if (currentTab === 'media') {
-        if (this.activeElement.tagName === 'IMG' || this.activeElement.tagName === 'AUDIO') {
-          if (baseline && baseline.src) this.activeElement.src = baseline.src;
+        if (el.tagName === 'IMG' || el.tagName === 'AUDIO') {
+          if (baseline && baseline.src) el.src = baseline.src;
         }
-        this.activeElement.style.removeProperty('background-image');
+        el.style.removeProperty('background-image');
       } else if (currentTab === 'props') {
         if (baseline && baseline.dataset) {
-          Object.keys(this.activeElement.dataset).forEach(k => delete this.activeElement.dataset[k]);
+          Object.keys(el.dataset).forEach(k => delete el.dataset[k]);
           Object.entries(baseline.dataset).forEach(([k, v]) => {
-            this.activeElement.dataset[k] = v;
+            el.dataset[k] = v;
           });
         }
       }
-    }
+
+      if (el !== this.activeElement && typeof this.onElementChange === 'function' && meta) {
+        this.onElementChange(el, meta, { reset: true, resetSection: currentTab }, this.currentBreakpoint);
+      }
+    });
 
     // 1. Notify change FIRST so schemaApplier strips the dynamic style rules from iframe <style>
     this._notifyChange({ reset: true, resetSection: currentTab });

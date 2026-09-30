@@ -241,6 +241,41 @@ export function applyDesignSchema(schema, doc = document) {
 
   const elements = schema.elements;
 
+  // Restore elements that were previously overridden but are no longer in active schema (e.g. after undo/reset)
+  if (doc.__ekoOverriddenElements && doc.__ekoOverriddenElements.size > 0) {
+    const currentActiveSelectors = new Set(Object.keys(elements).map(key => {
+      const item = elements[key];
+      return item?.selector || (key.startsWith('#') || key.startsWith('.') ? key : `#${key}`);
+    }));
+    doc.__ekoOverriddenElements.forEach(el => {
+      let isStillOverridden = false;
+      for (const sel of currentActiveSelectors) {
+        try {
+          if (el.matches && el.matches(sel)) {
+            isStillOverridden = true;
+            break;
+          }
+        } catch (_) {}
+      }
+      if (!isStillOverridden) {
+        if (el.__ekoOriginalText !== undefined) {
+          if (el.children.length === 0) {
+            el.textContent = el.__ekoOriginalText;
+          } else {
+            el.innerHTML = el.__ekoOriginalHtml !== undefined ? el.__ekoOriginalHtml : el.__ekoOriginalText;
+          }
+        }
+        if (el.__ekoOriginalSrc !== undefined) {
+          el.src = el.__ekoOriginalSrc;
+        }
+        if (el.__ekoOriginalBg !== undefined) {
+          el.style.backgroundImage = el.__ekoOriginalBg;
+        }
+        doc.__ekoOverriddenElements.delete(el);
+      }
+    });
+  }
+
   // 1. Compile CSS Media Queries (Universal, Desktop, Tablet, Mobile)
   const compiledCss = generateCssFromSchema(schema);
   if (styleTag && styleTag.textContent !== compiledCss) {

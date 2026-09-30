@@ -1763,7 +1763,7 @@ html[data-admin-theme="light"] .admin-picker-hex-input,
   user-select: none;
   font-family: var(--admin-font);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--admin-text-secondary);
   box-sizing: border-box;
   white-space: nowrap;
@@ -1771,7 +1771,7 @@ html[data-admin-theme="light"] .admin-picker-hex-input,
 
 .admin-toggle-changes-compact:hover {
   background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(245, 158, 11, 0.65);
+  border-color: #FFFF00;
   color: #ffffff;
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
@@ -1800,14 +1800,14 @@ html[data-admin-theme="light"] .admin-picker-hex-input,
 }
 
 .admin-toggle-changes-compact.is-on .toggle-changes-badge-dot {
-  background: #f59e0b;
-  border: none;
-  box-shadow: none;
+  background: #FFFF00;
+  border: 1.5px solid #000000;
+  box-shadow: 0 0 0 1px #ffffff;
 }
 
 .admin-toggle-changes-compact .toggle-changes-title {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--admin-text-primary);
   letter-spacing: 0.01em;
 }
@@ -1821,9 +1821,9 @@ html[data-admin-theme="light"] .admin-picker-hex-input,
   height: 18px;
   padding: 0 4px;
   border-radius: 9999px;
-  background: rgba(245, 158, 11, 0.2);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.45);
+  background: #FFFF00 !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
   font-size: 11px;
   font-weight: 700;
   font-family: var(--admin-font-number), "Manrope", sans-serif !important;
@@ -1834,11 +1834,12 @@ html[data-admin-theme="light"] .admin-picker-hex-input,
   letter-spacing: 0;
   margin: 0;
   vertical-align: middle;
+  text-shadow: none;
 }
 
 .admin-toggle-changes-compact .toggle-changes-pill {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 2px 6px;
   border-radius: var(--admin-radius-sm);
   background: rgba(255, 255, 255, 0.08);
@@ -1848,13 +1849,17 @@ html[data-admin-theme="light"] .admin-picker-hex-input,
 }
 
 .admin-toggle-changes-compact.is-on .toggle-changes-pill {
-  background: rgba(245, 158, 11, 0.22);
-  color: #fef08a;
-  border: 1px solid rgba(245, 158, 11, 0.5);
+  background: #FFFF00 !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+  text-shadow: none !important;
+  font-weight: 700 !important;
 }
 
 .admin-toggle-changes-compact.is-on {
-  border-color: rgba(245, 158, 11, 0.5);
+  background: rgba(255, 255, 0, 0.08);
+  border-color: #FFFF00;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 /* --------------------------------------------------------------------------
@@ -2775,13 +2780,12 @@ html[data-admin-theme="light"] .admin-section-header .section-title-text,
 }
 html[data-admin-theme="light"] .btn-restore-checkpoint,
 .admin-workspace[data-theme="light"] .btn-restore-checkpoint {
-  background: #FFFFFF !important;
+  background: rgba(0, 119, 214, 0.08) !important;
   color: #0077D6 !important;
-  border: 1.5px solid rgba(0, 119, 214, 0.6) !important;
-  outline: 1px solid rgba(0, 119, 214, 0.3) !important;
-  outline-offset: 1px !important;
+  border: 1px solid rgba(0, 119, 214, 0.45) !important;
+  outline: none !important;
   font-weight: 600 !important;
-  box-shadow: 0 0 6px rgba(0, 119, 214, 0.12) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
@@ -2793,72 +2797,133 @@ html[data-admin-theme="light"] .btn-restore-checkpoint svg,
 
 html[data-admin-theme="light"] .btn-restore-checkpoint:hover:not(:disabled),
 .admin-workspace[data-theme="light"] .btn-restore-checkpoint:hover:not(:disabled) {
-  background: rgba(0, 119, 214, 0.12) !important;
-  color: #0077D6 !important;
+  background: rgba(0, 119, 214, 0.18) !important;
+  color: #005bb5 !important;
   border-color: #0077D6 !important;
-  outline-color: #0077D6 !important;
-  box-shadow: 0 0 12px rgba(0, 119, 214, 0.25), 0 3px 8px rgba(0, 0, 0, 0.12) !important;
+  outline: none !important;
+  box-shadow: 0 2px 8px rgba(0, 119, 214, 0.22) !important;
   transform: translateY(-1px);
 }
 
 html[data-admin-theme="light"] .btn-restore-checkpoint:hover:not(:disabled) svg,
 .admin-workspace[data-theme="light"] .btn-restore-checkpoint:hover:not(:disabled) svg {
-  stroke: #0077D6 !important;
+  stroke: #005bb5 !important;
   transform: rotate(-15deg);
 }
 
 html[data-admin-theme="light"] .btn-restore-checkpoint:active:not(:disabled),
 .admin-workspace[data-theme="light"] .btn-restore-checkpoint:active:not(:disabled) {
   transform: translateY(0);
-  background: rgba(0, 119, 214, 0.2) !important;
+  background: rgba(0, 119, 214, 0.26) !important;
   border-color: #0077D6 !important;
+  outline: none !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+html[data-admin-theme="light"] #btn-publish-history .admin-history-badge,
+.admin-workspace[data-theme="light"] #btn-publish-history .admin-history-badge {
+  background: rgba(0, 119, 214, 0.12) !important;
+  color: #0077D6 !important;
+  border: 1px solid rgba(0, 119, 214, 0.35) !important;
+  font-weight: 700 !important;
 }
 
 html[data-admin-theme="light"] .admin-modal-header #btn-close-history-modal,
 .admin-workspace[data-theme="light"] .admin-modal-header #btn-close-history-modal {
-  border: 1.5px solid rgba(0, 119, 214, 0.6) !important;
-  outline: 1px solid rgba(0, 119, 214, 0.3) !important;
-  outline-offset: 1px !important;
-  color: #0077D6 !important;
-  background: #FFFFFF !important;
-  box-shadow: 0 0 6px rgba(0, 119, 214, 0.12) !important;
+  border: none !important;
+  outline: none !important;
+  color: #64748B !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: var(--admin-radius-sm) !important;
+  transition: all 0.15s ease !important;
 }
 
-html[data-admin-theme="light"] .admin-modal-footer #btn-done-history-modal,
-.admin-workspace[data-theme="light"] .admin-modal-footer #btn-done-history-modal {
-  border: 1.5px solid rgba(0, 119, 214, 0.6) !important;
-  outline: 1px solid rgba(0, 119, 214, 0.3) !important;
-  outline-offset: 1px !important;
-  color: #0077D6 !important;
-  background: #FFFFFF !important;
-  box-shadow: 0 0 6px rgba(0, 119, 214, 0.12) !important;
+html[data-admin-theme="light"] .admin-modal-header #btn-close-history-modal:hover,
+.admin-workspace[data-theme="light"] .admin-modal-header #btn-close-history-modal:hover {
+  border: none !important;
+  outline: none !important;
+  color: #0F172A !important;
+  background: rgba(0, 0, 0, 0.06) !important;
+  box-shadow: none !important;
+}
+
+html[data-admin-theme="light"] .admin-modal-header .admin-btn-ghost,
+.admin-workspace[data-theme="light"] .admin-modal-header .admin-btn-ghost {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 html[data-admin-theme="light"] .admin-modal-header .admin-btn-ghost:hover,
 .admin-workspace[data-theme="light"] .admin-modal-header .admin-btn-ghost:hover {
-  border-color: #0077D6 !important;
+  border: none !important;
+  outline: none !important;
+  color: #0F172A !important;
+  background: rgba(0, 0, 0, 0.06) !important;
+  box-shadow: none !important;
+}
+
+html[data-admin-theme="light"] .admin-modal-footer #btn-refresh-history,
+.admin-workspace[data-theme="light"] .admin-modal-footer #btn-refresh-history {
+  border: 1px solid #CBD5E1 !important;
+  outline: none !important;
+  color: #334155 !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+html[data-admin-theme="light"] .admin-modal-footer #btn-refresh-history:hover,
+.admin-workspace[data-theme="light"] .admin-modal-footer #btn-refresh-history:hover {
+  border-color: #64748B !important;
+  color: #0F172A !important;
+  background: #F1F5F9 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-1px);
+}
+
+html[data-admin-theme="light"] .admin-modal-footer #btn-done-history-modal,
+.admin-workspace[data-theme="light"] .admin-modal-footer #btn-done-history-modal {
+  border: 1px solid rgba(0, 119, 214, 0.5) !important;
+  outline: none !important;
   color: #0077D6 !important;
   background: rgba(0, 119, 214, 0.08) !important;
-  box-shadow: 0 0 8px rgba(0, 119, 214, 0.16) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  font-weight: 700 !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 html[data-admin-theme="light"] .admin-modal-footer #btn-done-history-modal:hover,
-.admin-workspace[data-theme="light"] .admin-modal-footer #btn-done-history-modal:hover,
-html[data-admin-theme="light"] .admin-modal-footer #btn-done-schema-modal:hover,
-.admin-workspace[data-theme="light"] .admin-modal-footer #btn-done-schema-modal:hover {
+.admin-workspace[data-theme="light"] .admin-modal-footer #btn-done-history-modal:hover {
   border-color: #0077D6 !important;
-  outline-color: #0077D6 !important;
-  color: #0077D6 !important;
-  background: rgba(0, 119, 214, 0.12) !important;
-  box-shadow: 0 0 10px rgba(0, 119, 214, 0.22), 0 3px 8px rgba(0, 0, 0, 0.08) !important;
+  outline: none !important;
+  color: #005bb5 !important;
+  background: rgba(0, 119, 214, 0.18) !important;
+  box-shadow: 0 2px 8px rgba(0, 119, 214, 0.22) !important;
+  transform: translateY(-1px);
+}
+
+html[data-admin-theme="light"] .admin-modal-footer #btn-done-history-modal:active,
+.admin-workspace[data-theme="light"] .admin-modal-footer #btn-done-history-modal:active {
+  transform: translateY(0);
+  background: rgba(0, 119, 214, 0.26) !important;
+  border-color: #0077D6 !important;
+}
+
+html[data-admin-theme="light"] .history-item-card.is-active-checkpoint,
+.admin-workspace[data-theme="light"] .history-item-card.is-active-checkpoint {
+  border-color: rgba(0, 119, 214, 0.45) !important;
+  background: rgba(0, 119, 214, 0.04) !important;
 }
 
 html[data-admin-theme="light"] .btn-restore-checkpoint.is-active-btn,
 .admin-workspace[data-theme="light"] .btn-restore-checkpoint.is-active-btn {
-  background: transparent !important;
+  background: rgba(16, 185, 129, 0.12) !important;
   color: #059669 !important;
-  border-color: rgba(5, 150, 105, 0.4) !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+  cursor: default;
+  outline: none !important;
 }
 
 html[data-admin-theme="light"] .btn-restore-checkpoint.is-active-btn svg,
@@ -2978,52 +3043,69 @@ html[data-admin-theme="light"] .admin-toggle-changes-compact,
 .admin-workspace[data-theme="light"] .admin-toggle-changes-compact {
   background: #FFFFFF !important;
   border: 1px solid #CBD5E1 !important;
-  color: #475569 !important;
+  color: #0F172A !important;
+  font-weight: 500 !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
 }
 
 html[data-admin-theme="light"] .admin-toggle-changes-compact:hover,
 .admin-workspace[data-theme="light"] .admin-toggle-changes-compact:hover {
-  background: #F8FAFC !important;
-  border-color: #d97706 !important;
-  color: #0F172A !important;
+  background: #FFFFF0 !important;
+  border-color: #000000 !important;
+  color: #000000 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
 }
 
 html[data-admin-theme="light"] .admin-toggle-changes-compact .toggle-changes-title,
 .admin-workspace[data-theme="light"] .admin-toggle-changes-compact .toggle-changes-title {
-  color: #1E293B !important;
+  color: #0F172A !important;
+  font-weight: 500 !important;
 }
 
 html[data-admin-theme="light"] .admin-toggle-changes-compact .toggle-changes-pill,
 .admin-workspace[data-theme="light"] .admin-toggle-changes-compact .toggle-changes-pill {
   background: #F1F5F9 !important;
   color: #64748B !important;
+  border: 1px solid #E2E8F0 !important;
+  font-weight: 600 !important;
 }
 
 html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on,
 .admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on {
-  border-color: #d97706 !important;
+  border: 1.5px solid #000000 !important;
+  background: rgba(255, 255, 0, 0.16) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
 }
 
 html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-badge-dot,
 .admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-badge-dot {
-  background: #d97706 !important;
-  border: none !important;
-  box-shadow: none !important;
+  background: #FFFF00 !important;
+  border: 1.5px solid #000000 !important;
+  box-shadow: 0 0 0 1px #000000 !important;
+}
+
+html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-title,
+.admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-title {
+  color: #000000 !important;
+  font-weight: 600 !important;
 }
 
 html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-pill,
 .admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-pill {
-  background: #FEF3C7 !important;
-  color: #B45309 !important;
-  border: 1px solid #FDE68A !important;
+  background: #FFFF00 !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
 }
 
 html[data-admin-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-count,
 .admin-workspace[data-theme="light"] .admin-toggle-changes-compact.is-on .toggle-changes-count {
-  background: #FEF3C7 !important;
-  color: #B45309 !important;
-  border-color: #FCD34D !important;
+  background: #FFFF00 !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
 }
 
 /* Light Mode: Change indicator numbers on sidebar menu (Pure Black background with Pure White text) */
