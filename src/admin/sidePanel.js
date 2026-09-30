@@ -8,7 +8,7 @@
  * and dynamic data attributes.
  */
 
-import { getFriendlyName } from './selectionEngine.js';
+import { getFriendlyName, findSimilarCardElements, getEnclosingSectionName } from './selectionEngine.js';
 
 export class SidePanel {
   /**
@@ -50,6 +50,11 @@ export class SidePanel {
     // Element baselines: stores snapshot BEFORE any sidebar edits (selector -> { style, text, isTextOnly, dataset })
     this.elementBaselines = new Map();
 
+    // Linked elements system for TEXTS subcategories
+    this.linkedSubcategories = new Set(); // Set of section IDs that have linking enabled: 'sec-typography', 'sec-shadow', etc.
+    this.currentSimilarElements = []; // Cached array of similar elements across cards in the active section
+    this.selectionEngine = null;
+
     // Shadow Studio state
     this.shadowState = {
       x: 0,
@@ -62,6 +67,13 @@ export class SidePanel {
     };
 
     this.render();
+  }
+
+  setSelectionEngine(engine) {
+    this.selectionEngine = engine;
+    if (this.linkedSubcategories && this.linkedSubcategories.size > 0 && this.currentSimilarElements && this.currentSimilarElements.length > 0) {
+      this.selectionEngine.setLinkedElements(this.currentSimilarElements);
+    }
   }
 
   setBreakpoint(breakpoint) {
@@ -424,6 +436,7 @@ export class SidePanel {
     if (snapA.domDirectText !== snapB.domDirectText) return false;
     if (JSON.stringify(snapA.dataset) !== JSON.stringify(snapB.dataset)) return false;
     if (JSON.stringify(snapA.shadowState) !== JSON.stringify(snapB.shadowState)) return false;
+    if (JSON.stringify(snapA.linkedSnapshots || []) !== JSON.stringify(snapB.linkedSnapshots || [])) return false;
     return true;
   }
 
@@ -434,6 +447,23 @@ export class SidePanel {
     if (!this.activeMeta || !this.exportSystem) return null;
     const selector = this.activeMeta.selector;
     const el = this.activeElement;
+
+    const linkedSnapshots = (this.currentSimilarElements && this.currentSimilarElements.length > 1)
+      ? this.currentSimilarElements.map(itemEl => {
+          if (!itemEl || !itemEl.isConnected) return null;
+          const meta = this.selectionEngine ? this.selectionEngine.extractElementMetadata(itemEl) : null;
+          const elSelector = meta ? meta.selector : this._generateFallbackSelector(itemEl);
+          return {
+            selector: elSelector,
+            exportData: JSON.parse(JSON.stringify(this.exportSystem.getElementData(elSelector) || null)),
+            domStyle: itemEl.getAttribute('style'),
+            domDirectText: this._getDirectText(itemEl),
+            domHtml: itemEl.innerHTML,
+            dataset: { ...itemEl.dataset }
+          };
+        }).filter(Boolean)
+      : [];
+
     return {
       label,
       selector,
@@ -445,6 +475,7 @@ export class SidePanel {
       domHtml: el ? el.innerHTML : null,
       dataset: el ? { ...el.dataset } : {},
       shadowState: { ...this.shadowState },
+      linkedSnapshots,
       timestamp: Date.now()
     };
   }
@@ -531,7 +562,12 @@ export class SidePanel {
     if (!snapshot || !this.exportSystem) return;
     const selector = snapshot.selector;
 
-    // 1. Restore data in exportSystem
+    const doc = (this.activeElement && this.activeElement.ownerDocument)
+      || (typeof this.getIframeDoc === 'function' ? this.getIframeDoc() : null)
+      || document.querySelector('#admin-preview-frame')?.contentDocument
+      || window.document;
+
+    // 1. Restore data in exportSystem for main active element
     if (snapshot.exportData) {
       this.exportSystem.changesMap.set(selector, JSON.parse(JSON.stringify(snapshot.exportData)));
       this.exportSystem.sessionUserChangesMap.set(selector, JSON.parse(JSON.stringify(snapshot.exportData)));
@@ -539,14 +575,49 @@ export class SidePanel {
       this.exportSystem.changesMap.delete(selector);
       this.exportSystem.sessionUserChangesMap.delete(selector);
     }
+
+    // 2. Restore linked items in exportSystem and DOM
+    if (snapshot.linkedSnapshots && Array.isArray(snapshot.linkedSnapshots)) {
+      snapshot.linkedSnapshots.forEach(item => {
+        if (!item || item.selector === selector) return;
+        if (item.exportData) {
+          this.exportSystem.changesMap.set(item.selector, JSON.parse(JSON.stringify(item.exportData)));
+          this.exportSystem.sessionUserChangesMap.set(item.selector, JSON.parse(JSON.stringify(item.exportData)));
+        } else {
+          this.exportSystem.changesMap.delete(item.selector);
+          this.exportSystem.sessionUserChangesMap.delete(item.selector);
+        }
+
+        const linkedEl = (item.selector && doc && doc.querySelector) ? doc.querySelector(item.selector) : null;
+        if (linkedEl) {
+          if (item.domStyle !== null && item.domStyle !== undefined) {
+            linkedEl.setAttribute('style', item.domStyle);
+          } else {
+            linkedEl.removeAttribute('style');
+          }
+
+          if (item.domDirectText !== null && item.domDirectText !== undefined) {
+            this._updateElementDirectText(linkedEl, item.domDirectText);
+          }
+
+          if (item.dataset) {
+            Object.keys(linkedEl.dataset).forEach(k => delete linkedEl.dataset[k]);
+            Object.entries(item.dataset).forEach(([k, v]) => {
+              linkedEl.dataset[k] = v;
+            });
+          }
+
+          if (typeof this.onElementChange === 'function') {
+            const itemMeta = this.selectionEngine ? this.selectionEngine.extractElementMetadata(linkedEl) : { selector: item.selector };
+            this.onElementChange(linkedEl, itemMeta, { undoRedo: true }, snapshot.breakpoint || this.currentBreakpoint);
+          }
+        }
+      });
+    }
+
     this.exportSystem.hasUnpublishedChanges = this.exportSystem.changesMap.size > 0;
 
-    // 2. Restore DOM element state in iframe document
-    const doc = (this.activeElement && this.activeElement.ownerDocument)
-      || (typeof this.getIframeDoc === 'function' ? this.getIframeDoc() : null)
-      || document.querySelector('#admin-preview-frame')?.contentDocument
-      || window.document;
-
+    // 3. Restore DOM element state in iframe document for main active element
     const targetEl = (selector && doc && doc.querySelector) ? (doc.querySelector(selector) || this.activeElement) : this.activeElement;
 
     if (targetEl) {
@@ -589,12 +660,12 @@ export class SidePanel {
       }
     }
 
-    // 3. Re-apply schema dynamically to iframe document
+    // 4. Re-apply schema dynamically to iframe document
     try {
       applyDesignSchema(this.exportSystem.serializeSchema(), doc);
     } catch (_) {}
 
-    // 4. Update inspector tab, title, and all sidebar sliders/controls
+    // 5. Update inspector tab, title, and all sidebar sliders/controls
     if (this.activeElement && this.activeMeta) {
       const titleEl = this.container.querySelector('#admin-panel-title');
       if (titleEl) {
@@ -614,7 +685,7 @@ export class SidePanel {
       this._updateResetButtonVisibility();
     }
 
-    // 5. Notify parent app to reposition selection boxes and update status
+    // 6. Notify parent app to reposition selection boxes and update status
     if (typeof this.onElementChange === 'function' && targetEl && this.activeMeta) {
       this.onElementChange(targetEl, this.activeMeta, { undoRedo: true }, snapshot.breakpoint || this.currentBreakpoint);
     }
@@ -766,6 +837,19 @@ export class SidePanel {
     this.activeElement = element;
     this.activeMeta = metadata;
 
+    // Detect all similar text elements across cards in the enclosing section
+    this.currentSimilarElements = findSimilarCardElements(element);
+
+    if (this.linkedSubcategories && this.linkedSubcategories.size > 0 && this.currentSimilarElements && this.currentSimilarElements.length > 1) {
+      if (this.selectionEngine) {
+        this.selectionEngine.setLinkedElements(this.currentSimilarElements);
+      }
+    } else {
+      if (this.selectionEngine) {
+        this.selectionEngine.setLinkedElements([]);
+      }
+    }
+
     this._captureBaselineIfNeeded();
     this._refreshActiveMetaStyles();
     this._parseExistingShadow();
@@ -878,6 +962,10 @@ export class SidePanel {
   clear() {
     this.activeElement = null;
     this.activeMeta = null;
+    this.currentSimilarElements = [];
+    if (this.selectionEngine) {
+      this.selectionEngine.setLinkedElements([]);
+    }
 
     const titleEl = this.container.querySelector('#admin-panel-title');
     const footerEl = this.container.querySelector('#admin-panel-footer');
@@ -1555,6 +1643,73 @@ export class SidePanel {
       if (this.exportSystem) {
         this.exportSystem.removeChange(selector, 'dataAttr', null, 'all');
       }
+    }
+
+    // Cascade reset to linked card elements if this subcategory is linked
+    const isResetLinked = (() => {
+      if (!this.linkedSubcategories || this.linkedSubcategories.size === 0) return false;
+      if (!this.currentSimilarElements || this.currentSimilarElements.length <= 1) return false;
+      if (type === 'typography' || key === 'typography') return this.linkedSubcategories.has('sec-typography');
+      if (type === 'shadow' || key === 'shadow' || type === 'shadow-prop' || (key && key.startsWith('shadow-'))) return this.linkedSubcategories.has('sec-shadow');
+      if (type === 'colors' || key === 'colors') return this.linkedSubcategories.has('sec-colors');
+      if (type === 'borders' || key === 'borders') return this.linkedSubcategories.has('sec-borders');
+      if (type === 'text' || key === 'text') return this.linkedSubcategories.has('sec-text-content');
+      if (type === 'style' && key) {
+        if (['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textTransform', 'fontVariant', 'textAlign', 'fontStyle'].includes(key)) {
+          return this.linkedSubcategories.has('sec-typography');
+        }
+        if (['color', 'backgroundColor'].includes(key)) return this.linkedSubcategories.has('sec-colors');
+        if (['borderColor', 'borderWidth', 'borderRadius'].includes(key)) return this.linkedSubcategories.has('sec-borders');
+      }
+      return false;
+    })();
+
+    if (isResetLinked) {
+      this.currentSimilarElements.forEach(el => {
+        if (el && el.isConnected && el !== this.activeElement) {
+          const meta = this.selectionEngine ? this.selectionEngine.extractElementMetadata(el) : null;
+          const sel = meta ? meta.selector : this._generateFallbackSelector(el);
+          const b = this.elementBaselines.get(sel);
+
+          if (type === 'text' || key === 'text') {
+            if (b) {
+              if (b.isTextOnly) el.textContent = b.text;
+              else el.innerHTML = b.text;
+            }
+            if (this.exportSystem) this.exportSystem.removeChange(sel, 'text', 'text', 'all');
+          } else if (type === 'typography' || key === 'typography') {
+            const keys = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textTransform', 'fontVariant', 'textAlign', 'fontStyle'];
+            keys.forEach(k => {
+              el.style.removeProperty(this._camelToKebab(k));
+              if (this.exportSystem) this.exportSystem.removeChange(sel, 'style', k, 'all');
+            });
+          } else if (type === 'colors' || key === 'colors') {
+            ['color', 'backgroundColor'].forEach(k => {
+              el.style.removeProperty(this._camelToKebab(k));
+              if (this.exportSystem) this.exportSystem.removeChange(sel, 'style', k, 'all');
+            });
+          } else if (type === 'borders' || key === 'borders') {
+            ['borderColor', 'borderWidth', 'borderRadius'].forEach(k => {
+              el.style.removeProperty(this._camelToKebab(k));
+              if (this.exportSystem) this.exportSystem.removeChange(sel, 'style', k, 'all');
+            });
+          } else if (type === 'shadow' || key === 'shadow' || type === 'shadow-prop') {
+            el.style.removeProperty('text-shadow');
+            el.style.removeProperty('box-shadow');
+            if (this.exportSystem) {
+              this.exportSystem.removeChange(sel, 'style', 'textShadow', 'all');
+              this.exportSystem.removeChange(sel, 'style', 'boxShadow', 'all');
+            }
+          } else if (type === 'style' && key) {
+            el.style.removeProperty(this._camelToKebab(key));
+            if (this.exportSystem) this.exportSystem.removeChange(sel, 'style', key, 'all');
+          }
+
+          if (typeof this.onElementChange === 'function' && meta) {
+            this.onElementChange(el, meta, { reset: true, resetProperty: key || type }, this.currentBreakpoint);
+          }
+        }
+      });
     }
 
     // 1. Notify change so exportSystem & schemaApplier immediately strip the dynamic override rule from the iframe <style>
@@ -2935,6 +3090,39 @@ export class SidePanel {
     this._bindResetButtons(container);
   }
 
+  _renderLinkButton(sectionId) {
+    const textSubcategories = ['sec-typography', 'sec-shadow', 'sec-colors', 'sec-borders', 'sec-text-content'];
+    if (!textSubcategories.includes(sectionId)) return '';
+
+    const count = (this.currentSimilarElements && this.currentSimilarElements.length > 0)
+      ? this.currentSimilarElements.length
+      : 1;
+
+    // Only show link option if 2 or more similar elements exist in the section
+    if (count < 2) return '';
+
+    const isLinked = this.linkedSubcategories ? this.linkedSubcategories.has(sectionId) : false;
+    const sectionName = this.activeElement ? getEnclosingSectionName(this.activeElement) : 'Section';
+    const tooltip = isLinked
+      ? `Linked: ${count} elements in ${sectionName} (Click to unlink)`
+      : `Link ${count} similar elements across cards in ${sectionName}`;
+
+    return `
+      <button type="button" 
+        class="btn-section-link ${isLinked ? 'is-linked' : ''}" 
+        data-link-section="${sectionId}" 
+        data-tooltip="${tooltip}"
+        title="${tooltip}">
+        <svg class="link-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+        <span class="link-btn-text">${isLinked ? 'Linked' : 'Link'}</span>
+        <span class="link-btn-count">${count}</span>
+      </button>
+    `;
+  }
+
   _renderSectionHeader(sectionId, title, indicatorKeys = [], resetType = null, resetKey = null, extraHtml = '') {
     let count = 0;
     indicatorKeys.forEach(k => {
@@ -2951,6 +3139,7 @@ export class SidePanel {
         </div>
         <div class="section-header-actions" style="display: flex; align-items: center; gap: 8px;">
           ${extraHtml}
+          ${this._renderLinkButton(sectionId)}
           ${resetType ? `
             <button type="button" class="btn-field-reset btn-section-reset" data-reset-type="${resetType}" ${resetKey ? `data-reset-key="${resetKey}"` : ''} data-tooltip="Reset section" style="display: ${count > 0 ? 'inline-flex' : 'none'};">↺ Reset</button>
           ` : ''}
@@ -2962,9 +3151,76 @@ export class SidePanel {
     `;
   }
 
+  toggleSubcategoryLink(sectionId) {
+    if (!this.activeElement) return;
+
+    this.currentSimilarElements = findSimilarCardElements(this.activeElement);
+    const count = this.currentSimilarElements.length;
+    const sectionName = getEnclosingSectionName(this.activeElement);
+
+    const subcategoryLabels = {
+      'sec-typography': 'Typography',
+      'sec-shadow': 'Shadow and Glow Studio',
+      'sec-colors': 'Colors',
+      'sec-borders': 'Borders',
+      'sec-text-content': 'Text Content'
+    };
+    const label = subcategoryLabels[sectionId] || 'Subcategory';
+
+    if (this.linkedSubcategories.has(sectionId)) {
+      this.linkedSubcategories.delete(sectionId);
+      if (this.linkedSubcategories.size === 0) {
+        if (this.selectionEngine) {
+          this.selectionEngine.setLinkedElements([]);
+        }
+      }
+      if (typeof this.onToast === 'function') {
+        this.onToast(`Unlinked ${label}. Changes will only apply to the selected element.`);
+      }
+    } else {
+      this.linkedSubcategories.add(sectionId);
+      if (this.selectionEngine) {
+        this.selectionEngine.setLinkedElements(this.currentSimilarElements);
+      }
+      if (typeof this.onToast === 'function') {
+        this.onToast(`🔗 Linked ${count} similar elements in ${sectionName}! Changes in ${label} will apply to all ${count} elements.`);
+      }
+    }
+
+    this._renderActiveTab();
+  }
+
   // ==========================================================================
   // HELPERS
   // ==========================================================================
+  _resetSliderByPrefix(prefix) {
+    const prefixMap = {
+      'font-size': { type: 'style', key: 'fontSize' },
+      'line-height': { type: 'style', key: 'lineHeight' },
+      'letter-spacing': { type: 'style', key: 'letterSpacing' },
+      'border-width': { type: 'style', key: 'borderWidth' },
+      'border-radius': { type: 'style', key: 'borderRadius' },
+      'margin-top': { type: 'style', key: 'marginTop' },
+      'margin-bottom': { type: 'style', key: 'marginBottom' },
+      'margin-left': { type: 'style', key: 'marginLeft' },
+      'margin-right': { type: 'style', key: 'marginRight' },
+      'padding-top': { type: 'style', key: 'paddingTop' },
+      'padding-bottom': { type: 'style', key: 'paddingBottom' },
+      'padding-left': { type: 'style', key: 'paddingLeft' },
+      'padding-right': { type: 'style', key: 'paddingRight' },
+      'gap': { type: 'style', key: 'gap' },
+      'shadow-x': { type: 'shadow-prop', key: 'shadow-x' },
+      'shadow-y': { type: 'shadow-prop', key: 'shadow-y' },
+      'shadow-blur': { type: 'shadow-prop', key: 'shadow-blur' },
+      'shadow-spread': { type: 'shadow-prop', key: 'shadow-spread' },
+      'shadow-opacity': { type: 'shadow-prop', key: 'shadow-opacity' }
+    };
+    const mapped = prefixMap[prefix];
+    if (mapped) {
+      this.resetProperty(mapped.type, mapped.key);
+    }
+  }
+
   _bindResetButtons(container) {
     // 1. Reset buttons click
     container.querySelectorAll('.btn-field-reset').forEach(btn => {
@@ -2976,7 +3232,17 @@ export class SidePanel {
       });
     });
 
-    // 2. Double-click on setting names (.admin-field-label) resets that parameter
+    // 2. Link buttons click
+    container.querySelectorAll('.btn-section-link').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const sectionId = btn.dataset.linkSection;
+        this.toggleSubcategoryLink(sectionId);
+      });
+    });
+
+    // 3. Double-click on setting names (.admin-field-label) resets that parameter
     container.querySelectorAll('.admin-field-row').forEach(row => {
       const label = row.querySelector('.admin-field-label');
       const resetBtn = row.querySelector('.btn-field-reset');
@@ -2999,7 +3265,33 @@ export class SidePanel {
       }
     });
 
-    // 3. Section collapse/expand binding
+    // 4. Alt + Click on any slider or range control resets that parameter
+    container.querySelectorAll('.admin-slider-row, .admin-range-input, .admin-range-number').forEach(sliderEl => {
+      sliderEl.addEventListener('pointerdown', (e) => {
+        if (e.altKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          const row = sliderEl.closest('.admin-field-row');
+          const resetBtn = row ? row.querySelector('.btn-field-reset') : null;
+          if (resetBtn) {
+            resetBtn.click();
+          } else {
+            const idMatch = (sliderEl.id || '').match(/(?:slider|num)-(.*)/);
+            if (idMatch) {
+              this._resetSliderByPrefix(idMatch[1]);
+            }
+          }
+        }
+      });
+      sliderEl.addEventListener('click', (e) => {
+        if (e.altKey) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      });
+    });
+
+    // 5. Section collapse/expand binding
     this._bindSectionToggles(container);
   }
 
@@ -3013,7 +3305,7 @@ export class SidePanel {
 
       headerEl.style.cursor = 'pointer';
       headerEl.addEventListener('click', (e) => {
-        if (e.target.closest('.btn-field-reset, .btn-section-reset, a, input, select')) {
+        if (e.target.closest('.btn-field-reset, .btn-section-reset, .btn-section-link, a, input, select')) {
           return;
         }
 
@@ -3049,12 +3341,43 @@ export class SidePanel {
       isInteracting = false;
     };
 
+    const triggerReset = () => {
+      const row = slider.closest('.admin-field-row');
+      const resetBtn = row ? row.querySelector('.btn-field-reset') : null;
+      if (resetBtn) {
+        resetBtn.click();
+      } else {
+        this._resetSliderByPrefix(prefix);
+      }
+    };
+
     slider.addEventListener('pointerdown', (e) => {
+      if (e.altKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerReset();
+        return;
+      }
       if (e.button === 0) startInteraction();
+    });
+    slider.addEventListener('click', (e) => {
+      if (e.altKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerReset();
+      }
     });
     slider.addEventListener('pointerup', endInteraction);
     slider.addEventListener('change', endInteraction);
     slider.addEventListener('blur', endInteraction);
+
+    num.addEventListener('pointerdown', (e) => {
+      if (e.altKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerReset();
+      }
+    });
 
     slider.addEventListener('keydown', (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -3607,14 +3930,106 @@ export class SidePanel {
     }
   }
 
+  _isDetailLinked(detail) {
+    if (!this.linkedSubcategories || this.linkedSubcategories.size === 0) return false;
+    if (!this.currentSimilarElements || this.currentSimilarElements.length <= 1) return false;
+
+    if (detail.styleKey) {
+      const key = detail.styleKey;
+      if (['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'fontVariant', 'textTransform', 'textAlign', 'fontStyle'].includes(key)) {
+        return this.linkedSubcategories.has('sec-typography');
+      }
+      if (['textShadow', 'boxShadow'].includes(key)) {
+        return this.linkedSubcategories.has('sec-shadow');
+      }
+      if (['color', 'backgroundColor'].includes(key)) {
+        return this.linkedSubcategories.has('sec-colors');
+      }
+      if (['borderWidth', 'borderColor', 'borderStyle', 'borderRadius'].includes(key)) {
+        return this.linkedSubcategories.has('sec-borders');
+      }
+    }
+
+    if (detail.text !== undefined) {
+      return this.linkedSubcategories.has('sec-text-content');
+    }
+
+    return false;
+  }
+
   _notifyChange(detail = {}) {
     if (!detail.reset) {
       this._captureBaselineIfNeeded();
     }
     if (typeof this.onElementChange === 'function' && this.activeElement && this.activeMeta) {
       this.onElementChange(this.activeElement, this.activeMeta, detail, this.currentBreakpoint);
+
+      // If change belongs to an active linked subcategory, apply to all similar elements across cards in the current section
+      if (this._isDetailLinked(detail)) {
+        this.currentSimilarElements.forEach(el => {
+          if (el && el.isConnected && el !== this.activeElement) {
+            let meta = null;
+            if (this.selectionEngine) {
+              meta = this.selectionEngine.extractElementMetadata(el);
+            }
+            if (!meta) {
+              meta = {
+                tagName: el.tagName,
+                id: el.id || '',
+                className: el.className || '',
+                selector: this._generateFallbackSelector(el),
+                styles: {},
+                dataAttributes: { ...el.dataset }
+              };
+            }
+
+            const sel = meta.selector;
+            if (!this.elementBaselines.has(sel)) {
+              const isTextOnly = el.children.length === 0;
+              const win = el.ownerDocument ? el.ownerDocument.defaultView : window;
+              const computed = win ? win.getComputedStyle(el) : null;
+              this.elementBaselines.set(sel, {
+                style: el.getAttribute('style') || '',
+                text: isTextOnly ? el.textContent : el.innerHTML,
+                isTextOnly,
+                dataset: { ...el.dataset },
+                shadowState: { ...this.shadowState },
+                computedColor: computed ? computed.color : '',
+                computedBgColor: computed ? computed.backgroundColor : '',
+                computedBorderColor: computed ? computed.borderColor : '',
+                computedBorderWidth: computed ? computed.borderWidth : '',
+                computedBorderRadius: computed ? computed.borderRadius : '',
+                computedFontFamily: computed ? computed.fontFamily : '',
+                computedFontSize: computed ? computed.fontSize : '',
+                computedFontWeight: computed ? computed.fontWeight : '',
+                computedFontStyle: computed ? computed.fontStyle : '',
+                computedTextAlign: computed ? computed.textAlign : '',
+                computedTextTransform: computed ? computed.textTransform : '',
+                computedFontVariant: computed ? computed.fontVariant : '',
+                computedLineHeight: computed ? computed.lineHeight : '',
+                computedLetterSpacing: computed ? computed.letterSpacing : '',
+                computedTextShadow: computed ? computed.textShadow : '',
+                computedBoxShadow: computed ? computed.boxShadow : ''
+              });
+            }
+
+            if (detail.text !== undefined) {
+              this._updateElementDirectText(el, detail.text);
+            }
+
+            this.onElementChange(el, meta, detail, this.currentBreakpoint);
+          }
+        });
+      }
     }
     this._syncFieldIndicators();
+  }
+
+  _generateFallbackSelector(el) {
+    if (!el) return '';
+    if (el.id) return `#${el.id}`;
+    if (this.selectionEngine) return this.selectionEngine.generateSelector(el);
+    return el.tagName.toLowerCase();
   }
 
   _rgbToHex(colorStr) {

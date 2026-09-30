@@ -78,6 +78,229 @@ export function getFriendlyName(targetEl) {
   return 'Element';
 }
 
+/**
+ * Helper to identify the enclosing semantic section of an element
+ */
+export function getEnclosingSection(el) {
+  if (!el || !el.ownerDocument) return null;
+  const section = el.closest(
+    'section, header, footer, [id="showcase"], [id="services"], [id="process"], [id="delivery"], [id="contact"], [id="hero"], [id="top"], .section, .process-section, .delivery-section, .services, .contact, .hero, .site-header, main'
+  );
+  return section || el.ownerDocument.body;
+}
+
+/**
+ * Returns a friendly name for the enclosing section
+ */
+export function getEnclosingSectionName(el) {
+  const sec = getEnclosingSection(el);
+  if (!sec) return 'Current Section';
+  const id = (sec.id || '').toLowerCase();
+  const cls = Array.from(sec.classList || []).map(c => c.toLowerCase());
+
+  if (id === 'showcase' || cls.includes('showcase') || cls.includes('beats')) return 'Showcase Section';
+  if (id === 'services' || cls.includes('services')) return 'Services Section';
+  if (id === 'process' || cls.includes('process-section')) return 'Process Section';
+  if (id === 'delivery' || cls.includes('delivery-section')) return 'Delivery Section';
+  if (id === 'contact' || cls.includes('contact')) return 'Contact Section';
+  if (id === 'top' || id === 'hero' || cls.includes('hero')) return 'Hero Section';
+  if (sec.tagName.toLowerCase() === 'header' || cls.includes('site-header')) return 'Header Section';
+  if (sec.tagName.toLowerCase() === 'footer') return 'Footer Section';
+
+  const heading = sec.querySelector('h1, h2, h3');
+  if (heading && heading.textContent.trim()) {
+    const text = heading.textContent.trim();
+    return text.length > 20 ? `${text.slice(0, 18)}... Section` : `${text} Section`;
+  }
+
+  return 'Current Section';
+}
+
+/**
+ * Builds a relative CSS selector path from a card/container down to a target descendant
+ */
+function getRelativeCardPath(card, el) {
+  if (!card || !el || card === el) return '';
+  const parts = [];
+  let curr = el;
+  while (curr && curr !== card && curr.parentElement) {
+    let selector = curr.tagName.toLowerCase();
+    const cleanClasses = Array.from(curr.classList || []).filter(c => 
+      !c.startsWith('is-') && !c.startsWith('eko-') && c !== 'active' && c !== 'selected' && c !== 'hover' && c !== 'focus'
+    );
+    if (cleanClasses.length > 0) {
+      selector += '.' + cleanClasses.join('.');
+    } else {
+      let idx = 1;
+      let sib = curr.previousElementSibling;
+      let totalSame = 0;
+      if (curr.parentElement) {
+        for (const ch of curr.parentElement.children) {
+          if (ch.tagName === curr.tagName) totalSame++;
+        }
+      }
+      if (totalSame > 1) {
+        while (sib) {
+          if (sib.tagName === curr.tagName) idx++;
+          sib = sib.previousElementSibling;
+        }
+        selector += `:nth-of-type(${idx})`;
+      }
+    }
+    parts.unshift(selector);
+    curr = curr.parentElement;
+  }
+  return parts.join(' > ');
+}
+
+/**
+ * Smartly finds all similar text elements across different cards/items
+ * strictly within the enclosing website section of targetEl.
+ */
+export function findSimilarCardElements(targetEl) {
+  if (!targetEl || !targetEl.ownerDocument) return [];
+
+  const section = getEnclosingSection(targetEl);
+  if (!section) return [targetEl];
+
+  const isValidCandidate = (el) => {
+    if (!el || !el.isConnected) return false;
+    if (el.nodeType !== Node.ELEMENT_NODE) return false;
+    if (el.closest && (el.closest('#eko-designer-overlays') || el.closest('.admin-workspace'))) return false;
+    return true;
+  };
+
+  // Known card and repeating item selectors across the website
+  const cardSelectors = [
+    '.track',
+    '.process-card',
+    '.services-catalog-card',
+    '.services-card-wrapper',
+    '.service-card',
+    '.beat-card',
+    '.session-card',
+    '.order-card',
+    '.cart-item',
+    '.catalog-audio-track',
+    '.catalog-tile',
+    'article',
+    '[class*="card"]',
+    'li'
+  ];
+
+  let card = null;
+  let cardSelectorMatched = null;
+
+  for (const sel of cardSelectors) {
+    const candidate = targetEl.closest(sel);
+    if (candidate && section.contains(candidate) && candidate !== section) {
+      const matches = section.querySelectorAll(sel);
+      if (matches.length > 1) {
+        card = candidate;
+        cardSelectorMatched = sel;
+        break;
+      }
+    }
+  }
+
+  // If no known selector matched, check if an ancestor within the section has multiple same-tag/class siblings
+  if (!card) {
+    let curr = targetEl.parentElement;
+    while (curr && curr !== section && curr !== targetEl.ownerDocument.body) {
+      if (curr.parentElement) {
+        const siblings = Array.from(curr.parentElement.children).filter(c => c.tagName === curr.tagName);
+        if (siblings.length > 1) {
+          card = curr;
+          break;
+        }
+      }
+      curr = curr.parentElement;
+    }
+  }
+
+  // If a repeating card container is found:
+  if (card && section.contains(card)) {
+    let cards = [];
+    if (cardSelectorMatched) {
+      cards = Array.from(section.querySelectorAll(cardSelectorMatched)).filter(isValidCandidate);
+    }
+    if (cards.length <= 1 && card.parentElement) {
+      cards = Array.from(card.parentElement.children).filter(c => c.tagName === card.tagName && isValidCandidate(c));
+    }
+
+    if (cards.length > 1) {
+      const relSelector = getRelativeCardPath(card, targetEl);
+      const results = [];
+
+      for (const c of cards) {
+        let match = null;
+        if (relSelector) {
+          try {
+            match = c.querySelector(relSelector);
+          } catch (_) {}
+        }
+        if (!match && targetEl.classList && targetEl.classList.length > 0) {
+          const cleanClasses = Array.from(targetEl.classList).filter(cls => 
+            !cls.startsWith('is-') && !cls.startsWith('eko-') && cls !== 'active' && cls !== 'selected'
+          );
+          if (cleanClasses.length > 0) {
+            try {
+              match = c.querySelector(`.${cleanClasses.join('.')}`);
+            } catch (_) {}
+          }
+        }
+        if (!match) {
+          const sameTags = c.querySelectorAll(targetEl.tagName.toLowerCase());
+          if (sameTags.length === 1) {
+            match = sameTags[0];
+          }
+        }
+        if (!match && targetEl === card) {
+          match = c;
+        }
+
+        if (match && isValidCandidate(match)) {
+          results.push(match);
+        }
+      }
+
+      if (results.length > 1) {
+        if (!results.includes(targetEl)) {
+          const cardIdx = cards.indexOf(card);
+          if (cardIdx >= 0) results[cardIdx] = targetEl;
+          else results.unshift(targetEl);
+        }
+        return results;
+      }
+    }
+  }
+
+  // Fallback: If not in card, check if multiple elements with the same specific class exist in this section
+  if (targetEl.classList && targetEl.classList.length > 0) {
+    const cleanClasses = Array.from(targetEl.classList).filter(cls => 
+      !cls.startsWith('is-') && !cls.startsWith('eko-') && cls !== 'active' && cls !== 'selected'
+    );
+    for (const cls of cleanClasses) {
+      const candidates = Array.from(section.querySelectorAll(`.${cls}`)).filter(isValidCandidate);
+      if (candidates.length > 1 && candidates.includes(targetEl)) {
+        return candidates;
+      }
+    }
+  }
+
+  // Fallback: check if targetEl has same-tag siblings in immediate parent
+  if (targetEl.parentElement && section.contains(targetEl.parentElement)) {
+    const sameTagSiblings = Array.from(targetEl.parentElement.children).filter(
+      c => c.tagName === targetEl.tagName && isValidCandidate(c)
+    );
+    if (sameTagSiblings.length > 1 && sameTagSiblings.includes(targetEl)) {
+      return sameTagSiblings;
+    }
+  }
+
+  return [targetEl];
+}
+
 export class SelectionEngine {
   /**
    * @param {HTMLIFrameElement} iframe
@@ -100,6 +323,7 @@ export class SelectionEngine {
     this.selectedBox = null;
     this.selectedBadge = null;
     this.changedBoxesContainer = null;
+    this.linkedBoxesContainer = null;
     this.circuitSvg = null;
     this.leftTag = null;
     this.rightTag = null;
@@ -112,6 +336,7 @@ export class SelectionEngine {
     this.hasMovedDrag = false;
 
     this.changedElements = new Set();
+    this.linkedElements = [];
     this.showChangesEnabled = Boolean(showChanges);
 
     this._boundOnMouseMove = this._onMouseMove.bind(this);
@@ -159,6 +384,12 @@ export class SelectionEngine {
     this.changedBoxesContainer.id = 'eko-changed-boxes-container';
     this.changedBoxesContainer.style.pointerEvents = 'none';
     this.overlayRoot.appendChild(this.changedBoxesContainer);
+
+    // Container for linked elements highlight overlays
+    this.linkedBoxesContainer = this.doc.createElement('div');
+    this.linkedBoxesContainer.id = 'eko-linked-boxes-container';
+    this.linkedBoxesContainer.style.pointerEvents = 'none';
+    this.overlayRoot.appendChild(this.linkedBoxesContainer);
 
     // Left movable futuristic tag (Compact Circle with Change Count & Snap-to-center on double click)
     this.leftTag = this.doc.createElement('div');
@@ -383,9 +614,9 @@ export class SelectionEngine {
           width: 26px !important;
           height: 26px !important;
           border-radius: 50% !important;
-          background: rgba(18, 14, 30, 0.96) !important;
-          border: 1.5px solid #7e22ce !important;
-          box-shadow: inset 0 0 0 1.5px #c084fc, 0 2px 6px rgba(0, 0, 0, 0.45) !important;
+          background: rgba(10, 10, 15, 0.96) !important;
+          border: 2px solid #FFFF00 !important;
+          box-shadow: 0 0 0 1.5px #000000, 0 0 10px rgba(255, 255, 0, 0.5) !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
@@ -398,14 +629,14 @@ export class SelectionEngine {
 
         .eko-circuit-tag:hover .circuit-tag-circle,
         .eko-circuit-tag.is-dragging .circuit-tag-circle {
-          border-color: #9333ea !important;
-          box-shadow: inset 0 0 0 1.5px #e879f9, 0 3px 8px rgba(0, 0, 0, 0.6) !important;
-          background: rgba(26, 20, 44, 0.98) !important;
+          border-color: #FFFF00 !important;
+          box-shadow: 0 0 0 1.5px #000000, 0 0 16px rgba(255, 255, 0, 0.8) !important;
+          background: rgba(15, 15, 20, 0.98) !important;
         }
 
         .circuit-tag-count {
           font-size: 13px !important;
-          font-weight: 700 !important;
+          font-weight: 800 !important;
           color: #ffffff !important;
           font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
           letter-spacing: 0 !important;
@@ -419,7 +650,7 @@ export class SelectionEngine {
           margin: 0 !important;
           padding: 0 !important;
           -webkit-font-smoothing: antialiased !important;
-          text-shadow: none !important;
+          text-shadow: 0 1px 2px #000000 !important;
           font-variant-numeric: tabular-nums !important;
         }
 
@@ -427,23 +658,21 @@ export class SelectionEngine {
           width: 5px !important;
           height: 5px !important;
           border-radius: 50% !important;
-          background: #c084fc !important;
-          border: 1px solid #f5f3ff !important;
-          box-shadow: none !important;
+          background: #FFFF00 !important;
+          border: 1px solid #000000 !important;
+          box-shadow: 0 0 0 1px #FFFFFF, 0 0 6px #FFFF00 !important;
           flex-shrink: 0 !important;
         }
 
         /* --------------------------------------------------------------------------
-           High-Visibility Changed Element Overlays (Precision Viewfinder Framing)
-           - Precision outer corner L-brackets with clean outward standoff framing
-           - Thicker, spaced dashed boundary lines matching high-contrast design
-           - Clean separation so corner brackets and dashed lines never overlap or cut
+           High-Visibility Changed Element Overlays (Clean High-Contrast Framing)
            -------------------------------------------------------------------------- */
         .eko-changed-box {
           position: absolute !important;
           border: none !important;
-          background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' stroke='%23c084fc' stroke-width='2' stroke-dasharray='7%2c 5' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e") !important;
+          background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' stroke='%23000000' stroke-width='2.8' stroke-dasharray='7%2c 5' stroke-dashoffset='0' stroke-linecap='square'/%3e%3crect width='100%25' height='100%25' fill='none' stroke='%23FFFF00' stroke-width='1.5' stroke-dasharray='7%2c 5' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e") !important;
           background-color: transparent !important;
+          filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4)) !important;
           box-shadow: none !important;
           pointer-events: none !important;
           border-radius: 0 !important;
@@ -453,18 +682,17 @@ export class SelectionEngine {
         }
 
         /* Framing Corner L-Brackets with Clean Outward Standoff:
-           Positioned with a clean 4px clearance outside the dashed box
-           so they frame the element like a precision viewfinder reticle
-           without overlapping or cutting through the dashed perimeter */
+           Positioned with a clean 4px clearance outside the dashed box */
         .eko-changed-box::before {
           content: '' !important;
           position: absolute !important;
           top: -4px !important;
           left: -4px !important;
-          width: 10px !important;
-          height: 10px !important;
-          border-top: 2px solid #c084fc !important;
-          border-left: 2px solid #c084fc !important;
+          width: 9px !important;
+          height: 9px !important;
+          border-top: 2px solid #FFFF00 !important;
+          border-left: 2px solid #FFFF00 !important;
+          filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)) !important;
           pointer-events: none !important;
           box-sizing: border-box !important;
           z-index: 2 !important;
@@ -475,10 +703,11 @@ export class SelectionEngine {
           position: absolute !important;
           bottom: -4px !important;
           right: -4px !important;
-          width: 10px !important;
-          height: 10px !important;
-          border-bottom: 2px solid #c084fc !important;
-          border-right: 2px solid #c084fc !important;
+          width: 9px !important;
+          height: 9px !important;
+          border-bottom: 2px solid #FFFF00 !important;
+          border-right: 2px solid #FFFF00 !important;
+          filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)) !important;
           pointer-events: none !important;
           box-sizing: border-box !important;
           z-index: 2 !important;
@@ -496,24 +725,7 @@ export class SelectionEngine {
         }
 
         .eko-hover-badge {
-          position: absolute !important;
-          top: -24px;
-          left: 0;
-          background: #ffffff !important;
-          color: #0b0f19 !important;
-          font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Work Sans", sans-serif !important;
-          font-size: 10px !important;
-          font-weight: 700 !important;
-          padding: 2px 7px !important;
-          border-radius: 3px !important;
-          white-space: nowrap !important;
-          border: 1px solid rgba(0, 229, 255, 0.7) !important;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 0 8px rgba(0, 229, 255, 0.25) !important;
-          display: flex !important;
-          align-items: center !important;
-          gap: 4px !important;
-          z-index: 100000000 !important;
-          pointer-events: none !important;
+          display: none !important;
         }
 
         .eko-selected-box {
@@ -528,36 +740,7 @@ export class SelectionEngine {
         }
 
         .eko-selected-badge {
-          position: absolute !important;
-          top: -26px;
-          left: 0;
-          background: #ffffff !important;
-          color: #090c15 !important;
-          font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Work Sans", sans-serif !important;
-          font-size: 11px !important;
-          font-weight: 700 !important;
-          padding: 3px 8px !important;
-          border-radius: 4px !important;
-          white-space: nowrap !important;
-          border: 1.5px solid #007fff !important;
-          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3), 0 0 10px rgba(0, 127, 255, 0.25) !important;
-          display: flex !important;
-          align-items: center !important;
-          gap: 6px !important;
-          z-index: 100000000 !important;
-          pointer-events: none !important;
-        }
-
-        .eko-selected-badge .dimensions {
-          background: #f1f5f9 !important;
-          color: #0066cc !important;
-          font-family: "Manrope", -apple-system, sans-serif !important;
-          font-variant-numeric: tabular-nums !important;
-          font-weight: 700 !important;
-          font-size: 10.5px !important;
-          padding: 1px 5px !important;
-          border-radius: 2px !important;
-          border: 1px solid #e2e8f0 !important;
+          display: none !important;
         }
 
         .eko-handle {
@@ -573,6 +756,58 @@ export class SelectionEngine {
         .eko-handle.tr { top: -4px !important; right: -4px !important; }
         .eko-handle.bl { bottom: -4px !important; left: -4px !important; }
         .eko-handle.br { bottom: -4px !important; right: -4px !important; }
+
+        /* --------------------------------------------------------------------------
+           Linked Elements Highlight Boxes & Badges
+           -------------------------------------------------------------------------- */
+        .eko-linked-box {
+          position: absolute !important;
+          border: 2px dashed #00b0ff !important;
+          background: rgba(0, 176, 255, 0.08) !important;
+          pointer-events: none !important;
+          border-radius: 2px !important;
+          box-sizing: border-box !important;
+          box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 14px rgba(0, 176, 255, 0.28) !important;
+          z-index: 99999995 !important;
+          transition: width 0.06s ease-out, height 0.06s ease-out, left 0.06s ease-out, top 0.06s ease-out !important;
+        }
+
+        .eko-linked-badge {
+          position: absolute !important;
+          bottom: -16px !important;
+          top: auto !important;
+          right: 0 !important;
+          left: auto !important;
+          background: rgba(13, 21, 39, 0.94) !important;
+          color: #38bdf8 !important;
+          font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Work Sans", sans-serif !important;
+          font-size: 9px !important;
+          font-weight: 700 !important;
+          padding: 1px 4px !important;
+          border-radius: 2px !important;
+          white-space: nowrap !important;
+          border: 1px solid rgba(0, 176, 255, 0.6) !important;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 2px !important;
+          line-height: 1 !important;
+          height: 14px !important;
+          box-sizing: border-box !important;
+          z-index: 100000000 !important;
+          pointer-events: none !important;
+        }
+
+        .eko-linked-bracket {
+          position: absolute !important;
+          width: 6px !important;
+          height: 6px !important;
+          pointer-events: none !important;
+        }
+        .eko-linked-bracket.tl { top: -2px !important; left: -2px !important; border-top: 2px solid #00e5ff !important; border-left: 2px solid #00e5ff !important; }
+        .eko-linked-bracket.tr { top: -2px !important; right: -2px !important; border-top: 2px solid #00e5ff !important; border-right: 2px solid #00e5ff !important; }
+        .eko-linked-bracket.bl { bottom: -2px !important; left: -2px !important; border-bottom: 2px solid #00e5ff !important; border-left: 2px solid #00e5ff !important; }
+        .eko-linked-bracket.br { bottom: -2px !important; right: -2px !important; border-bottom: 2px solid #00e5ff !important; border-right: 2px solid #00e5ff !important; }
       `;
       this.doc.head.appendChild(styleTag);
     }
@@ -644,6 +879,7 @@ export class SelectionEngine {
   deselect() {
     this.selectedElement = null;
     if (this.selectedBox) this.selectedBox.style.display = 'none';
+    this.setLinkedElements([]);
     if (typeof this.onDeselect === 'function') {
       this.onDeselect();
     }
@@ -662,6 +898,72 @@ export class SelectionEngine {
       this._renderBox(this.hoverBox, this.hoverBadge, this.hoveredElement, false);
     }
     this._renderChangedBoxes();
+    this._renderLinkedBoxes();
+  }
+
+  /**
+   * Sets linked elements to highlight concurrently with selected element
+   * @param {Array<HTMLElement>} elements
+   */
+  setLinkedElements(elements = []) {
+    this.linkedElements = Array.isArray(elements) ? elements : Array.from(elements || []);
+    this._renderLinkedBoxes();
+    if (this.selectedElement) {
+      this._renderBox(this.selectedBox, this.selectedBadge, this.selectedElement, true);
+    }
+  }
+
+  /**
+   * Renders high-visibility floating highlight boxes around all linked elements
+   */
+  _renderLinkedBoxes() {
+    if (!this.linkedBoxesContainer || !this.doc) return;
+    this.linkedBoxesContainer.innerHTML = '';
+
+    if (!this.linkedElements || this.linkedElements.length <= 1) return;
+
+    const total = this.linkedElements.length;
+    const viewportHeight = this.win.innerHeight || (this.doc.documentElement && this.doc.documentElement.clientHeight) || 1000;
+    const viewportWidth = this.win.innerWidth || (this.doc.documentElement && this.doc.documentElement.clientWidth) || 1000;
+
+    this.linkedElements.forEach((el, idx) => {
+      if (!el || !el.isConnected) return;
+      if (el === this.selectedElement) return; // Selected element is already highlighted with selectedBox
+
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) return;
+      if (rect.bottom < 0 || rect.top > viewportHeight || rect.right < 0 || rect.left > viewportWidth) return;
+
+      const box = this.doc.createElement('div');
+      box.className = 'eko-linked-box';
+      box.style.display = 'block';
+      box.style.width = `${Math.round(rect.width)}px`;
+      box.style.height = `${Math.round(rect.height)}px`;
+      box.style.left = `${Math.round(rect.left)}px`;
+      box.style.top = `${Math.round(rect.top)}px`;
+
+      const badge = this.doc.createElement('div');
+      badge.className = 'eko-linked-badge';
+      badge.innerHTML = `<span>🔗 ${idx + 1}/${total}</span>`;
+      badge.style.setProperty('right', '0px', 'important');
+      badge.style.setProperty('left', 'auto', 'important');
+      if (rect.bottom > viewportHeight - 18) {
+        badge.style.setProperty('bottom', '2px', 'important');
+        badge.style.setProperty('top', 'auto', 'important');
+      } else {
+        badge.style.setProperty('bottom', '-16px', 'important');
+        badge.style.setProperty('top', 'auto', 'important');
+      }
+      box.appendChild(badge);
+
+      ['tl', 'tr', 'bl', 'br'].forEach(corner => {
+        const bracket = this.doc.createElement('div');
+        bracket.className = `eko-linked-bracket ${corner}`;
+        box.appendChild(bracket);
+      });
+
+      this.linkedBoxesContainer.appendChild(box);
+    });
   }
 
   /**
@@ -809,12 +1111,12 @@ export class SelectionEngine {
     let svgHtml = `
       <defs>
         <linearGradient id="circuitGradLeft" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="#c084fc" stop-opacity="0.95" />
-          <stop offset="100%" stop-color="#a855f7" stop-opacity="0.6" />
+          <stop offset="0%" stop-color="#FFFF00" stop-opacity="1" />
+          <stop offset="100%" stop-color="#FFFF00" stop-opacity="1" />
         </linearGradient>
         <linearGradient id="circuitGradRight" x1="100%" y1="0%" x2="0%" y2="0%">
-          <stop offset="0%" stop-color="#c084fc" stop-opacity="0.95" />
-          <stop offset="100%" stop-color="#a855f7" stop-opacity="0.6" />
+          <stop offset="0%" stop-color="#FFFF00" stop-opacity="1" />
+          <stop offset="100%" stop-color="#FFFF00" stop-opacity="1" />
         </linearGradient>
       </defs>
     `;
@@ -829,52 +1131,121 @@ export class SelectionEngine {
     const rightNodeX = rightTagRect ? rightTagRect.left : viewportWidth - 100;
     const rightNodeY = rightTagRect ? rightTagRect.top + rightTagRect.height / 2 : rightY;
 
-    // Helper: generate circuit trace path (orthogonal / 45-deg futuristic aesthetic)
-    const buildCircuitPath = (startX, startY, targetX, targetY, isLeft) => {
-      // Step 1: horizontal lead from tag
-      const leadDist = Math.min(24, Math.max(10, Math.abs(targetX - startX) * 0.25));
-      const p1X = isLeft ? startX + leadDist : startX - leadDist;
-      const p1Y = startY;
+    // Standoff clearance distance between the terminal dot and the highlighted box edge
+    const STANDOFF_GAP = 14;
+    // Disconnect gap (1 dash cycle) between dots and dashed line endpoints
+    const DASH_GAP = 9;
 
-      // Step 2: intermediate orthogonal bus corner
-      const midBusX = isLeft
-        ? Math.max(p1X + 8, Math.min(targetX - 12, p1X + (targetX - p1X) * 0.4))
-        : Math.min(p1X - 8, Math.max(targetX + 12, p1X + (targetX - p1X) * 0.4));
-
-      return `M ${startX.toFixed(1)} ${startY.toFixed(1)} L ${p1X.toFixed(1)} ${p1Y.toFixed(1)} L ${midBusX.toFixed(1)} ${targetY.toFixed(1)} L ${targetX.toFixed(1)} ${targetY.toFixed(1)}`;
+    // Helper: calculate evenly spaced dash array so no dashes are cut off midway
+    const getEvenDashArray = (length) => {
+      const len = Math.max(8, length);
+      const N = Math.max(1, Math.round((len + 4) / 10));
+      const denominator = Math.max(1, 2.5 * N - 1);
+      const gap = Math.max(2.5, len / denominator);
+      const dash = gap * 1.5;
+      return `${dash.toFixed(2)} ${gap.toFixed(2)}`;
     };
+
+    // Helper: render a single disconnected dashed segment between two points with complete even dashes
+    const renderCircuitSegment = (x1, y1, x2, y2, gradId) => {
+      const dist = Math.hypot(x2 - x1, y2 - y1);
+      if (dist <= DASH_GAP * 2 + 4) return ''; // Distance too short for dashes
+
+      const ux = (x2 - x1) / dist;
+      const uy = (y2 - y1) / dist;
+
+      const sx = x1 + ux * DASH_GAP;
+      const sy = y1 + uy * DASH_GAP;
+      const ex = x2 - ux * DASH_GAP;
+      const ey = y2 - uy * DASH_GAP;
+
+      const segLen = dist - DASH_GAP * 2;
+      const dashArr = getEvenDashArray(segLen);
+      const pathD = `M ${sx.toFixed(1)} ${sy.toFixed(1)} L ${ex.toFixed(1)} ${ey.toFixed(1)}`;
+
+      return `
+        <path d="${pathD}" fill="none" stroke="#000000" stroke-width="3.5" stroke-dasharray="${dashArr}" stroke-linecap="round" opacity="0.95" />
+        <path d="${pathD}" fill="none" stroke="#FFFF00" stroke-width="2" stroke-dasharray="${dashArr}" stroke-linecap="round" opacity="1" />
+      `;
+    };
+
+    // Helper: render high-contrast glowing dot at a joint vertex
+    const renderJointDot = (cx, cy) => `
+      <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4" fill="#000000" />
+      <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="2.5" fill="#FFFF00" stroke="#FFFFFF" stroke-width="1" />
+    `;
 
     // Draw traces for Left items
     if (leftItems.length > 0 && leftTagRect) {
       leftItems.forEach(item => {
-        // Target anchor point: left edge vertical center of the element's box
-        const targetX = Math.max(leftNodeX + 6, item.rect.left);
-        const targetY = Math.max(10, Math.min(viewportHeight - 10, item.centerY));
+        const startX = leftNodeX;
+        const startY = leftNodeY;
+        const endDotX = Math.max(startX + 30, item.rect.left - STANDOFF_GAP);
+        const endDotY = Math.max(10, Math.min(viewportHeight - 10, item.centerY));
 
-        const pathD = buildCircuitPath(leftNodeX, leftNodeY, targetX, targetY, true);
+        const leadDist = Math.min(24, Math.max(12, Math.abs(endDotX - startX) * 0.25));
+        const p1X = startX + leadDist;
+        const p1Y = startY;
 
-        // Circuit line
-        svgHtml += `
-          <path d="${pathD}" fill="none" stroke="url(#circuitGradLeft)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.9" />
-          <circle cx="${targetX.toFixed(1)}" cy="${targetY.toFixed(1)}" r="2.5" fill="#c084fc" stroke="#f5f3ff" stroke-width="1" />
-        `;
+        const isDirect = Math.abs(endDotY - startY) < 6;
+
+        if (isDirect) {
+          // Direct horizontal trace: Start -> Terminal Dot
+          svgHtml += renderCircuitSegment(startX, startY, endDotX, endDotY, 'circuitGradLeft');
+          svgHtml += renderJointDot(endDotX, endDotY);
+        } else {
+          // 2-joint orthogonal trace: Start -> Joint 1 -> Joint 2 -> Terminal Dot
+          const midBusX = Math.max(p1X + 10, Math.min(endDotX - 12, p1X + (endDotX - p1X) * 0.45));
+          const p2X = midBusX;
+          const p2Y = endDotY;
+
+          // Disconnected dashed segments between joints
+          svgHtml += renderCircuitSegment(startX, startY, p1X, p1Y, 'circuitGradLeft');
+          svgHtml += renderCircuitSegment(p1X, p1Y, p2X, p2Y, 'circuitGradLeft');
+          svgHtml += renderCircuitSegment(p2X, p2Y, endDotX, endDotY, 'circuitGradLeft');
+
+          // Glowing dots at every joint and terminal endpoint
+          svgHtml += renderJointDot(p1X, p1Y);
+          svgHtml += renderJointDot(p2X, p2Y);
+          svgHtml += renderJointDot(endDotX, endDotY);
+        }
       });
     }
 
     // Draw traces for Right items (only if not mobile mode)
     if (!isMobileMode && rightItems.length > 0 && rightTagRect) {
       rightItems.forEach(item => {
-        // Target anchor point: right edge vertical center of the element's box
-        const targetX = Math.min(rightNodeX - 6, item.rect.right);
-        const targetY = Math.max(10, Math.min(viewportHeight - 10, item.centerY));
+        const startX = rightNodeX;
+        const startY = rightNodeY;
+        const endDotX = Math.min(startX - 30, item.rect.right + STANDOFF_GAP);
+        const endDotY = Math.max(10, Math.min(viewportHeight - 10, item.centerY));
 
-        const pathD = buildCircuitPath(rightNodeX, rightNodeY, targetX, targetY, false);
+        const leadDist = Math.min(24, Math.max(12, Math.abs(startX - endDotX) * 0.25));
+        const p1X = startX - leadDist;
+        const p1Y = startY;
 
-        // Circuit line
-        svgHtml += `
-          <path d="${pathD}" fill="none" stroke="url(#circuitGradRight)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.9" />
-          <circle cx="${targetX.toFixed(1)}" cy="${targetY.toFixed(1)}" r="2.5" fill="#c084fc" stroke="#f5f3ff" stroke-width="1" />
-        `;
+        const isDirect = Math.abs(endDotY - startY) < 6;
+
+        if (isDirect) {
+          // Direct horizontal trace: Start -> Terminal Dot
+          svgHtml += renderCircuitSegment(startX, startY, endDotX, endDotY, 'circuitGradRight');
+          svgHtml += renderJointDot(endDotX, endDotY);
+        } else {
+          // 2-joint orthogonal trace: Start -> Joint 1 -> Joint 2 -> Terminal Dot
+          const midBusX = Math.min(p1X - 10, Math.max(endDotX + 12, p1X + (endDotX - p1X) * 0.45));
+          const p2X = midBusX;
+          const p2Y = endDotY;
+
+          // Disconnected dashed segments between joints
+          svgHtml += renderCircuitSegment(startX, startY, p1X, p1Y, 'circuitGradRight');
+          svgHtml += renderCircuitSegment(p1X, p1Y, p2X, p2Y, 'circuitGradRight');
+          svgHtml += renderCircuitSegment(p2X, p2Y, endDotX, endDotY, 'circuitGradRight');
+
+          // Glowing dots at every joint and terminal endpoint
+          svgHtml += renderJointDot(p1X, p1Y);
+          svgHtml += renderJointDot(p2X, p2Y);
+          svgHtml += renderJointDot(endDotX, endDotY);
+        }
       });
     }
 
@@ -912,12 +1283,25 @@ export class SelectionEngine {
     const dimText = `${Math.round(rect.width)} × ${Math.round(rect.height)}`;
 
     if (badgeEl) {
-      badgeEl.innerHTML = `<span>${friendlyName}</span>${isSelected ? `<span class="dimensions">${dimText}</span>` : ''}`;
-      // Flip badge inside if close to top edge of viewport
-      if (rect.top < 28) {
-        badgeEl.style.top = '2px';
+      const isLinkedGroup = isSelected && this.linkedElements && this.linkedElements.length > 1 && this.linkedElements.includes(targetEl);
+      if (isLinkedGroup) {
+        const activeIdx = this.linkedElements.indexOf(targetEl) + 1;
+        const total = this.linkedElements.length;
+        badgeEl.className = 'eko-linked-badge';
+        badgeEl.innerHTML = `<span>🔗 ${activeIdx}/${total}</span>`;
+        badgeEl.style.setProperty('display', 'flex', 'important');
+        badgeEl.style.setProperty('right', '0px', 'important');
+        badgeEl.style.setProperty('left', 'auto', 'important');
+        if (rect.bottom > viewportHeight - 18) {
+          badgeEl.style.setProperty('bottom', '2px', 'important');
+          badgeEl.style.setProperty('top', 'auto', 'important');
+        } else {
+          badgeEl.style.setProperty('bottom', '-16px', 'important');
+          badgeEl.style.setProperty('top', 'auto', 'important');
+        }
       } else {
-        badgeEl.style.top = '-26px';
+        badgeEl.style.setProperty('display', 'none', 'important');
+        badgeEl.innerHTML = '';
       }
     }
   }
@@ -1085,5 +1469,9 @@ export class SelectionEngine {
     if (this.overlayRoot) {
       this.overlayRoot.remove();
     }
+    if (this.linkedBoxesContainer) {
+      this.linkedBoxesContainer.remove();
+    }
+    this.linkedElements = [];
   }
 }

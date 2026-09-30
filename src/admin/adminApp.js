@@ -283,6 +283,24 @@ export class AdminApp {
     }, 320);
   }
 
+  toggleEditMode() {
+    if (this.currentMode === 'interactive') {
+      this.currentMode = 'select';
+      if (this.selectionEngine) this.selectionEngine.setMode('select');
+      if (typeof this.updateModeUI === 'function') this.updateModeUI();
+    } else {
+      this.currentMode = 'interactive';
+      if (this.selectionEngine) {
+        this.selectionEngine.deselect();
+        this.selectionEngine.setMode('interactive');
+      }
+      if (this.sidePanel) {
+        this.sidePanel.clear();
+      }
+      if (typeof this.updateModeUI === 'function') this.updateModeUI();
+    }
+  }
+
   _bindControls() {
     // 1. Combined Edit On / Edit Off Mode Toggle Button
     const modeToggleBtn = this.rootElement.querySelector('#btn-toggle-mode');
@@ -292,7 +310,7 @@ export class AdminApp {
     const breadcrumbPrefix = this.rootElement.querySelector('#breadcrumb-prefix');
     const breadcrumbTarget = this.rootElement.querySelector('#breadcrumb-target');
 
-    const updateModeUI = () => {
+    this.updateModeUI = () => {
       if (this.currentMode === 'select') {
         modeToggleBtn.classList.add('is-inspect');
         modeIcon.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="m13 13 6 6"/></svg>`;
@@ -331,31 +349,13 @@ export class AdminApp {
       }
     };
 
-    const toggleEditMode = () => {
-      if (this.currentMode === 'interactive') {
-        this.currentMode = 'select';
-        if (this.selectionEngine) this.selectionEngine.setMode('select');
-        updateModeUI();
-      } else {
-        this.currentMode = 'interactive';
-        if (this.selectionEngine) {
-          this.selectionEngine.deselect();
-          this.selectionEngine.setMode('interactive');
-        }
-        if (this.sidePanel) {
-          this.sidePanel.clear();
-        }
-        updateModeUI();
-      }
-    };
-
-    modeToggleBtn.addEventListener('click', toggleEditMode);
+    modeToggleBtn.addEventListener('click', () => this.toggleEditMode());
 
     // Clicking the target/guidance box in Edit Off mode turns Edit mode ON
     if (breadcrumbBox) {
       breadcrumbBox.addEventListener('click', () => {
         if (this.currentMode === 'interactive') {
-          toggleEditMode();
+          this.toggleEditMode();
         }
       });
     }
@@ -490,7 +490,6 @@ export class AdminApp {
       themeToggleBtn.addEventListener('click', () => {
         const nextTheme = this.theme === 'dark' ? 'light' : 'dark';
         updateThemeUI(nextTheme);
-        this._showToast(`Switched to ${nextTheme === 'dark' ? 'Dark' : 'Light'} theme`);
       });
     }
 
@@ -907,41 +906,64 @@ export class AdminApp {
       }
     });
 
-    // Keyboard Shortcuts for Sidebar Menu Undo / Redo
-    const handleUndoRedoShortcuts = (e) => {
+    // Keyboard Shortcuts for Sidebar Menu Undo / Redo, Shift + E (Toggle Inspect), and I (Toggle Sidebar)
+    const handleGlobalShortcuts = (e) => {
       const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
       const isCmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+      const targetTag = e.target ? (e.target.tagName || '').toUpperCase() : '';
+      const isTyping = (targetTag === 'INPUT' || targetTag === 'TEXTAREA' || targetTag === 'SELECT' || (e.target && e.target.isContentEditable));
 
-      if (!isCmdOrCtrl) return;
+      // 1. Shift + E shortcut to toggle Edit / Inspect mode
+      if (e.shiftKey && (e.key === 'E' || e.key === 'e' || e.code === 'KeyE') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (!isTyping) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          this.toggleEditMode();
+          return;
+        }
+      }
 
-      if (e.key === 'z' || e.key === 'Z') {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        if (e.shiftKey) {
-          // Redo: Shift + Cmd/Ctrl + Z
+      // 2. I shortcut to collapse/expand sidebar
+      if ((e.key === 'i' || e.key === 'I' || e.code === 'KeyI') && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+        if (!isTyping) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          this.toggleSidebarCollapse();
+          return;
+        }
+      }
+
+      // 3. Undo / Redo shortcuts (Cmd/Ctrl + Z, Shift + Cmd/Ctrl + Z, Cmd/Ctrl + Y)
+      if (isCmdOrCtrl) {
+        if (e.key === 'z' || e.key === 'Z') {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          if (e.shiftKey) {
+            // Redo: Shift + Cmd/Ctrl + Z
+            if (this.sidePanel) {
+              const success = this.sidePanel.redo();
+              if (success) this._showToast('↷ Redo applied');
+            }
+          } else {
+            // Undo: Cmd/Ctrl + Z
+            if (this.sidePanel) {
+              const success = this.sidePanel.undo();
+              if (success) this._showToast('↶ Undo applied');
+            }
+          }
+        } else if (e.key === 'y' || e.key === 'Y') {
+          // Redo: Cmd/Ctrl + Y
+          e.preventDefault();
+          e.stopImmediatePropagation();
           if (this.sidePanel) {
             const success = this.sidePanel.redo();
             if (success) this._showToast('↷ Redo applied');
           }
-        } else {
-          // Undo: Cmd/Ctrl + Z
-          if (this.sidePanel) {
-            const success = this.sidePanel.undo();
-            if (success) this._showToast('↶ Undo applied');
-          }
-        }
-      } else if (e.key === 'y' || e.key === 'Y') {
-        // Redo: Cmd/Ctrl + Y
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        if (this.sidePanel) {
-          const success = this.sidePanel.redo();
-          if (success) this._showToast('↷ Redo applied');
         }
       }
     };
 
-    window.addEventListener('keydown', handleUndoRedoShortcuts);
+    window.addEventListener('keydown', handleGlobalShortcuts);
 
     this.sidePanel.setBreakpoint(this.currentBreakpoint);
 
@@ -961,7 +983,7 @@ export class AdminApp {
         const iDoc = iframe.contentDocument || iframe.contentWindow.document;
 
         if (iDoc) {
-          iDoc.addEventListener('keydown', handleUndoRedoShortcuts);
+          iDoc.addEventListener('keydown', handleGlobalShortcuts);
         }
 
         // Apply published schema and preview mode on canvas preview
@@ -1003,6 +1025,7 @@ export class AdminApp {
 
         // Ensure engine is set to current mode
         this.selectionEngine.setMode(this.currentMode);
+        this.sidePanel.setSelectionEngine(this.selectionEngine);
 
         // Initialize yellow dotted boundaries on changed elements
         this.updateChangedElementsHighlight();
@@ -1022,7 +1045,6 @@ export class AdminApp {
       localStorage.setItem('eko_admin_show_changes', String(this.showChangesHighlight));
     } catch (_) {}
     this.updateChangedElementsHighlight();
-    this._showToast(this.showChangesHighlight ? '✓ Changes highlighted on canvas' : 'Changes highlight hidden');
   }
 
   /**
