@@ -908,7 +908,11 @@ function adminDesignModePlugin() {
 
     // 2i. GET /api/media/list - List available project images and audio tracks for Media Management
     if (parsedUrl.pathname === '/api/media/list' || (parsedUrl.pathname === '/api/media' && parsedUrl.searchParams.get('action') === 'list')) {
-      const imagesDir = path.resolve(process.cwd(), 'assets', 'images');
+      let imagesDir = path.resolve(process.cwd(), 'assets', 'images');
+      if (!fs.existsSync(imagesDir) || fs.readdirSync(imagesDir).length === 0) {
+        const backupDir = path.resolve(process.cwd(), 'scripts', 'images_backup');
+        if (fs.existsSync(backupDir)) imagesDir = backupDir;
+      }
       const bgDir = path.resolve(process.cwd(), 'assets', 'backgrounds');
       const foundImages = [];
       
@@ -928,7 +932,7 @@ function adminDesignModePlugin() {
               foundImages.push({
                 name: humanize(file),
                 fileName: file,
-                src: `./assets/images/${file}`,
+                src: `https://huggingface.co/datasets/greyhugging/RawStorage/resolve/main/Images/${file}`,
                 category: file.includes('dsp') || file.includes('eq') || file.includes('reverb') || file.includes('tuning') ? 'Plugins' : 'Studio'
               });
             }
@@ -1000,25 +1004,19 @@ function adminDesignModePlugin() {
         const ext = path.extname(cleanFileName).toLowerCase();
         const isAudio = ['.mp3', '.wav', '.aac', '.flac', '.ogg', '.m4a'].includes(ext);
 
-        // For non-audio assets (like layout images), optionally write locally if needed, but NEVER for audio
-        if (!isAudio) {
-          const destFolder = path.resolve(process.cwd(), 'assets', 'images');
-          if (!fs.existsSync(destFolder)) {
-            fs.mkdirSync(destFolder, { recursive: true });
-          }
-          const localFilePath = path.join(destFolder, cleanFileName);
-          fs.writeFileSync(localFilePath, fileBuffer);
-        }
+        // Images are stored exclusively on Hugging Face dataset at Images/
+        // Do NOT store in github repository assets/images
+        const remoteRelPath = isAudio ? `showcase/${cleanFileName}` : `Images/${cleanFileName}`;
 
         // 1. Put in RAM cache for instant 0ms streaming playback
         const cacheKey = cleanFileName.toLowerCase();
         const etag = `"${fileBuffer.length.toString(16)}-${Date.now().toString(16)}"`;
         mediaMemoryBuffers.set(cacheKey, { buffer: fileBuffer, etag });
+        mediaMemoryBuffers.set(remoteRelPath.toLowerCase(), { buffer: fileBuffer, etag });
 
         // 2. Upload upstream directly to Hugging Face RawStorage dataset
         const hfToken = process.env.HF_ACCESS_TOKEN;
         const hfRepo = 'greyhugging/RawStorage';
-        const remoteRelPath = `showcase/${cleanFileName}`;
         let hfUploadSuccess = false;
         let hfError = null;
 
@@ -1027,7 +1025,7 @@ function adminDesignModePlugin() {
             // Commit to Hugging Face via Git LFS / Commit API
             const hfCommitUrl = `https://huggingface.co/api/datasets/${hfRepo}/commit/main`;
             const commitPayload = {
-              summary: `Upload ${cleanFileName} via Eko Design Mode`,
+              summary: `Upload ${cleanFileName} to ${remoteRelPath} via Eko Design Mode`,
               operations: [
                 {
                   key: 'file',
@@ -1050,6 +1048,7 @@ function adminDesignModePlugin() {
             if (hfRes.ok) {
               hfUploadSuccess = true;
               resolvedPathCache.set(cacheKey, remoteRelPath);
+              resolvedPathCache.set(remoteRelPath.toLowerCase(), remoteRelPath);
             } else {
               const errTxt = await hfRes.text();
               console.warn('[Media Proxy] HF commit warning:', hfRes.status, errTxt);
@@ -1061,14 +1060,17 @@ function adminDesignModePlugin() {
           }
         }
 
-        // Return clean media proxy URL
-        const proxyUrl = `/api/media?file=${encodeURIComponent(cleanFileName)}`;
+        // Return Hugging Face direct resolve URL (and proxyUrl fallback)
+        const hfDirectUrl = `https://huggingface.co/datasets/${hfRepo}/resolve/main/${remoteRelPath}`;
+        const proxyUrl = `/api/media?file=${encodeURIComponent(remoteRelPath)}`;
         res.setHeader('Content-Type', 'application/json');
         return res.end(JSON.stringify({
           success: true,
           fileName: cleanFileName,
           isAudio,
-          url: proxyUrl,
+          url: isAudio ? proxyUrl : hfDirectUrl,
+          proxyUrl,
+          directUrl: hfDirectUrl,
           path: remoteRelPath,
           size: fileBuffer.length,
           hfUploadSuccess,
@@ -1081,6 +1083,82 @@ function adminDesignModePlugin() {
         res.statusCode = 500;
         res.setHeader('Content-Type', 'application/json');
         return res.end(JSON.stringify({ error: 'Media upload failed: ' + uploadErr.message }));
+      }
+    }
+
+    // 3b. POST /api/media/sync-hf-images - Bulk sync existing images to Hugging Face RawStorage/Images
+    if (parsedUrl.pathname === '/api/media/sync-hf-images' && req.method === 'POST') {
+      const hfToken = process.env.HF_ACCESS_TOKEN;
+      const hfRepo = 'greyhugging/RawStorage';
+      if (!hfToken) {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({
+          success: false,
+          error: 'HF_ACCESS_TOKEN is not configured in environment variables. Please provide your Hugging Face write token.'
+        }));
+      }
+
+      let imagesDir = path.resolve(process.cwd(), 'assets', 'images');
+      if (!fs.existsSync(imagesDir) || fs.readdirSync(imagesDir).length === 0) {
+        const backupDir = path.resolve(process.cwd(), 'scripts', 'images_backup');
+        if (fs.existsSync(backupDir)) imagesDir = backupDir;
+      }
+      if (!fs.existsSync(imagesDir) || fs.readdirSync(imagesDir).length === 0) {
+        res.statusCode = 404;
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ success: false, error: 'No images found to sync.' }));
+      }
+
+      try {
+        const files = fs.readdirSync(imagesDir).filter(f => {
+          const ext = path.extname(f).toLowerCase();
+          return ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'].includes(ext);
+        });
+
+        const results = [];
+        for (const file of files) {
+          const buf = fs.readFileSync(path.join(imagesDir, file));
+          const remoteRelPath = `Images/${file}`;
+          const hfCommitUrl = `https://huggingface.co/api/datasets/${hfRepo}/commit/main`;
+          const commitPayload = {
+            summary: `Upload ${file} to Images/ in ${hfRepo}`,
+            operations: [
+              {
+                key: 'file',
+                value: buf.toString('base64'),
+                encoding: 'base64',
+                path: remoteRelPath
+              }
+            ]
+          };
+
+          try {
+            const hfRes = await fetch(hfCommitUrl, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${hfToken}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(commitPayload)
+            });
+            results.push({ file, success: hfRes.ok, status: hfRes.status });
+          } catch (itemErr) {
+            results.push({ file, success: false, error: itemErr.message });
+          }
+        }
+
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({
+          success: true,
+          count: results.filter(r => r.success).length,
+          total: files.length,
+          results
+        }));
+      } catch (syncErr) {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ success: false, error: syncErr.message }));
       }
     }
 
@@ -1240,6 +1318,8 @@ function mediaProxyPlugin() {
 
       // 1b. Check local disk assets (public/assets/audio, assets/audio, public/assets/images, etc.)
       const possibleDiskPaths = [
+        path.resolve(process.cwd(), 'scripts', 'images_backup', path.basename(fileName)),
+        path.resolve(process.cwd(), 'scripts', 'images_backup', fileName),
         path.resolve(process.cwd(), 'public', 'assets', 'audio', fileName),
         path.resolve(process.cwd(), 'public', 'assets', 'audio', path.basename(fileName)),
         path.resolve(process.cwd(), 'assets', 'audio', fileName),
@@ -1263,10 +1343,13 @@ function mediaProxyPlugin() {
 
       try {
         const memorizedPath = resolvedPathCache.get(cacheKey);
+        const cleanBase = path.basename(fileName);
         const candidatePaths = memorizedPath
           ? [memorizedPath]
           : [
               decodedRelPath,
+              `Images/${cleanBase}`,
+              `Images/${fileName}`,
               `audio/${fileName}`,
               `showcase/${fileName}`,
               fileName,

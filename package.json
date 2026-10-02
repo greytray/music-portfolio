@@ -7,7 +7,8 @@
     "dev": "vite --host 0.0.0.0 --port 3000",
     "build": "vite build",
     "lint": "vite build",
-    "preview": "vite preview --host 0.0.0.0 --port 3000"
+    "preview": "vite preview --host 0.0.0.0 --port 3000",
+    "sync:hf-images": "node scripts/sync-images-to-hf.js"
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",
