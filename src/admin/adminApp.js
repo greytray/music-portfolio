@@ -10,6 +10,44 @@ import { ExportSystem } from './exportSystem.js';
 import { TooltipManager } from './tooltipSystem.js';
 import { applyDesignSchema } from '../utils/schemaApplier.js';
 
+/**
+ * Safely retrieve iframe document with cross-origin resilience
+ */
+export function getSafeIframeDoc(iframe) {
+  if (!iframe) return null;
+  try {
+    const doc = iframe.contentDocument;
+    if (doc) return doc;
+  } catch (_) {
+    return null;
+  }
+  try {
+    const win = iframe.contentWindow;
+    if (win) {
+      return win.document || null;
+    }
+  } catch (_) {
+    return null;
+  }
+  return null;
+}
+
+/**
+ * Safely retrieve iframe window with cross-origin resilience
+ */
+export function getSafeIframeWindow(iframe) {
+  if (!iframe) return null;
+  try {
+    const win = iframe.contentWindow;
+    if (win && win.location && win.location.href) {
+      return win;
+    }
+  } catch (_) {
+    return null;
+  }
+  return null;
+}
+
 export class AdminApp {
   constructor(mountContainer = document.body) {
     this.mountContainer = mountContainer;
@@ -38,6 +76,18 @@ export class AdminApp {
 
     // Sync theme to root html element
     document.documentElement.setAttribute('data-admin-theme', this.theme);
+
+    // Compute iframe source preserving session authentication parameters
+    const previewParams = new URLSearchParams();
+    previewParams.set('admin_preview', '1');
+    try {
+      const currentParams = new URLSearchParams(window.location.search);
+      ['__aistudio_auth_token', '__session_index', 'auth', 'token'].forEach(k => {
+        const v = currentParams.get(k);
+        if (v) previewParams.set(k, v);
+      });
+    } catch (_) {}
+    const previewSrc = `/?${previewParams.toString()}`;
 
     this.rootElement = document.createElement('div');
     this.rootElement.id = 'eko-admin-workspace';
@@ -130,25 +180,20 @@ export class AdminApp {
             <span>Revert</span>
           </button>
 
-          <!-- Deployment Status Indicator (GitHub Commit/Deploy style) -->
-          <div class="admin-deploy-status" id="admin-deploy-status" style="display: none;">
-            <div class="deploy-status-indicator" id="deploy-status-indicator">
-              <span class="deploy-yellow-circle" id="deploy-yellow-circle"></span>
-              <span class="deploy-green-tick" id="deploy-green-tick" style="display: none;">
-                <svg viewBox="0 0 16 16"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
-              </span>
-            </div>
-            <span class="deploy-status-label" id="deploy-status-label">Deploying...</span>
-          </div>
-
-          <!-- Publish Changes Button -->
+          <!-- Publish Changes Button (with space-saving three-dots bounce animation during deployment) -->
           <button type="button" class="admin-btn admin-btn-primary admin-btn-publish" id="btn-publish-changes" data-tooltip="Publish visual changes live to website">
-            <span class="publish-btn-icon-wrap" id="publish-btn-icon-wrap">
-              <svg class="publish-icon-default" id="publish-icon-default" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-              <span class="deploy-yellow-circle" id="publish-btn-yellow-circle" style="display: none;"></span>
-              <span class="deploy-green-tick" id="publish-btn-green-tick" style="display: none;"><svg viewBox="0 0 16 16"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg></span>
+            <span class="publish-btn-content" id="publish-btn-content">
+              <span class="publish-btn-icon-wrap" id="publish-btn-icon-wrap">
+                <svg class="publish-icon-default" id="publish-icon-default" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <span class="deploy-green-tick" id="publish-btn-green-tick" style="display: none;"><svg viewBox="0 0 16 16"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg></span>
+              </span>
+              <span id="btn-publish-label">Publish</span>
             </span>
-            <span id="btn-publish-label">Publish</span>
+            <span class="publish-dots-bounce" id="publish-dots-bounce" style="display: none;" aria-label="Deploying">
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
           </button>
 
           <!-- Exit Admin -->
@@ -163,7 +208,7 @@ export class AdminApp {
       <main class="admin-body ${this.sidebarPosition === 'left' ? 'sidebar-left' : ''}" id="admin-main-body">
         <div class="admin-stage-container">
           <div class="admin-viewport-wrapper is-universal" id="admin-viewport-wrapper">
-            <iframe id="admin-preview-frame" class="admin-preview-frame" src="/?admin_preview=1" title="Visual Preview Canvas"></iframe>
+            <iframe id="admin-preview-frame" class="admin-preview-frame" src="${previewSrc}" title="Visual Preview Canvas"></iframe>
           </div>
 
           <!-- Quick Re-expand tab when sidebar is collapsed -->
@@ -395,7 +440,7 @@ export class AdminApp {
       // Update preview mode attribute on iframe doc without thrashing stylesheet
       if (iframe) {
         try {
-          const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+          const iDoc = getSafeIframeDoc(iframe);
           if (iDoc && iDoc.documentElement) {
             iDoc.documentElement.setAttribute('data-preview-mode', 'universal');
           }
@@ -438,7 +483,7 @@ export class AdminApp {
       // Update preview mode attribute on iframe doc without thrashing stylesheet
       if (iframe) {
         try {
-          const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+          const iDoc = getSafeIframeDoc(iframe);
           if (iDoc && iDoc.documentElement) {
             iDoc.documentElement.setAttribute('data-preview-mode', this.currentBreakpoint);
           }
@@ -478,7 +523,7 @@ export class AdminApp {
 
       if (iframe) {
         try {
-          const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+          const iDoc = getSafeIframeDoc(iframe);
           if (iDoc && iDoc.documentElement) {
             iDoc.documentElement.setAttribute('data-admin-theme', theme);
           }
@@ -509,17 +554,13 @@ export class AdminApp {
       });
     }
 
-    // 6. Publish button & Deployment Status Lifecycle (GitHub commit/push deployment indicator)
+    // 6. Publish button Lifecycle (with space-saving three dots bounce animation during deployment)
     const publishBtn = this.rootElement.querySelector('#btn-publish-changes');
+    const publishBtnContent = this.rootElement.querySelector('#publish-btn-content');
+    const publishDotsBounce = this.rootElement.querySelector('#publish-dots-bounce');
     const publishLabel = this.rootElement.querySelector('#btn-publish-label');
     const publishIconDefault = this.rootElement.querySelector('#publish-icon-default');
-    const publishBtnYellowCircle = this.rootElement.querySelector('#publish-btn-yellow-circle');
     const publishBtnGreenTick = this.rootElement.querySelector('#publish-btn-green-tick');
-
-    const deployStatusPill = this.rootElement.querySelector('#admin-deploy-status');
-    const deployYellowCircle = this.rootElement.querySelector('#deploy-yellow-circle');
-    const deployGreenTick = this.rootElement.querySelector('#deploy-green-tick');
-    const deployStatusLabel = this.rootElement.querySelector('#deploy-status-label');
 
     let isPublishing = false;
     let deploymentResetTimer = null;
@@ -531,75 +572,54 @@ export class AdminApp {
       }
 
       if (state === 'in_progress') {
-        // Deploying: shrinking/growing yellow circle active
-        if (deployStatusPill) {
-          deployStatusPill.style.display = 'inline-flex';
-          deployStatusPill.className = 'admin-deploy-status is-deploying';
-        }
-        if (deployYellowCircle) deployYellowCircle.style.display = 'inline-block';
-        if (deployGreenTick) deployGreenTick.style.display = 'none';
-        if (deployStatusLabel) deployStatusLabel.textContent = customText || 'Deploying changes...';
-
-        if (publishIconDefault) publishIconDefault.style.display = 'none';
-        if (publishBtnYellowCircle) publishBtnYellowCircle.style.display = 'inline-block';
-        if (publishBtnGreenTick) publishBtnGreenTick.style.display = 'none';
+        // Deploying: show compact 3 dots bounce animation inside publish button (saves space instead of text)
+        if (publishBtnContent) publishBtnContent.style.display = 'none';
+        if (publishDotsBounce) publishDotsBounce.style.display = 'inline-flex';
         if (publishBtn) {
           publishBtn.classList.add('is-publishing');
           publishBtn.classList.remove('is-deployed-success');
+          publishBtn.setAttribute('data-tooltip', 'Deploying changes live...');
         }
-        if (publishLabel) publishLabel.textContent = 'Deploying...';
 
       } else if (state === 'success') {
-        // Deployed: yellow circle turns to green tick mark
-        if (deployStatusPill) {
-          deployStatusPill.style.display = 'inline-flex';
-          deployStatusPill.className = 'admin-deploy-status is-deployed';
-        }
-        if (deployYellowCircle) deployYellowCircle.style.display = 'none';
-        if (deployGreenTick) deployGreenTick.style.display = 'inline-flex';
-        if (deployStatusLabel) deployStatusLabel.textContent = customText || 'Deployment finished';
-
+        // Deployed: show green tick mark and "Published!"
+        if (publishDotsBounce) publishDotsBounce.style.display = 'none';
+        if (publishBtnContent) publishBtnContent.style.display = 'inline-flex';
         if (publishIconDefault) publishIconDefault.style.display = 'none';
-        if (publishBtnYellowCircle) publishBtnYellowCircle.style.display = 'none';
         if (publishBtnGreenTick) publishBtnGreenTick.style.display = 'inline-flex';
+        if (publishLabel) publishLabel.textContent = 'Published!';
         if (publishBtn) {
           publishBtn.classList.remove('is-publishing');
           publishBtn.classList.add('is-deployed-success');
           publishBtn.classList.remove('has-changes');
+          publishBtn.setAttribute('data-tooltip', 'Changes deployed successfully');
         }
-        if (publishLabel) publishLabel.textContent = 'Published!';
 
         deploymentResetTimer = setTimeout(() => {
           if (publishIconDefault) publishIconDefault.style.display = 'inline-block';
-          if (publishBtnYellowCircle) publishBtnYellowCircle.style.display = 'none';
           if (publishBtnGreenTick) publishBtnGreenTick.style.display = 'none';
           if (publishBtn) {
             publishBtn.classList.remove('is-deployed-success');
+            publishBtn.setAttribute('data-tooltip', 'Publish visual changes live to website');
           }
           if (publishLabel) publishLabel.textContent = 'Publish';
         }, 2800);
 
       } else if (state === 'error') {
-        if (deployStatusPill) {
-          deployStatusPill.style.display = 'inline-flex';
-          deployStatusPill.className = 'admin-deploy-status is-deploy-error';
-        }
-        if (deployYellowCircle) deployYellowCircle.style.display = 'none';
-        if (deployGreenTick) deployGreenTick.style.display = 'none';
-        if (deployStatusLabel) deployStatusLabel.textContent = customText || 'Deployment failed';
-
+        if (publishDotsBounce) publishDotsBounce.style.display = 'none';
+        if (publishBtnContent) publishBtnContent.style.display = 'inline-flex';
         if (publishIconDefault) publishIconDefault.style.display = 'inline-block';
-        if (publishBtnYellowCircle) publishBtnYellowCircle.style.display = 'none';
         if (publishBtnGreenTick) publishBtnGreenTick.style.display = 'none';
         if (publishBtn) {
           publishBtn.classList.remove('is-publishing');
           publishBtn.classList.remove('is-deployed-success');
+          publishBtn.setAttribute('data-tooltip', 'Deployment failed. Click to retry.');
         }
         if (publishLabel) publishLabel.textContent = 'Error';
 
         deploymentResetTimer = setTimeout(() => {
           if (publishLabel) publishLabel.textContent = 'Publish';
-          if (deployStatusPill) deployStatusPill.style.display = 'none';
+          if (publishBtn) publishBtn.setAttribute('data-tooltip', 'Publish visual changes live to website');
         }, 3200);
       }
     };
@@ -776,12 +796,14 @@ export class AdminApp {
             const restored = await this.exportSystem.restoreCheckpoint(targetId);
             const iframe = this.rootElement.querySelector('#admin-preview-frame');
             if (iframe) {
-              const iDoc = iframe.contentDocument || iframe.contentWindow.document;
-              if (iDoc && iDoc.documentElement) {
-                iDoc.documentElement.setAttribute('data-preview-mode', this.currentBreakpoint);
+              const iDoc = getSafeIframeDoc(iframe);
+              if (iDoc) {
+                if (iDoc.documentElement) {
+                  iDoc.documentElement.setAttribute('data-preview-mode', this.currentBreakpoint);
+                }
+                applyDesignSchema(restored.schema, iDoc);
+                this.updateChangedElementsHighlight();
               }
-              applyDesignSchema(restored.schema, iDoc);
-              this.updateChangedElementsHighlight();
             }
 
             // Clear element baselines in side panel and re-inspect
@@ -843,7 +865,7 @@ export class AdminApp {
     // Initialize side panel
     this.sidePanel = new SidePanel(sidepanelContainer, {
       exportSystem: this.exportSystem,
-      getIframeDoc: () => (iframe.contentDocument || iframe.contentWindow?.document),
+      getIframeDoc: () => getSafeIframeDoc(iframe),
       onToast: (msg, isErr) => this._showToast(msg, isErr),
       onElementChange: (element, metadata, changeDetail, breakpoint = this.currentBreakpoint) => {
         // Record in Export System with active device breakpoint
@@ -871,8 +893,10 @@ export class AdminApp {
 
         // Apply updated schema styles dynamically in iframe DOM
         try {
-          const iDoc = iframe.contentDocument || iframe.contentWindow.document;
-          applyDesignSchema(this.exportSystem.serializeSchema(), iDoc);
+          const iDoc = getSafeIframeDoc(iframe);
+          if (iDoc) {
+            applyDesignSchema(this.exportSystem.serializeSchema(), iDoc);
+          }
         } catch (_) {}
 
         // Reposition selection highlight box
@@ -969,28 +993,39 @@ export class AdminApp {
 
     this.exportSystem.initPromise.then(() => {
       try {
-        const iDoc = iframe.contentDocument || iframe.contentWindow.document;
-        if (iDoc && iDoc.documentElement) {
-          iDoc.documentElement.setAttribute('data-preview-mode', this.currentBreakpoint);
+        const iDoc = getSafeIframeDoc(iframe);
+        if (iDoc) {
+          if (iDoc.documentElement) {
+            iDoc.documentElement.setAttribute('data-preview-mode', this.currentBreakpoint);
+          }
+          applyDesignSchema(this.exportSystem.serializeSchema(), iDoc);
+          this.updateChangedElementsHighlight();
         }
-        applyDesignSchema(this.exportSystem.serializeSchema(), iDoc);
-        this.updateChangedElementsHighlight();
       } catch (_) {}
     });
 
-    iframe.addEventListener('load', () => {
+    const initBridge = () => {
       try {
-        const iDoc = iframe.contentDocument || iframe.contentWindow.document;
-
-        if (iDoc) {
-          iDoc.addEventListener('keydown', handleGlobalShortcuts);
+        const iDoc = getSafeIframeDoc(iframe);
+        if (!iDoc || !iDoc.body) {
+          // Frame is not ready or currently cross-origin (e.g. during auth redirect)
+          return;
         }
 
+        iDoc.addEventListener('keydown', handleGlobalShortcuts);
+
         // Apply published schema and preview mode on canvas preview
-        if (iDoc && iDoc.documentElement) {
+        if (iDoc.documentElement) {
           iDoc.documentElement.setAttribute('data-preview-mode', this.currentBreakpoint);
         }
         applyDesignSchema(this.exportSystem.serializeSchema(), iDoc);
+
+        // Clean up previous engine instance if exists
+        if (this.selectionEngine) {
+          try {
+            this.selectionEngine.destroy();
+          } catch (_) {}
+        }
 
         // Initialize Selection Engine starting in Normal (interactive / Edit Off) mode
         this.selectionEngine = new SelectionEngine(iframe, {
@@ -1031,9 +1066,17 @@ export class AdminApp {
         this.updateChangedElementsHighlight();
 
       } catch (err) {
-        console.error('[Admin Preview Bridge Init Failed]:', err);
+        console.warn('[Admin Preview Bridge Init]:', err.message || err);
       }
-    });
+    };
+
+    iframe.addEventListener('load', initBridge);
+
+    // If iframe already loaded before listener was attached, initialize immediately
+    const initialDoc = getSafeIframeDoc(iframe);
+    if (initialDoc && initialDoc.readyState === 'complete') {
+      initBridge();
+    }
   }
 
   /**
@@ -1095,7 +1138,7 @@ export class AdminApp {
     if (!iframe) return;
     let iDoc = null;
     try {
-      iDoc = iframe.contentDocument || iframe.contentWindow.document;
+      iDoc = getSafeIframeDoc(iframe);
     } catch (_) {
       return;
     }

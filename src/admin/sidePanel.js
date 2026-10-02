@@ -138,17 +138,17 @@ export class SidePanel {
           <strong>Inspector</strong>
           <span>Select an element on canvas</span>
         </div>
-        <div style="display: flex; gap: 4px; align-items: center;">
-          <button type="button" class="admin-btn admin-btn-ghost btn-undo" id="btn-sidepanel-undo" data-tooltip="Undo (Ctrl+Z)" disabled style="padding: 4px 6px;">
+        <div class="admin-sidepanel-header-actions" id="admin-sidepanel-header-actions">
+          <button type="button" class="admin-btn admin-btn-ghost btn-undo" id="btn-sidepanel-undo" data-tooltip="Undo (Ctrl+Z)" disabled>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
           </button>
-          <button type="button" class="admin-btn admin-btn-ghost btn-redo" id="btn-sidepanel-redo" data-tooltip="Redo (Ctrl+Shift+Z)" disabled style="padding: 4px 6px;">
+          <button type="button" class="admin-btn admin-btn-ghost btn-redo" id="btn-sidepanel-redo" data-tooltip="Redo (Ctrl+Shift+Z)" disabled>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
           </button>
           <button type="button" class="admin-btn admin-btn-ghost" id="btn-sidepanel-collapse" data-tooltip="Collapse Inspector Sidebar">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/><path d="m10 9-3 3 3 3"/></svg>
           </button>
-          <button type="button" class="admin-btn admin-btn-ghost" id="btn-sidepanel-close" data-tooltip="Close Panel">✕</button>
+          <button type="button" class="admin-btn admin-btn-ghost btn-sidepanel-close" id="btn-sidepanel-close" data-tooltip="Close Panel">✕</button>
         </div>
       </div>
 
@@ -178,18 +178,66 @@ export class SidePanel {
 
       <!-- Tab Content Area -->
       <div class="admin-tab-content" id="admin-tab-content">
-        <div class="admin-empty-notice" style="text-align: center; padding: 48px 20px; color: var(--admin-text-secondary); width: 100%; box-sizing: border-box;">
-          <div class="empty-cursor-icon-wrap" style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: rgba(0, 127, 255, 0.08); border: 1px solid rgba(0, 127, 255, 0.22); margin-bottom: 16px; margin-inline: auto;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--admin-accent-cyan); transform: translate(-1px, 1px);">
+        <div class="admin-empty-notice" style="text-align: center; padding: 32px 18px; color: var(--admin-text-secondary); width: 100%; box-sizing: border-box;">
+          <div class="empty-cursor-icon-wrap" style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.35); margin-bottom: 12px; margin-inline: auto;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--admin-accent-cyan); transform: translate(-1px, 1px);">
               <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
               <path d="m13 13 6 6"/>
             </svg>
           </div>
-          <p style="margin: 0 0 44px 0; font-size: 14.5px; font-weight: 700; color: var(--admin-text-primary); text-align: center;">Inspect &amp; Edit</p>
-          <div style="text-align: left; max-width: 285px; margin-inline: auto; font-size: 12.5px; line-height: 1.8; color: var(--admin-text-secondary);">
-            <div style="margin-bottom: 12px;"><strong>Step 1.</strong> Turn on Edit mode.</div>
-            <div style="margin-bottom: 12px;"><strong>Step 2.</strong> Click any element on the preview website to inspect and edit.</div>
-            <div style="margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--admin-border-subtle); font-size: 12px; color: var(--admin-text-muted);"><strong>Tip:</strong> Double click on highlighted setting names to reset them.</div>
+          <p style="margin: 0 0 20px 0; font-size: 14.5px; font-weight: 700; color: var(--admin-text-primary); text-align: center;">Inspect &amp; Edit</p>
+          <div style="text-align: left; max-width: 320px; margin-inline: auto; font-size: 12px; line-height: 1.6; color: var(--admin-text-secondary);">
+            <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span><strong>Step 1.</strong> Turn on Edit mode</span>
+              <span class="admin-kbd-group" style="display: inline-flex; align-items: center; gap: 2px;">
+                <kbd class="admin-keycap">Shift</kbd>
+                <kbd class="admin-keycap">E</kbd>
+              </span>
+            </div>
+            <div style="margin-bottom: 14px;"><strong>Step 2.</strong> Click any element on the preview website to inspect and edit.</div>
+            
+            <div style="padding-top: 10px; border-top: 1px dashed var(--admin-border-subtle); margin-bottom: 12px;">
+              <div style="font-weight: 700; color: var(--admin-text-primary); margin-bottom: 6px; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em;">Tips &amp; Quick Resets</div>
+              <div style="display: flex; flex-direction: column; gap: 5px; font-size: 11.5px; color: var(--admin-text-muted);">
+                <div>• <strong style="color: var(--admin-text-secondary);">Underline Indication:</strong> Modified settings display an underline (yellow in dark, amber in light mode).</div>
+                <div>• <strong style="color: var(--admin-text-secondary);">Double-Click Reset:</strong> Double-click any underlined setting name to instantly revert it.</div>
+                <div>• <strong style="color: var(--admin-text-secondary);">Slider Reset:</strong> Double-click slider handle or number field to reset to default.</div>
+                <div>• <strong style="color: var(--admin-text-secondary);">Element Reset:</strong> Use the <em>Reset Changes</em> button below to revert all edits on the element.</div>
+              </div>
+            </div>
+
+            <div style="padding-top: 10px; border-top: 1px dashed var(--admin-border-subtle);">
+              <div style="font-weight: 700; color: var(--admin-text-primary); margin-bottom: 8px; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em;">Keyboard Shortcuts</div>
+              <div style="display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 11.5px; align-items: center; color: var(--admin-text-muted);">
+                <span class="admin-kbd-group">
+                  <kbd class="admin-keycap">Shift</kbd>
+                  <kbd class="admin-keycap">E</kbd>
+                </span>
+                <span style="color: var(--admin-text-secondary); font-weight: 500;">Toggle Edit mode on / off</span>
+
+                <span class="admin-kbd-group">
+                  <kbd class="admin-keycap">I</kbd>
+                </span>
+                <span style="color: var(--admin-text-secondary); font-weight: 500;">Collapse / expand sidebar</span>
+
+                <span class="admin-kbd-group">
+                  <kbd class="admin-keycap">⌘</kbd>
+                  <span class="admin-kbd-slash">/</span>
+                  <kbd class="admin-keycap">Ctrl</kbd>
+                  <kbd class="admin-keycap">Z</kbd>
+                </span>
+                <span style="color: var(--admin-text-secondary); font-weight: 500;">Undo previous change</span>
+
+                <span class="admin-kbd-group">
+                  <kbd class="admin-keycap">⌘</kbd>
+                  <span class="admin-kbd-slash">/</span>
+                  <kbd class="admin-keycap">Ctrl</kbd>
+                  <kbd class="admin-keycap">Shift</kbd>
+                  <kbd class="admin-keycap">Z</kbd>
+                </span>
+                <span style="color: var(--admin-text-secondary); font-weight: 500;">Redo reverted change</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -209,6 +257,7 @@ export class SidePanel {
     this._bindTabEvents();
     this._bindHeaderEvents();
     this._bindFooterEvents();
+    this._renderActiveTab();
   }
 
   _bindFooterEvents() {
@@ -308,14 +357,19 @@ export class SidePanel {
   _bindTabEvents() {
     this.container.querySelectorAll('.admin-tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
+        if (this.auditionAudioElement) {
+          try {
+            this.auditionAudioElement.pause();
+          } catch (_) {}
+          this.auditionAudioElement = null;
+          this.currentPlayingAuditionSrc = null;
+        }
         this.container.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('is-active'));
         btn.classList.add('is-active');
         this.activeTab = btn.dataset.tab;
-        if (this.activeTab === 'media' || (this.activeElement && this.activeMeta)) {
-          this._renderActiveTab();
-          this.updateTabCounters();
-          this._updateResetButtonVisibility();
-        }
+        this._renderActiveTab();
+        this.updateTabCounters();
+        this._updateResetButtonVisibility();
       });
     });
   }
@@ -627,7 +681,7 @@ export class SidePanel {
 
     const doc = (this.activeElement && this.activeElement.ownerDocument)
       || (typeof this.getIframeDoc === 'function' ? this.getIframeDoc() : null)
-      || document.querySelector('#admin-preview-frame')?.contentDocument
+      || (() => { try { return document.querySelector('#admin-preview-frame')?.contentDocument || null; } catch(_) { return null; } })()
       || window.document;
 
     // 1. Restore data in exportSystem for main active element
@@ -1113,38 +1167,22 @@ export class SidePanel {
     }
 
     const titleEl = this.container.querySelector('#admin-panel-title');
-    const footerEl = this.container.querySelector('#admin-panel-footer');
-    const contentEl = this.container.querySelector('#admin-tab-content');
-
     if (titleEl) {
-      titleEl.innerHTML = `
-        <strong>Inspector</strong>
-        <span>Select an element on canvas</span>
-      `;
+      if (this.activeTab === 'media') {
+        titleEl.innerHTML = `
+          <strong>Media Studio</strong>
+          <span>Project Assets &amp; Audio Tracks</span>
+        `;
+      } else {
+        titleEl.innerHTML = `
+          <strong>Inspector</strong>
+          <span>Select an element on canvas</span>
+        `;
+      }
     }
     this._updateResetButtonVisibility();
 
-    if (this.activeTab === 'media') {
-      this._renderActiveTab();
-    } else if (contentEl) {
-      contentEl.innerHTML = `
-        <div class="admin-empty-notice" style="text-align: center; padding: 48px 20px; color: var(--admin-text-secondary); width: 100%; box-sizing: border-box;">
-          <div class="empty-cursor-icon-wrap" style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: rgba(0, 127, 255, 0.08); border: 1px solid rgba(0, 127, 255, 0.22); margin-bottom: 16px; margin-inline: auto;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--admin-accent-cyan); transform: translate(-1px, 1px);">
-              <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
-              <path d="m13 13 6 6"/>
-            </svg>
-          </div>
-          <p style="margin: 0 0 44px 0; font-size: 14.5px; font-weight: 700; color: var(--admin-text-primary); text-align: center;">Inspect &amp; Edit</p>
-          <div style="text-align: left; max-width: 285px; margin-inline: auto; font-size: 12.5px; line-height: 1.8; color: var(--admin-text-secondary);">
-            <div style="margin-bottom: 12px;"><strong>Step 1.</strong> Turn on Edit mode.</div>
-            <div style="margin-bottom: 12px;"><strong>Step 2.</strong> Click any element on the preview website to inspect and edit.</div>
-            <div style="margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--admin-border-subtle); font-size: 12px; color: var(--admin-text-muted);"><strong>Tip:</strong> Double click on highlighted setting names to reset them.</div>
-          </div>
-        </div>
-      `;
-    }
-
+    this._renderActiveTab();
     this.updateTabCounters();
   }
 
@@ -1457,23 +1495,179 @@ export class SidePanel {
   _renderActiveTab() {
     const contentEl = this.container.querySelector('#admin-tab-content');
     if (!contentEl) return;
-    if (this.activeTab !== 'media' && (!this.activeElement || !this.activeMeta)) return;
 
-    if (this.activeTab === 'text') {
-      contentEl.innerHTML = this._buildTextTabHtml();
-      this._bindTextTabControls(contentEl);
-    } else if (this.activeTab === 'spacing') {
-      contentEl.innerHTML = this._buildSpacingTabHtml();
-      this._bindSpacingTabControls(contentEl);
-    } else if (this.activeTab === 'media') {
+    const titleEl = this.container.querySelector('#admin-panel-title');
+    if (!this.activeElement || !this.activeMeta) {
+      if (titleEl) {
+        if (this.activeTab === 'media') {
+          titleEl.innerHTML = `
+            <strong>Media Studio</strong>
+            <span>Project Assets &amp; Audio Tracks</span>
+          `;
+        } else {
+          titleEl.innerHTML = `
+            <strong>Inspector</strong>
+            <span>Select an element on canvas</span>
+          `;
+        }
+      }
+    }
+
+    if (this.activeTab === 'media') {
       contentEl.innerHTML = this._buildMediaTabHtml();
       this._bindMediaTabControls(contentEl);
+    } else if (this.activeTab === 'text') {
+      if (!this.activeElement || !this.activeMeta) {
+        contentEl.innerHTML = this._buildEmptyTabNotice('text');
+      } else {
+        contentEl.innerHTML = this._buildTextTabHtml();
+        this._bindTextTabControls(contentEl);
+      }
+    } else if (this.activeTab === 'spacing') {
+      if (!this.activeElement || !this.activeMeta) {
+        contentEl.innerHTML = this._buildEmptyTabNotice('spacing');
+      } else {
+        contentEl.innerHTML = this._buildSpacingTabHtml();
+        this._bindSpacingTabControls(contentEl);
+      }
     } else if (this.activeTab === 'props') {
-      contentEl.innerHTML = this._buildPropsTabHtml();
-      this._bindPropsTabControls(contentEl);
+      if (!this.activeElement || !this.activeMeta) {
+        contentEl.innerHTML = this._buildEmptyTabNotice('props');
+      } else {
+        contentEl.innerHTML = this._buildPropsTabHtml();
+        this._bindPropsTabControls(contentEl);
+      }
+    } else {
+      contentEl.innerHTML = this._buildEmptyTabNotice(this.activeTab || 'text');
     }
 
     this._syncFieldIndicators();
+  }
+
+  /**
+   * Category-specific empty state notice when no canvas element is currently selected
+   */
+  _buildEmptyTabNotice(tabKey) {
+    let iconSvg = '';
+    let categoryName = '';
+    let categoryTitle = '';
+    let categoryDesc = '';
+    let step2Text = '';
+    let tipText = '';
+
+    if (tabKey === 'text') {
+      categoryName = 'TEXTS';
+      categoryTitle = 'Typography & Text Styling';
+      categoryDesc = 'No text component currently selected.';
+      iconSvg = `
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--admin-accent-cyan);">
+          <path d="M4 7V4h16v3M9 20h6M12 4v16"/>
+        </svg>
+      `;
+      step2Text = 'Click any heading, paragraph, button label, badge, or link in the preview to inspect and edit.';
+      tipText = 'Customize font family, font size, weight, line height, letter spacing, alignment, colors, and glow shadows.';
+    } else if (tabKey === 'spacing') {
+      categoryName = 'SPACING';
+      categoryTitle = 'Spacing & Layout Model';
+      categoryDesc = 'No layout component currently selected.';
+      iconSvg = `
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--admin-accent-cyan);">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>
+        </svg>
+      `;
+      step2Text = 'Click any container, card, grid, column, or button in the preview to inspect and adjust its layout.';
+      tipText = 'Fine-tune margin, padding, flex gaps, border width, border color, and corner radius per device breakpoint.';
+    } else if (tabKey === 'props') {
+      categoryName = 'PROPS';
+      categoryTitle = 'Custom Attributes & Props';
+      categoryDesc = 'No DOM element currently selected.';
+      iconSvg = `
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--admin-accent-cyan);">
+          <polyline points="16 18 22 12 16 6"/>
+          <polyline points="8 6 2 12 8 18"/>
+        </svg>
+      `;
+      step2Text = 'Click any component or element in the preview to inspect its custom HTML dataset and attributes.';
+      tipText = 'Inspect, add, and update data-* attributes, track IDs, audio sources, and interaction links.';
+    } else {
+      categoryName = 'INSPECTOR';
+      categoryTitle = 'Inspect & Edit';
+      categoryDesc = 'Select an element on canvas.';
+      iconSvg = `
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--admin-accent-cyan); transform: translate(-1px, 1px);">
+          <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+          <path d="m13 13 6 6"/>
+        </svg>
+      `;
+      step2Text = 'Click any element on the preview website to inspect and edit.';
+      tipText = 'Double click on highlighted setting names to reset them.';
+    }
+
+    return `
+      <div class="admin-empty-notice" style="text-align: center; padding: 32px 18px; color: var(--admin-text-secondary); width: 100%; box-sizing: border-box;">
+        <div class="empty-cursor-icon-wrap" style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.35); margin-bottom: 12px; margin-inline: auto;">
+          ${iconSvg}
+        </div>
+        <div style="display: inline-block; padding: 2px 8px; border-radius: 4px; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.35); font-size: 10px; font-weight: 700; letter-spacing: 0.5px; color: #A78BFA; margin-bottom: 8px;">
+          ${categoryName}
+        </div>
+        <p style="margin: 0 0 4px 0; font-size: 14.5px; font-weight: 700; color: var(--admin-text-primary); text-align: center;">${categoryTitle}</p>
+        <p style="margin: 0 0 18px 0; font-size: 12px; color: var(--admin-text-muted); text-align: center;">${categoryDesc}</p>
+        <div style="text-align: left; max-width: 320px; margin-inline: auto; font-size: 12px; line-height: 1.6; color: var(--admin-text-secondary); background: rgba(255, 255, 255, 0.02); padding: 14px 16px; border-radius: 8px; border: 1px solid var(--admin-border-subtle);">
+          <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span><strong style="color: var(--admin-text-primary);">Step 1.</strong> Ensure <span style="color: var(--admin-accent-blue); font-weight: 600;">Edit mode</span> is ON</span>
+            <span class="admin-kbd-group" style="display: inline-flex; align-items: center; gap: 2px;">
+              <kbd class="admin-keycap">Shift</kbd>
+              <kbd class="admin-keycap">E</kbd>
+            </span>
+          </div>
+          <div style="margin-bottom: 12px;"><strong style="color: var(--admin-text-primary);">Step 2.</strong> ${step2Text}</div>
+          
+          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--admin-border-subtle); margin-bottom: 10px;">
+            <div style="font-weight: 700; color: var(--admin-text-primary); margin-bottom: 5px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;">Tips &amp; Quick Resets</div>
+            <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--admin-text-muted);">
+              <div>• <strong style="color: var(--admin-text-secondary);">Underline Indication:</strong> Modified settings display an underline (yellow in dark, amber in light mode).</div>
+              <div>• <strong style="color: var(--admin-text-secondary);">Double-Click Reset:</strong> Double-click any underlined setting name to instantly revert it.</div>
+              <div>• <strong style="color: var(--admin-text-secondary);">Slider Reset:</strong> Double-click slider handle or number field to reset to default.</div>
+            </div>
+          </div>
+
+          <div style="padding-top: 10px; border-top: 1px dashed var(--admin-border-subtle);">
+            <div style="font-weight: 700; color: var(--admin-text-primary); margin-bottom: 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;">Shortcuts</div>
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 5px 10px; font-size: 11px; align-items: center; color: var(--admin-text-muted);">
+              <span class="admin-kbd-group">
+                <kbd class="admin-keycap">Shift</kbd>
+                <kbd class="admin-keycap">E</kbd>
+              </span>
+              <span style="color: var(--admin-text-secondary); font-weight: 500;">Toggle Edit mode</span>
+
+              <span class="admin-kbd-group">
+                <kbd class="admin-keycap">I</kbd>
+              </span>
+              <span style="color: var(--admin-text-secondary); font-weight: 500;">Toggle Sidebar</span>
+
+              <span class="admin-kbd-group">
+                <kbd class="admin-keycap">⌘</kbd>
+                <span class="admin-kbd-slash">/</span>
+                <kbd class="admin-keycap">Ctrl</kbd>
+                <kbd class="admin-keycap">Z</kbd>
+              </span>
+              <span style="color: var(--admin-text-secondary); font-weight: 500;">Undo</span>
+
+              <span class="admin-kbd-group">
+                <kbd class="admin-keycap">⌘</kbd>
+                <span class="admin-kbd-slash">/</span>
+                <kbd class="admin-keycap">Ctrl</kbd>
+                <kbd class="admin-keycap">Shift</kbd>
+                <kbd class="admin-keycap">Z</kbd>
+              </span>
+              <span style="color: var(--admin-text-secondary); font-weight: 500;">Redo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   /**

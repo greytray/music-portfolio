@@ -350,15 +350,25 @@ export class SelectionEngine {
   }
 
   get doc() {
-    return this.iframe.contentDocument || (this.iframe.contentWindow && this.iframe.contentWindow.document);
+    try {
+      return this.iframe.contentDocument || null;
+    } catch (_) {
+      return null;
+    }
   }
 
   get win() {
-    return this.iframe.contentWindow;
+    try {
+      const w = this.iframe.contentWindow;
+      if (w && w.location && w.location.href) return w;
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 
   init() {
-    if (!this.doc) return;
+    if (!this.doc || !this.doc.body) return;
 
     // Inject isolated overlay CSS directly into iframe document head
     this._injectOverlayStyles();
@@ -447,8 +457,10 @@ export class SelectionEngine {
     // Attach listeners
     this.doc.addEventListener('mousemove', this._boundOnMouseMove, { passive: true });
     this.doc.addEventListener('click', this._boundOnClick, true);
-    this.win.addEventListener('scroll', this._boundOnScroll, { passive: true });
-    this.win.addEventListener('resize', this._boundOnResize, { passive: true });
+    if (this.win) {
+      this.win.addEventListener('scroll', this._boundOnScroll, { passive: true });
+      this.win.addEventListener('resize', this._boundOnResize, { passive: true });
+    }
 
     // Render any already-recorded changed boxes
     this._renderChangedBoxes();
@@ -1136,13 +1148,15 @@ export class SelectionEngine {
     // Disconnect gap between dots and dashed line endpoints
     const DASH_GAP = 7;
 
-    // Helper: calculate evenly spaced dash array so no dashes are cut off midway
+    // Helper: calculate evenly spaced dash array with exactly 3.5px spacing/gaps between dashes
     const getEvenDashArray = (length) => {
       const len = Math.max(8, length);
-      const N = Math.max(1, Math.round((len + 4) / 10));
-      const denominator = Math.max(1, 2.5 * N - 1);
-      const gap = Math.max(2.5, len / denominator);
-      const dash = gap * 1.5;
+      const targetDash = 5;
+      const targetGap = 3.5;
+      const cycle = targetDash + targetGap; // 8.5px
+      const N = Math.max(1, Math.round(len / cycle));
+      const gap = 3.5;
+      const dash = Math.max(2, (len - (N * gap)) / N);
       return `${dash.toFixed(2)} ${gap.toFixed(2)}`;
     };
 
