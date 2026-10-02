@@ -240,6 +240,7 @@ export class SidePanel {
             </div>
           </div>
         </div>
+        <div class="admin-sidebar-scroll-end" aria-hidden="true">---------------------------------------------------</div>
       </div>
 
       <!-- Footer Quick Actions: Reset Changes and Compact Show Changes on/off -->
@@ -488,7 +489,7 @@ export class SidePanel {
     } else if (sectionName === 'spacing') {
       return spacingStyleList.some(k => this.isFieldChanged(k));
     } else if (sectionName === 'media') {
-      return this.isFieldChanged('src') || this.isFieldChanged('audio') || this.isFieldChanged('backgroundImage') || this.isFieldChanged('media');
+      return this.isFieldChanged('src') || this.isFieldChanged('audio') || this.isFieldChanged('backgroundImage') || this.isFieldChanged('media') || this.isFieldChanged('transform') || this.isFieldChanged('width') || this.isFieldChanged('height') || this.isFieldChanged('objectFit');
     } else if (sectionName === 'props') {
       return this.isFieldChanged('dataAttributes');
     }
@@ -1495,6 +1496,7 @@ export class SidePanel {
   _renderActiveTab() {
     const contentEl = this.container.querySelector('#admin-tab-content');
     if (!contentEl) return;
+    const prevScrollTop = contentEl.scrollTop;
 
     const titleEl = this.container.querySelector('#admin-panel-title');
     if (!this.activeElement || !this.activeMeta) {
@@ -1513,35 +1515,41 @@ export class SidePanel {
       }
     }
 
+    const DASHED_END_LINE = `<div class="admin-sidebar-scroll-end" aria-hidden="true">---------------------------------------------------</div>`;
+
     if (this.activeTab === 'media') {
-      contentEl.innerHTML = this._buildMediaTabHtml();
+      contentEl.innerHTML = this._buildMediaTabHtml() + DASHED_END_LINE;
       this._bindMediaTabControls(contentEl);
     } else if (this.activeTab === 'text') {
       if (!this.activeElement || !this.activeMeta) {
-        contentEl.innerHTML = this._buildEmptyTabNotice('text');
+        contentEl.innerHTML = this._buildEmptyTabNotice('text') + DASHED_END_LINE;
       } else {
-        contentEl.innerHTML = this._buildTextTabHtml();
+        contentEl.innerHTML = this._buildTextTabHtml() + DASHED_END_LINE;
         this._bindTextTabControls(contentEl);
       }
     } else if (this.activeTab === 'spacing') {
       if (!this.activeElement || !this.activeMeta) {
-        contentEl.innerHTML = this._buildEmptyTabNotice('spacing');
+        contentEl.innerHTML = this._buildEmptyTabNotice('spacing') + DASHED_END_LINE;
       } else {
-        contentEl.innerHTML = this._buildSpacingTabHtml();
+        contentEl.innerHTML = this._buildSpacingTabHtml() + DASHED_END_LINE;
         this._bindSpacingTabControls(contentEl);
       }
     } else if (this.activeTab === 'props') {
       if (!this.activeElement || !this.activeMeta) {
-        contentEl.innerHTML = this._buildEmptyTabNotice('props');
+        contentEl.innerHTML = this._buildEmptyTabNotice('props') + DASHED_END_LINE;
       } else {
-        contentEl.innerHTML = this._buildPropsTabHtml();
+        contentEl.innerHTML = this._buildPropsTabHtml() + DASHED_END_LINE;
         this._bindPropsTabControls(contentEl);
       }
     } else {
-      contentEl.innerHTML = this._buildEmptyTabNotice(this.activeTab || 'text');
+      contentEl.innerHTML = this._buildEmptyTabNotice(this.activeTab || 'text') + DASHED_END_LINE;
     }
 
     this._syncFieldIndicators();
+    if (prevScrollTop > 0) {
+      contentEl.scrollTop = prevScrollTop;
+    }
+    this._justReorderedTrackIdx = null;
   }
 
   /**
@@ -1756,6 +1764,7 @@ export class SidePanel {
         else if (rowEl.querySelector('#slider-shadow-spread') && this.isShadowPropChanged('shadow-spread')) isRowChanged = true;
         else if (rowEl.querySelector('#hex-color-shadow') && this.isShadowPropChanged('shadow-color')) isRowChanged = true;
         else if (rowEl.querySelector('#shadow-target-group') && this.isShadowPropChanged('shadow-target')) isRowChanged = true;
+        else if (rowEl.querySelector('#slider-img-scale') && (this.isFieldChanged('scale') || this.isFieldChanged('transform'))) isRowChanged = true;
       }
 
       const labelEl = rowEl.querySelector('.admin-field-label');
@@ -1997,6 +2006,28 @@ export class SidePanel {
         this.exportSystem.removeChange(selector, 'style', 'height', 'all');
         this.exportSystem.removeChange(selector, 'style', 'objectFit', 'all');
       }
+    } else if (type === 'media-transform' || key === 'media-transform') {
+      this.imageTransformState = {
+        flipH: false,
+        flipV: false,
+        scale: 100,
+        width: '',
+        height: '',
+        objectFit: 'cover'
+      };
+      this.activeElement.style.removeProperty('transform');
+      this.activeElement.style.removeProperty('width');
+      this.activeElement.style.removeProperty('height');
+      this.activeElement.style.removeProperty('object-fit');
+      if (this.exportSystem) {
+        this.exportSystem.removeChange(selector, 'style', 'transform', 'all');
+        this.exportSystem.removeChange(selector, 'style', 'width', 'all');
+        this.exportSystem.removeChange(selector, 'style', 'height', 'all');
+        this.exportSystem.removeChange(selector, 'style', 'objectFit', 'all');
+      }
+      this._notifyChange({ reset: true });
+      this._renderActiveTab();
+      return;
     } else if (type === 'flips' || key === 'flips') {
       this.imageTransformState.flipH = false;
       this.imageTransformState.flipV = false;
@@ -3489,48 +3520,127 @@ export class SidePanel {
     this.updateTabCounters();
   }
 
-  _handleAudition(src, btnEl) {
+  _formatTime(sec) {
+    if (isNaN(sec) || sec < 0) return '0:00';
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  }
+
+  _updateAuditionTimeUi(cur, dur) {
+    const timeDisplays = this.container.querySelectorAll('.inline-seek-time-text');
+    const seekBars = this.container.querySelectorAll('.admin-inline-seek-slider');
+    const seekFills = this.container.querySelectorAll('.admin-inline-seek-fill');
+
+    const formattedCur = this._formatTime(cur);
+    const formattedDur = this._formatTime(dur);
+
+    timeDisplays.forEach(td => {
+      td.textContent = `${formattedCur} / ${formattedDur}`;
+    });
+
+    if (dur > 0) {
+      const pct = Math.min(100, Math.max(0, (cur / dur) * 100));
+      seekBars.forEach(sb => {
+        if (!this.isAuditionSeeking) sb.value = cur;
+        sb.max = dur;
+      });
+      seekFills.forEach(sf => {
+        sf.style.width = `${pct}%`;
+      });
+    }
+  }
+
+  _updateAuditionUiState(isPlaying) {
+    this.container.querySelectorAll('.btn-inline-seek-toggle').forEach(btn => {
+      const isThisTrack = btn.dataset.src === this.currentPlayingAuditionSrc;
+      if (isThisTrack) {
+        btn.classList.toggle('is-playing', isPlaying);
+        btn.innerHTML = isPlaying
+          ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`
+          : `<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+      }
+    });
+
+    this.container.querySelectorAll('.btn-audition').forEach(b => {
+      const isThisTrack = b.dataset.src === this.currentPlayingAuditionSrc;
+      b.classList.toggle('is-playing', isThisTrack && isPlaying);
+      if (isThisTrack && isPlaying) {
+        b.innerHTML = `<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause`;
+      } else {
+        b.innerHTML = `<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Audition`;
+      }
+    });
+  }
+
+  _handleAudition(src, title = '', style = '', btnEl = null) {
     if (!src) return;
 
-    if (this.currentPlayingAuditionSrc === src && this.auditionAudioElement && !this.auditionAudioElement.paused) {
-      this.auditionAudioElement.pause();
-      this.currentPlayingAuditionSrc = null;
-      if (btnEl) {
-        btnEl.classList.remove('is-playing');
-        btnEl.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Audition`;
+    if (this.currentPlayingAuditionSrc === src && this.auditionAudioElement) {
+      if (this.auditionAudioElement.paused) {
+        this.auditionAudioElement.play().catch(() => {});
+        this._updateAuditionUiState(true);
+      } else {
+        this.auditionAudioElement.pause();
+        this._updateAuditionUiState(false);
       }
       return;
     }
 
     if (this.auditionAudioElement) {
-      this.auditionAudioElement.pause();
+      try {
+        this.auditionAudioElement.pause();
+      } catch (_) {}
     }
+
+    const cleanTitle = title || src.split('/').pop().replace(/\.[^/.]+$/, '').replace(/[_\-]+/g, ' ') || 'Audio Track';
+    this.currentPlayingAuditionSrc = src;
+    this.auditionTrackInfo = {
+      title: cleanTitle,
+      style: style || 'Custom Audio',
+      duration: '--:--',
+      src
+    };
 
     this.auditionAudioElement = new Audio(src);
-    this.currentPlayingAuditionSrc = src;
 
-    this.container.querySelectorAll('.btn-audition').forEach(b => {
-      b.classList.remove('is-playing');
-      b.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Audition`;
-    });
-
-    if (btnEl) {
-      btnEl.classList.add('is-playing');
-      btnEl.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause`;
-    }
-
-    this.auditionAudioElement.play().catch(() => {});
-
-    this.auditionAudioElement.addEventListener('ended', () => {
-      this.currentPlayingAuditionSrc = null;
-      if (btnEl) {
-        btnEl.classList.remove('is-playing');
-        btnEl.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Audition`;
+    this.auditionAudioElement.addEventListener('loadedmetadata', () => {
+      if (this.auditionAudioElement) {
+        const dur = this.auditionAudioElement.duration;
+        if (!isNaN(dur) && dur > 0) {
+          this.auditionTrackInfo.duration = this._formatTime(dur);
+          this._updateAuditionTimeUi(this.auditionAudioElement.currentTime, dur);
+        }
       }
     });
+
+    this.auditionAudioElement.addEventListener('timeupdate', () => {
+      if (this.auditionAudioElement && !this.isAuditionSeeking) {
+        const cur = this.auditionAudioElement.currentTime || 0;
+        const dur = this.auditionAudioElement.duration || 0;
+        this._updateAuditionTimeUi(cur, dur);
+      }
+    });
+
+    this.auditionAudioElement.addEventListener('play', () => {
+      this._updateAuditionUiState(true);
+    });
+
+    this.auditionAudioElement.addEventListener('pause', () => {
+      this._updateAuditionUiState(false);
+    });
+
+    this.auditionAudioElement.addEventListener('ended', () => {
+      this._updateAuditionUiState(false);
+      this._updateAuditionTimeUi(0, this.auditionAudioElement ? this.auditionAudioElement.duration : 0);
+    });
+
+    this.auditionAudioElement.play().catch(() => {});
+    this._renderActiveTab();
+    this._updateAuditionUiState(true);
   }
 
-  _handleReorderPlaylist(currentIndex, targetIndex) {
+  _handleReorderPlaylist(currentIndex, targetIndex, position = 'auto') {
     const iframeDoc = this.getIframeDoc ? this.getIframeDoc() : document;
     if (!iframeDoc) return;
 
@@ -3552,10 +3662,16 @@ export class SidePanel {
     const movingEl = tracks[currentIndex];
     const targetEl = tracks[targetIndex];
 
-    if (targetIndex > currentIndex) {
+    if (position === 'before') {
+      playlistEl.insertBefore(movingEl, targetEl);
+    } else if (position === 'after') {
       playlistEl.insertBefore(movingEl, targetEl.nextSibling);
     } else {
-      playlistEl.insertBefore(movingEl, targetEl);
+      if (targetIndex > currentIndex) {
+        playlistEl.insertBefore(movingEl, targetEl.nextSibling);
+      } else {
+        playlistEl.insertBefore(movingEl, targetEl);
+      }
     }
 
     const reorderedTracks = Array.from(playlistEl.querySelectorAll('.track'));
@@ -3710,6 +3826,7 @@ export class SidePanel {
     const hasFlipChanged = Boolean(this.imageTransformState.flipH || this.imageTransformState.flipV);
     const hasScaleChanged = this.imageTransformState.scale !== 100;
     const hasSizingChanged = Boolean(this.imageTransformState.width || this.imageTransformState.height || (this.imageTransformState.objectFit && this.imageTransformState.objectFit !== 'cover'));
+    const hasTransformChanged = hasFlipChanged || hasScaleChanged || hasSizingChanged;
     const hasMediaChanged = this.isFieldChanged('media') || this.isFieldChanged('backgroundImage') || this.isFieldChanged('transform') || this.isFieldChanged('width') || this.isFieldChanged('height');
 
     // Retrieve live playlist tracks for Arrangement feature
@@ -3717,23 +3834,35 @@ export class SidePanel {
     const playlistEl = iframeDoc ? (iframeDoc.querySelector('#playlist') || iframeDoc.querySelector('.playlist')) : null;
     const playlistTracks = playlistEl ? Array.from(playlistEl.querySelectorAll('.track')) : [];
 
+    // Current audition audio state
+    const isPlayingAudition = Boolean(this.auditionAudioElement && !this.auditionAudioElement.paused);
+    const auditionDur = this.auditionTrackInfo?.duration || (this.auditionAudioElement?.duration ? this._formatTime(this.auditionAudioElement.duration) : '0:00');
+    const auditionCur = this.auditionAudioElement?.currentTime ? this._formatTime(this.auditionAudioElement.currentTime) : '0:00';
+    const auditionSeekMax = this.auditionAudioElement?.duration || 100;
+    const auditionSeekVal = this.auditionAudioElement?.currentTime || 0;
+    const auditionFillPct = (this.auditionAudioElement && this.auditionAudioElement.duration)
+      ? Math.min(100, Math.max(0, (this.auditionAudioElement.currentTime / this.auditionAudioElement.duration) * 100))
+      : 0;
+
     return `
-      <!-- Sub-category Mode Switcher: Images vs Audio -->
+      <!-- 1. Sleek Symbol-Based Buttons matching standard category top/bottom spacing (Item 1) -->
       <div class="admin-media-mode-bar">
-        <button type="button" class="admin-media-mode-btn ${mode === 'image' ? 'is-active' : ''}" data-media-mode="image">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          <span>Image Management</span>
+        <button type="button" class="admin-media-mode-btn ${mode === 'image' ? 'is-active' : ''}" data-media-mode="image" data-tooltip="Image Studio">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+          </svg>
         </button>
-        <button type="button" class="admin-media-mode-btn ${mode === 'audio' ? 'is-active' : ''}" data-media-mode="audio">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-          <span>Audio Management</span>
+        <button type="button" class="admin-media-mode-btn ${mode === 'audio' ? 'is-active' : ''}" data-media-mode="audio" data-tooltip="Audio Studio">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+          </svg>
         </button>
       </div>
 
       ${mode === 'image' ? `
         <!-- ================= IMAGE MANAGEMENT ================= -->
 
-        <!-- Active Image Overview Card -->
+        <!-- Active Image Overview Card (When image/background is selected) -->
         ${currentImgSrc ? `
           <div class="admin-asset-overview-box">
             <img src="${currentImgSrc}" class="admin-asset-thumb-mini" alt="Selected Preview">
@@ -3741,64 +3870,61 @@ export class SidePanel {
               <div class="admin-asset-info-title">${currentImgSrc.split('/').pop() || 'Selected Image'}</div>
               <div class="admin-asset-info-sub">${this.activeMeta?.selector || 'Element Image'}</div>
             </div>
+            <div class="admin-swap-target-badge" data-tooltip="Currently selected canvas target for swapping">
+              <span class="target-dot"></span> Target
+            </div>
             ${hasMediaChanged ? `
-              <button type="button" class="btn-field-reset" data-reset-type="media" data-tooltip="Reset image and transforms" style="flex-shrink: 0;">↺ Reset</button>
+              <button type="button" class="btn-field-reset" data-reset-type="media" data-tooltip="Reset image and transforms" style="flex-shrink: 0;">↺</button>
             ` : ''}
           </div>
-        ` : `
-          <div style="padding: 10px 12px; margin-bottom: 12px; background: rgba(0, 127, 255, 0.06); border: 1px dashed rgba(0, 127, 255, 0.25); border-radius: var(--admin-radius-sm); font-size: 11px; color: var(--admin-text-secondary); line-height: 1.5;">
-            <strong style="color: var(--admin-accent-cyan);">Image Studio</strong>: Select any image or background element on canvas to flip, scale, or swap it. Or upload and explore project assets below.
-          </div>
-        `}
+        ` : ''}
 
-        <!-- 1. Horizontal and Vertical Flip Options -->
-        <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-media-flips') ? 'is-collapsed' : ''} ${hasFlipChanged ? 'is-modified' : ''}">
-          ${this._renderSectionHeader('sec-media-flips', 'Orientation & Flips', ['transform'], 'flips', null)}
-          
-          <div class="admin-field-row" style="margin-bottom: 4px;">
-            <div class="admin-flip-group">
-              <button type="button" class="btn-flip-toggle ${this.imageTransformState.flipH ? 'is-active' : ''}" id="btn-flip-h" data-tooltip="Mirror horizontally">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M8 7l-5 5 5 5V7z"/><path d="M16 7l5 5-5 5V7z"/><line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="2 2"/>
-                </svg>
-                <span>Flip Horizontal</span>
-              </button>
-              <button type="button" class="btn-flip-toggle ${this.imageTransformState.flipV ? 'is-active' : ''}" id="btn-flip-v" data-tooltip="Mirror vertically">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M7 8l5-5 5 5H7z"/><path d="M7 16l5 5 5-5H7z"/><line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="2 2"/>
-                </svg>
-                <span>Flip Vertical</span>
-              </button>
+        <!-- 3. Combined Transforms, Scaling, Resizing and Flips Under One Category -->
+        <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-media-transform') ? 'is-collapsed' : ''} ${hasTransformChanged ? 'is-modified' : ''}">
+          ${this._renderSectionHeader('sec-media-transform', 'Transform & Sizing', ['transform', 'width', 'height', 'objectFit'], 'media-transform', null)}
+
+          <!-- Flips & Orientation -->
+          <div class="admin-field-row ${hasFlipChanged ? 'is-modified' : ''}" style="margin-bottom: 8px;">
+            <div class="admin-field-label-wrap">
+              <label class="admin-field-label">Flips & Mirror</label>
+            </div>
+            <div class="admin-field-control">
+              <div class="admin-flip-group">
+                <button type="button" class="btn-flip-toggle ${this.imageTransformState.flipH ? 'is-active' : ''}" id="btn-flip-h" data-tooltip="Mirror horizontally">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 7l-5 5 5 5V7z"/><path d="M16 7l5 5-5 5V7z"/><line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="2 2"/>
+                  </svg>
+                  <span>Flip Horizontal</span>
+                </button>
+                <button type="button" class="btn-flip-toggle ${this.imageTransformState.flipV ? 'is-active' : ''}" id="btn-flip-v" data-tooltip="Mirror vertically">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 8l5-5 5 5H7z"/><path d="M7 16l5 5 5-5H7z"/><line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="2 2"/>
+                  </svg>
+                  <span>Flip Vertical</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- 2. Basic Scaling and Resizing Options -->
-        <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-media-scaling') ? 'is-collapsed' : ''} ${(hasScaleChanged || hasSizingChanged) ? 'is-modified' : ''}">
-          ${this._renderSectionHeader('sec-media-scaling', 'Scaling & Resizing', ['transform', 'width', 'height', 'objectFit'], 'sizing', null)}
-
-          <!-- Zoom / Scale Slider & Steppers -->
+          <!-- Scale / Zoom Slider & Steppers -->
           <div class="admin-field-row ${hasScaleChanged ? 'is-modified' : ''}">
             <div class="admin-field-label-wrap">
               <label class="admin-field-label">Scale / Zoom</label>
-              <span class="admin-field-val-badge" id="val-badge-scale">${this.imageTransformState.scale}%</span>
             </div>
-            <div class="admin-field-control" style="display: flex; align-items: center; gap: 6px;">
-              <button type="button" class="btn-stepper" id="btn-scale-dec" data-tooltip="Zoom out -5%">-</button>
-              <input type="range" class="admin-slider" id="img-scale-slider" min="25" max="200" step="5" value="${this.imageTransformState.scale}" style="flex: 1;">
-              <button type="button" class="btn-stepper" id="btn-scale-inc" data-tooltip="Zoom in +5%">+</button>
-              <button type="button" class="btn-field-reset" id="btn-reset-scale" data-reset-type="scale" data-tooltip="Reset scale to 100%" style="display: ${hasScaleChanged ? 'inline-flex' : 'none'};">↺</button>
+            <div class="admin-field-control">
+              ${this._renderSliderRow('img-scale', 25, 200, 5, this.imageTransformState.scale || 100, '%')}
+              <button type="button" class="btn-field-reset" data-reset-type="scale" data-tooltip="Reset scale to 100%" style="display: ${hasScaleChanged ? 'inline-flex' : 'none'};">↺</button>
             </div>
           </div>
 
           <!-- Scale Preset Pills -->
-          <div class="admin-preset-pills-row" style="margin-top: 4px; margin-bottom: 12px;">
+          <div class="admin-preset-pills-row" style="margin-top: 2px; margin-bottom: 12px;">
             ${[50, 75, 100, 125, 150, 200].map(s => `
               <button type="button" class="btn-preset-pill btn-preset-scale ${this.imageTransformState.scale === s ? 'is-active' : ''}" data-scale="${s}">${s}%</button>
             `).join('')}
           </div>
 
-          <!-- Resizing: Width & Height -->
+          <!-- Resizing: Width & Height Inputs -->
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
             <div class="admin-field-col">
               <label class="admin-field-label" style="font-size: 10px; margin-bottom: 4px; display: block;">Width</label>
@@ -3810,7 +3936,7 @@ export class SidePanel {
             </div>
           </div>
 
-          <!-- Resizing: Object Fit -->
+          <!-- Resizing: Object Fit Select -->
           <div class="admin-field-row" style="margin-bottom: 6px;">
             <div class="admin-field-label-wrap">
               <label class="admin-field-label">Object Fit</label>
@@ -3836,31 +3962,32 @@ export class SidePanel {
           </div>
         </div>
 
-        <!-- 3. Swapping with Existing Image or Through Upload -->
-        <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-media-swap') ? 'is-collapsed' : ''}">
+        <!-- 6. Easy Image Swapping & Project Library -->
+        <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-media-swap') ? 'is-collapsed' : ''}" style="margin-bottom: 0;">
           ${this._renderSectionHeader('sec-media-swap', 'Image Source & Swapping', ['media', 'src', 'backgroundImage'], 'media')}
 
-          <!-- Upload Option -->
+          <!-- Upload Dropzone Option with High Contrast Light Mode Text (Item 3) -->
           <div class="admin-dropzone" id="media-dropzone" style="margin-bottom: 12px;">
             <input type="file" id="media-file-input" style="display: none;" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif">
-            <div class="dropzone-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <div class="dropzone-icon admin-dropzone-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             </div>
-            <div style="font-size: 11px; font-weight: 600; color: #fff;">
+            <div class="admin-dropzone-title">
               Upload New Image (PNG / JPG / WebP / SVG)
             </div>
-            <div style="font-size: 10px; color: var(--admin-text-secondary); margin-top: 2px;">
-              Drag & Drop file or click to browse
+            <div class="admin-dropzone-desc">
+              Drag &amp; drop file or click to browse
             </div>
           </div>
 
-          <!-- Direct URL Input -->
-          <div class="admin-field-row" style="margin-bottom: 14px;">
+          <!-- Direct URL Input with Apply Action placed BELOW label (Item 2) -->
+          <div class="admin-field-vertical" style="margin-bottom: 12px;">
             <div class="admin-field-label-wrap">
               <label class="admin-field-label">Custom Image URL</label>
             </div>
-            <div class="admin-field-control">
+            <div class="admin-url-input-wrap">
               <input type="text" class="admin-input" id="media-url-input" value="${currentImgSrc}" placeholder="https://... or ./assets/images/...">
+              <button type="button" class="admin-btn admin-btn-primary" id="btn-apply-img-url">Apply</button>
             </div>
           </div>
 
@@ -3886,20 +4013,23 @@ export class SidePanel {
             <!-- Search Filter -->
             <input type="text" class="admin-input" id="img-gallery-search" placeholder="Search images by name..." style="margin-bottom: 8px; font-size: 10.5px; height: 26px;">
 
-            <!-- Gallery Cards Grid -->
+            <!-- Gallery Cards Grid with 1-Click Swap -->
             <div class="admin-gallery-grid" id="img-gallery-grid">
               ${this.availableImages.map(img => {
                 const isActive = currentImgSrc && (currentImgSrc.includes(img.src.replace(/^\.\//, '')) || img.src.includes(currentImgSrc.replace(/^\.\//, '')));
                 return `
-                  <button type="button" class="admin-gallery-card ${isActive ? 'is-active' : ''}" data-src="${img.src}" data-name="${img.name}" data-category="${img.category || 'General'}" title="Click to swap with ${img.name}">
+                  <div class="admin-gallery-card ${isActive ? 'is-active' : ''}" data-src="${img.src}" data-name="${img.name}" data-category="${img.category || 'General'}" data-tooltip="Click to swap with ${img.name}">
                     <div class="admin-gallery-thumb-wrap">
                       <img src="${img.src}" alt="${img.name}" loading="lazy">
                       ${isActive ? `<span class="admin-gallery-card-badge">Active</span>` : ''}
+                      <div class="admin-gallery-card-hover-action">
+                        <button type="button" class="btn-quick-swap">Swap</button>
+                      </div>
                     </div>
                     <div class="admin-gallery-meta">
                       <span class="admin-gallery-name">${img.name}</span>
                     </div>
-                  </button>
+                  </div>
                 `;
               }).join('')}
             </div>
@@ -3909,116 +4039,164 @@ export class SidePanel {
       ` : `
         <!-- ================= AUDIO MANAGEMENT ================= -->
 
-        <!-- Active Audio Overview & Audition Player -->
+        <!-- Active Audio Overview Card (When track is selected) -->
         ${currentAudioSrc ? `
-          <div class="admin-asset-overview-box">
-            <div style="width: 44px; height: 44px; border-radius: var(--admin-radius-sm); background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--admin-accent-cyan);">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          <div class="admin-asset-overview-box" style="flex-direction: column; align-items: stretch; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+              <div class="admin-asset-audio-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              </div>
+              <div class="admin-asset-info-col">
+                <div class="admin-asset-info-title">${currentAudioTitle}</div>
+                <div class="admin-asset-info-sub">${currentAudioSrc.split('/').pop() || 'Audio Track'}</div>
+              </div>
+              <div class="admin-swap-target-badge" data-tooltip="Currently selected canvas track">
+                <span class="target-dot"></span> Target
+              </div>
+              <button type="button" class="btn-audio-action btn-audition ${this.currentPlayingAuditionSrc === currentAudioSrc && isPlayingAudition ? 'is-playing' : ''}" data-src="${currentAudioSrc}" data-title="${currentAudioTitle}" style="flex-shrink: 0;">
+                ${this.currentPlayingAuditionSrc === currentAudioSrc && isPlayingAudition
+                  ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause`
+                  : `<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Audition`
+                }
+              </button>
             </div>
-            <div class="admin-asset-info-col">
-              <div class="admin-asset-info-title">${currentAudioTitle}</div>
-              <div class="admin-asset-info-sub">${currentAudioSrc.split('/').pop() || 'Audio Track'}</div>
-            </div>
-            <button type="button" class="btn-audio-action btn-audition" data-src="${currentAudioSrc}" style="flex-shrink: 0;">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Audition
-            </button>
-          </div>
-        ` : `
-          <div style="padding: 10px 12px; margin-bottom: 12px; background: rgba(0, 229, 255, 0.06); border: 1px dashed rgba(0, 229, 255, 0.25); border-radius: var(--admin-radius-sm); font-size: 11px; color: var(--admin-text-secondary); line-height: 1.5;">
-            <strong style="color: var(--admin-accent-cyan);">Audio Studio</strong>: Audition, swap, upload, and arrange tracks below. You can also click any track or play button on canvas to swap its audio.
-          </div>
-        `}
 
-        <!-- 1. Audio Track Swapping (Library) -->
+            <!-- Minimalist Seekbar directly below overview track if auditioned (Item 5) -->
+            ${this.currentPlayingAuditionSrc === currentAudioSrc ? `
+              <div class="admin-track-inline-seek is-overview-seek" data-track-src="${currentAudioSrc}">
+                <button type="button" class="btn-inline-seek-toggle ${isPlayingAudition ? 'is-playing' : ''}" data-src="${currentAudioSrc}" data-tooltip="${isPlayingAudition ? 'Pause' : 'Play'}">
+                  ${isPlayingAudition
+                    ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`
+                    : `<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`
+                  }
+                </button>
+                <div class="inline-seek-slider-wrap">
+                  <input type="range" class="admin-inline-seek-slider" min="0" max="${auditionSeekMax}" step="0.1" value="${auditionSeekVal}" data-tooltip="Seek audio">
+                  <div class="admin-inline-seek-fill" style="width: ${auditionFillPct}%;"></div>
+                </div>
+                <div class="inline-seek-time-text">${auditionCur} / ${auditionDur}</div>
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
+
+        <!-- 6. Audio Track Swapping (Library) with Minimalist Seekbars Below Each Track (Item 5) -->
         <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-audio-tracks') ? 'is-collapsed' : ''}">
           ${this._renderSectionHeader('sec-audio-tracks', 'Audio Tracks Library', ['media', 'audio'], 'media')}
 
           <div class="admin-audio-track-list">
             ${this.availableAudioTracks.map(t => {
               const isActive = currentAudioSrc && (currentAudioSrc.includes(t.file) || currentAudioSrc === t.src);
+              const isThisAuditioning = this.currentPlayingAuditionSrc === t.src;
               return `
-                <div class="admin-audio-track-row ${isActive ? 'is-active' : ''}">
-                  <div class="admin-audio-track-info">
-                    <div class="admin-audio-track-title">${t.title}</div>
-                    <div class="admin-audio-track-meta">
-                      <span>${t.style || 'Track'}</span>
-                      <span>•</span>
-                      <span>${t.duration || '--:--'}</span>
-                      ${isActive ? `<span style="color: var(--admin-accent-cyan); font-weight: 700;">(Active)</span>` : ''}
+                <div class="admin-audio-track-item ${isActive ? 'is-active' : ''} ${isThisAuditioning ? 'has-audition' : ''}">
+                  <div class="admin-audio-track-row">
+                    <div class="admin-audio-track-info">
+                      <div class="admin-audio-track-title">${t.title}</div>
+                      <div class="admin-audio-track-meta">
+                        <span>${t.style || 'Track'}</span>
+                        <span>•</span>
+                        <span>${t.duration || '--:--'}</span>
+                        ${isActive ? `<span class="admin-track-active-tag">(Active)</span>` : ''}
+                      </div>
+                    </div>
+                    <div class="admin-audio-track-actions">
+                      <button type="button" class="btn-audio-action btn-audition ${isThisAuditioning && isPlayingAudition ? 'is-playing' : ''}" data-src="${t.src}" data-title="${t.title}" data-style="${t.style}" data-tooltip="Audition this track">
+                        ${isThisAuditioning && isPlayingAudition
+                          ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause`
+                          : `<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Audition`
+                        }
+                      </button>
+                      <button type="button" class="btn-audio-action btn-swap-audio" data-src="${t.src}" data-title="${t.title}" data-tooltip="Swap target with ${t.title}">
+                        Swap
+                      </button>
                     </div>
                   </div>
-                  <div class="admin-audio-track-actions">
-                    <button type="button" class="btn-audio-action btn-audition" data-src="${t.src}" title="Audition this track">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Audition
-                    </button>
-                    <button type="button" class="btn-audio-action btn-swap-audio" data-src="${t.src}" data-title="${t.title}" title="Assign this track to the active component">
-                      Swap
-                    </button>
-                  </div>
+
+                  <!-- Minimalist Seekbar appearing below the track when user clicks Audition (Item 5) -->
+                  ${isThisAuditioning ? `
+                    <div class="admin-track-inline-seek" data-track-src="${t.src}">
+                      <button type="button" class="btn-inline-seek-toggle ${isPlayingAudition ? 'is-playing' : ''}" data-src="${t.src}" data-tooltip="${isPlayingAudition ? 'Pause' : 'Play'}">
+                        ${isPlayingAudition
+                          ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`
+                          : `<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`
+                        }
+                      </button>
+                      <div class="inline-seek-slider-wrap">
+                        <input type="range" class="admin-inline-seek-slider" min="0" max="${auditionSeekMax}" step="0.1" value="${auditionSeekVal}" data-tooltip="Seek audio">
+                        <div class="admin-inline-seek-fill" style="width: ${auditionFillPct}%;"></div>
+                      </div>
+                      <div class="inline-seek-time-text">${auditionCur} / ${auditionDur}</div>
+                    </div>
+                  ` : ''}
                 </div>
               `;
             }).join('')}
           </div>
 
-          <!-- Direct Audio URL Input -->
-          <div class="admin-field-row" style="margin-top: 10px; margin-bottom: 0;">
+          <!-- Direct Audio URL Input with Apply Action placed BELOW label (Item 2) -->
+          <div class="admin-field-vertical" style="margin-top: 10px; margin-bottom: 0;">
             <div class="admin-field-label-wrap">
               <label class="admin-field-label">Custom Audio URL</label>
             </div>
-            <div class="admin-field-control">
+            <div class="admin-url-input-wrap">
               <input type="text" class="admin-input" id="audio-url-input" value="${currentAudioSrc}" placeholder="/api/media?file=audio/... or https://...">
+              <button type="button" class="admin-btn admin-btn-primary" id="btn-apply-audio-url">Apply</button>
             </div>
           </div>
         </div>
 
-        <!-- 2. Audio Upload Option -->
+        <!-- Upload Audio File with High Contrast Light Mode Text (Item 3) -->
         <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-audio-upload') ? 'is-collapsed' : ''}">
           ${this._renderSectionHeader('sec-audio-upload', 'Upload Audio File', ['media'], 'media')}
 
           <div class="admin-dropzone" id="audio-dropzone">
             <input type="file" id="audio-file-input" style="display: none;" accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/aac,audio/flac">
-            <div class="dropzone-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            <div class="dropzone-icon admin-dropzone-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
             </div>
-            <div style="font-size: 11px; font-weight: 600; color: #fff;">
+            <div class="admin-dropzone-title">
               Upload New Audio (MP3 / WAV / OGG / M4A)
             </div>
-            <div style="font-size: 10px; color: var(--admin-text-secondary); margin-top: 2px;">
-              Drag & Drop file or click to browse local files
+            <div class="admin-dropzone-desc">
+              Drag &amp; drop audio file or click to browse
             </div>
           </div>
         </div>
 
-        <!-- 3. Playlist Arrangement Feature -->
-        <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-audio-arrangement') ? 'is-collapsed' : ''}">
+        <!-- 4. Playlist Arrangement Feature with Modern Drag Handles & Enhanced Animation (Items 4 & 6) -->
+        <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-audio-arrangement') ? 'is-collapsed' : ''}" style="margin-bottom: 0;">
           ${this._renderSectionHeader('sec-audio-arrangement', 'Playlist Arrangement', ['html'], 'text')}
 
           <div style="font-size: 10.5px; color: var(--admin-text-secondary); margin-bottom: 8px; line-height: 1.4;">
-            Reorder the track list live on the storefront. Use the arrow buttons to arrange tracks up or down.
+            Drag and reorder tracks to arrange the live playlist sequence.
           </div>
 
-          <div class="admin-arrange-box">
+          <div class="admin-arrange-box" id="admin-arrange-playlist-box">
             ${playlistTracks.length > 0 ? playlistTracks.map((t, idx) => {
               const title = t.dataset.title || t.querySelector('.track-name')?.firstChild?.textContent?.trim() || `Track ${idx + 1}`;
               const style = t.dataset.style || t.querySelector('.track-name small')?.textContent?.trim() || '';
               const isSelected = this.activeElement && (this.activeElement === t || this.activeElement.closest('.track') === t);
+              const isJustReordered = this._justReorderedTrackIdx === idx;
 
               return `
-                <div class="admin-arrange-item ${isSelected ? 'is-selected-track' : ''}">
+                <div class="admin-arrange-item ${isSelected ? 'is-selected-track' : ''} ${isJustReordered ? 'is-reordered-flash' : ''}" draggable="true" data-index="${idx}" data-tooltip="Drag to rearrange track order">
+                  <div class="admin-drag-handle">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <circle cx="9" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/>
+                      <circle cx="15" cy="5" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="19" r="1.5"/>
+                    </svg>
+                  </div>
                   <span class="admin-arrange-index">${String(idx + 1).padStart(2, '0')}</span>
                   <div class="admin-arrange-name">
-                    <strong>${title}</strong>
-                    ${style ? `<span style="font-size: 9.5px; color: var(--admin-text-muted); margin-left: 4px;">(${style})</span>` : ''}
-                  </div>
-                  <div class="admin-arrange-btn-group">
-                    <button type="button" class="btn-arrange-move btn-arrange-up" data-index="${idx}" ${idx === 0 ? 'disabled' : ''} title="Move Up">▲</button>
-                    <button type="button" class="btn-arrange-move btn-arrange-down" data-index="${idx}" ${idx === playlistTracks.length - 1 ? 'disabled' : ''} title="Move Down">▼</button>
+                    <span class="admin-arrange-title-text">${title}</span>
+                    ${style ? `<span class="admin-arrange-style">(${style})</span>` : ''}
                   </div>
                 </div>
               `;
             }).join('') : `
               <div style="font-size: 11px; color: var(--admin-text-muted); text-align: center; padding: 12px 0;">
-                Navigate to the Beats Showcase view to arrange tracks.
+                Navigate to Beats Showcase to arrange tracks.
               </div>
             `}
           </div>
@@ -4054,45 +4232,19 @@ export class SidePanel {
     }
 
     // 3. Scaling: Slider & Steppers & Pills
-    const scaleSlider = container.querySelector('#img-scale-slider');
-    const scaleBadge = container.querySelector('#val-badge-scale');
-    if (scaleSlider) {
-      scaleSlider.addEventListener('input', (e) => {
-        const val = parseInt(e.target.value, 10);
-        this.imageTransformState.scale = val;
-        if (scaleBadge) scaleBadge.textContent = `${val}%`;
-        this._applyImageTransform();
-      });
-    }
-
-    const scaleDecBtn = container.querySelector('#btn-scale-dec');
-    if (scaleDecBtn) {
-      scaleDecBtn.addEventListener('click', () => {
-        const current = this.imageTransformState.scale || 100;
-        this.imageTransformState.scale = Math.max(25, current - 5);
-        if (scaleSlider) scaleSlider.value = this.imageTransformState.scale;
-        if (scaleBadge) scaleBadge.textContent = `${this.imageTransformState.scale}%`;
-        this._applyImageTransform();
-      });
-    }
-
-    const scaleIncBtn = container.querySelector('#btn-scale-inc');
-    if (scaleIncBtn) {
-      scaleIncBtn.addEventListener('click', () => {
-        const current = this.imageTransformState.scale || 100;
-        this.imageTransformState.scale = Math.min(200, current + 5);
-        if (scaleSlider) scaleSlider.value = this.imageTransformState.scale;
-        if (scaleBadge) scaleBadge.textContent = `${this.imageTransformState.scale}%`;
-        this._applyImageTransform();
-      });
-    }
+    this._bindSliderPair(container, 'img-scale', (val) => {
+      this.imageTransformState.scale = val;
+      this._applyImageTransform();
+    });
 
     container.querySelectorAll('.btn-preset-scale').forEach(pill => {
       pill.addEventListener('click', () => {
         const targetScale = parseInt(pill.dataset.scale, 10);
         this.imageTransformState.scale = targetScale;
-        if (scaleSlider) scaleSlider.value = targetScale;
-        if (scaleBadge) scaleBadge.textContent = `${targetScale}%`;
+        const slider = container.querySelector('#slider-img-scale');
+        const num = container.querySelector('#num-img-scale');
+        if (slider) slider.value = targetScale;
+        if (num) num.value = targetScale;
         this._applyImageTransform();
       });
     });
@@ -4138,6 +4290,7 @@ export class SidePanel {
     const imgDropzone = container.querySelector('#media-dropzone');
     const imgFileInput = container.querySelector('#media-file-input');
     const imgUrlInput = container.querySelector('#media-url-input');
+    const applyImgUrlBtn = container.querySelector('#btn-apply-img-url');
 
     if (imgDropzone && imgFileInput) {
       imgDropzone.addEventListener('click', () => imgFileInput.click());
@@ -4165,10 +4318,21 @@ export class SidePanel {
       });
     }
 
+    const handleApplyImgUrl = () => {
+      if (!imgUrlInput) return;
+      const val = imgUrlInput.value.trim();
+      if (val) this._swapImage(val, 'custom URL');
+    };
+
+    if (applyImgUrlBtn) {
+      applyImgUrlBtn.addEventListener('click', handleApplyImgUrl);
+    }
     if (imgUrlInput) {
-      imgUrlInput.addEventListener('change', () => {
-        const val = imgUrlInput.value.trim();
-        if (val) this._swapImage(val, 'custom URL');
+      imgUrlInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleApplyImgUrl();
+        }
       });
     }
 
@@ -4212,16 +4376,72 @@ export class SidePanel {
       });
     });
 
-    // 7. Audio: Audition Player
+    // 7. Audio: Minimal Inline Seekbar Controls (Item 5)
+    container.querySelectorAll('.admin-track-inline-seek').forEach(seekContainer => {
+      const seekBar = seekContainer.querySelector('.admin-inline-seek-slider');
+      const toggleBtn = seekContainer.querySelector('.btn-inline-seek-toggle');
+      const fillEl = seekContainer.querySelector('.admin-inline-seek-fill');
+      const timeText = seekContainer.querySelector('.inline-seek-time-text');
+      const trackSrc = seekContainer.dataset.trackSrc;
+
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (this.currentPlayingAuditionSrc === trackSrc && this.auditionAudioElement) {
+            if (this.auditionAudioElement.paused) {
+              this.auditionAudioElement.play().catch(() => {});
+              this._updateAuditionUiState(true);
+            } else {
+              this.auditionAudioElement.pause();
+              this._updateAuditionUiState(false);
+            }
+          } else {
+            this._handleAudition(trackSrc);
+          }
+        });
+      }
+
+      if (seekBar) {
+        const startSeeking = () => { this.isAuditionSeeking = true; };
+        const stopSeeking = () => {
+          this.isAuditionSeeking = false;
+          if (this.auditionAudioElement && this.currentPlayingAuditionSrc === trackSrc) {
+            this.auditionAudioElement.currentTime = parseFloat(seekBar.value) || 0;
+          }
+        };
+
+        seekBar.addEventListener('pointerdown', startSeeking);
+        seekBar.addEventListener('touchstart', startSeeking);
+
+        seekBar.addEventListener('input', () => {
+          const val = parseFloat(seekBar.value) || 0;
+          const dur = this.auditionAudioElement?.duration || 100;
+          if (fillEl && dur > 0) {
+            fillEl.style.width = `${Math.min(100, Math.max(0, (val / dur) * 100))}%`;
+          }
+          if (timeText) {
+            timeText.textContent = `${this._formatTime(val)} / ${this._formatTime(dur)}`;
+          }
+        });
+
+        seekBar.addEventListener('change', stopSeeking);
+        seekBar.addEventListener('pointerup', stopSeeking);
+        seekBar.addEventListener('touchend', stopSeeking);
+      }
+    });
+
+    // 8. Audio: Track Audition buttons
     container.querySelectorAll('.btn-audition').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const src = btn.dataset.src;
-        this._handleAudition(src, btn);
+        const title = btn.dataset.title;
+        const style = btn.dataset.style;
+        this._handleAudition(src, title, style, btn);
       });
     });
 
-    // 8. Audio: Track Swapping
+    // 9. Audio: Track Swapping
     container.querySelectorAll('.btn-swap-audio').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -4231,16 +4451,29 @@ export class SidePanel {
       });
     });
 
-    // 9. Audio: Direct URL Input
+    // 10. Audio: Direct URL Input with Apply Action
     const audioUrlInput = container.querySelector('#audio-url-input');
+    const applyAudioUrlBtn = container.querySelector('#btn-apply-audio-url');
+
+    const handleApplyAudioUrl = () => {
+      if (!audioUrlInput) return;
+      const val = audioUrlInput.value.trim();
+      if (val) this._swapAudio(val, 'custom URL track');
+    };
+
+    if (applyAudioUrlBtn) {
+      applyAudioUrlBtn.addEventListener('click', handleApplyAudioUrl);
+    }
     if (audioUrlInput) {
-      audioUrlInput.addEventListener('change', () => {
-        const val = audioUrlInput.value.trim();
-        if (val) this._swapAudio(val, 'custom URL track');
+      audioUrlInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleApplyAudioUrl();
+        }
       });
     }
 
-    // 10. Audio: Upload Dropzone
+    // 11. Audio: Upload Dropzone
     const audioDropzone = container.querySelector('#audio-dropzone');
     const audioFileInput = container.querySelector('#audio-file-input');
     if (audioDropzone && audioFileInput) {
@@ -4269,22 +4502,143 @@ export class SidePanel {
       });
     }
 
-    // 11. Playlist Arrangement: Move Up & Move Down
-    container.querySelectorAll('.btn-arrange-up').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.dataset.index, 10);
-        this._handleReorderPlaylist(idx, idx - 1);
-      });
-    });
+    // 12. Playlist Arrangement with Modern Drag Handles & Seamless Reordering (Items 1 & 2)
+    const arrangeBox = container.querySelector('#admin-arrange-playlist-box');
+    if (arrangeBox) {
+      let dragSrcIdx = null;
+      let activeTargetIdx = null;
+      let activePosition = null; // 'top' or 'bottom'
 
-    container.querySelectorAll('.btn-arrange-down').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.dataset.index, 10);
-        this._handleReorderPlaylist(idx, idx + 1);
-      });
-    });
+      const clearDragOverIndicators = () => {
+        arrangeBox.querySelectorAll('.admin-arrange-item').forEach(it => {
+          it.classList.remove('is-drag-over-top', 'is-drag-over-bottom');
+        });
+      };
 
-    // 12. Reset buttons
+      // Container-wide dragover: Prevents ANY "not-allowed" cursor gaps anywhere inside or between tracks
+      arrangeBox.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (dragSrcIdx === null) return;
+
+        const items = Array.from(arrangeBox.querySelectorAll('.admin-arrange-item[draggable="true"]'));
+        if (items.length === 0) return;
+
+        // Find which item is closest vertically
+        let targetItem = null;
+        let isTop = false;
+
+        for (let i = 0; i < items.length; i++) {
+          const it = items[i];
+          const rect = it.getBoundingClientRect();
+          if (e.clientY <= rect.bottom) {
+            targetItem = it;
+            const midY = rect.top + rect.height / 2;
+            isTop = e.clientY < midY;
+            break;
+          }
+        }
+
+        // If mouse is below all items, snap to bottom of the last item
+        if (!targetItem) {
+          targetItem = items[items.length - 1];
+          isTop = false;
+        }
+
+        const targetIdx = parseInt(targetItem.dataset.index, 10);
+
+        if (targetIdx !== dragSrcIdx) {
+          // Check if state actually changed before modifying DOM classes to prevent flickering
+          if (activeTargetIdx !== targetIdx || activePosition !== (isTop ? 'top' : 'bottom')) {
+            clearDragOverIndicators();
+            targetItem.classList.add(isTop ? 'is-drag-over-top' : 'is-drag-over-bottom');
+            activeTargetIdx = targetIdx;
+            activePosition = isTop ? 'top' : 'bottom';
+          }
+        } else {
+          clearDragOverIndicators();
+          activeTargetIdx = null;
+          activePosition = null;
+        }
+      });
+
+      arrangeBox.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+      });
+
+      arrangeBox.addEventListener('dragleave', (e) => {
+        if (!arrangeBox.contains(e.relatedTarget)) {
+          clearDragOverIndicators();
+          activeTargetIdx = null;
+          activePosition = null;
+        }
+      });
+
+      arrangeBox.addEventListener('drop', (e) => {
+        e.preventDefault();
+        arrangeBox.classList.remove('is-dragging-active');
+        clearDragOverIndicators();
+
+        const srcIdx = dragSrcIdx;
+        const tgtIdx = activeTargetIdx;
+        const pos = activePosition;
+
+        dragSrcIdx = null;
+        activeTargetIdx = null;
+        activePosition = null;
+
+        if (srcIdx !== null && tgtIdx !== null && !isNaN(srcIdx) && !isNaN(tgtIdx) && srcIdx !== tgtIdx) {
+          const targetPos = pos === 'top' ? 'before' : 'after';
+          this._justReorderedTrackIdx = pos === 'top'
+            ? (srcIdx < tgtIdx ? tgtIdx - 1 : tgtIdx)
+            : (srcIdx > tgtIdx ? tgtIdx + 1 : tgtIdx);
+          this._handleReorderPlaylist(srcIdx, tgtIdx, targetPos);
+        }
+      });
+
+      // Item level listeners for initiating drag and click selection
+      const items = arrangeBox.querySelectorAll('.admin-arrange-item[draggable="true"]');
+      items.forEach(item => {
+        item.addEventListener('dragstart', (e) => {
+          dragSrcIdx = parseInt(item.dataset.index, 10);
+          activeTargetIdx = null;
+          activePosition = null;
+          arrangeBox.classList.add('is-dragging-active');
+          item.classList.add('is-dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', String(dragSrcIdx));
+        });
+
+        item.addEventListener('dragend', () => {
+          arrangeBox.classList.remove('is-dragging-active');
+          item.classList.remove('is-dragging');
+          clearDragOverIndicators();
+          dragSrcIdx = null;
+          activeTargetIdx = null;
+          activePosition = null;
+        });
+
+        // Click track card to highlight/select in preview
+        item.addEventListener('click', () => {
+          const idx = parseInt(item.dataset.index, 10);
+          const iframeDoc = this.getIframeDoc ? this.getIframeDoc() : document;
+          if (iframeDoc) {
+            const pEl = iframeDoc.querySelector('#playlist') || iframeDoc.querySelector('.playlist');
+            const tracks = pEl ? Array.from(pEl.querySelectorAll('.track')) : [];
+            if (tracks[idx] && this.selectionEngine) {
+              const meta = this.selectionEngine.extractElementMetadata(tracks[idx]);
+              if (meta) {
+                this.activeElement = tracks[idx];
+                this.activeMeta = meta;
+                this._renderActiveTab();
+              }
+            }
+          }
+        });
+      });
+    }
+
+    // 13. Reset buttons
     this._bindResetButtons(container);
   }
 

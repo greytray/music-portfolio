@@ -1382,19 +1382,19 @@ function mediaProxyPlugin() {
   setTimeout(prewarmServerMemory, 500);
 
   return {
-    name: 'media-proxy-middleware',
+    name: 'admin-design-mode-middleware',
     configureServer(server) {
-      server.middlewares.use(handler);
+      server.middlewares.use(makeHandler(server));
     },
     configurePreviewServer(server) {
-      server.middlewares.use(handler);
+      server.middlewares.use(makeHandler(server));
     },
   };
 }
 
 export default defineConfig({
   base: "/",
-  plugins: [copyAssetsPlugin(), adminDesignModePlugin(), mediaProxyPlugin()],
+  plugins: [copyAssetsPlugin(), adminDesignModePlugin()],
   build: {
     rollupOptions: {
       input: {
