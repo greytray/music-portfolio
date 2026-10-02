@@ -178,68 +178,7 @@ export class SidePanel {
 
       <!-- Tab Content Area -->
       <div class="admin-tab-content" id="admin-tab-content">
-        <div class="admin-empty-notice" style="text-align: center; padding: 32px 18px; color: var(--admin-text-secondary); width: 100%; box-sizing: border-box;">
-          <div class="empty-cursor-icon-wrap" style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.35); margin-bottom: 12px; margin-inline: auto;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--admin-accent-cyan); transform: translate(-1px, 1px);">
-              <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
-              <path d="m13 13 6 6"/>
-            </svg>
-          </div>
-          <p style="margin: 0 0 20px 0; font-size: 14.5px; font-weight: 700; color: var(--admin-text-primary); text-align: center;">Inspect &amp; Edit</p>
-          <div style="text-align: left; max-width: 320px; margin-inline: auto; font-size: 12px; line-height: 1.6; color: var(--admin-text-secondary);">
-            <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-              <span><strong>Step 1.</strong> Turn on Edit mode</span>
-              <span class="admin-kbd-group" style="display: inline-flex; align-items: center; gap: 2px;">
-                <kbd class="admin-keycap">Shift</kbd>
-                <kbd class="admin-keycap">E</kbd>
-              </span>
-            </div>
-            <div style="margin-bottom: 14px;"><strong>Step 2.</strong> Click any element on the preview website to inspect and edit.</div>
-            
-            <div style="padding-top: 10px; border-top: 1px dashed var(--admin-border-subtle); margin-bottom: 12px;">
-              <div style="font-weight: 700; color: var(--admin-text-primary); margin-bottom: 6px; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em;">Tips &amp; Quick Resets</div>
-              <div style="display: flex; flex-direction: column; gap: 5px; font-size: 11.5px; color: var(--admin-text-muted);">
-                <div>• <strong style="color: var(--admin-text-secondary);">Underline Indication:</strong> Modified settings display an underline (yellow in dark, amber in light mode).</div>
-                <div>• <strong style="color: var(--admin-text-secondary);">Double-Click Reset:</strong> Double-click any underlined setting name to instantly revert it.</div>
-                <div>• <strong style="color: var(--admin-text-secondary);">Slider Reset:</strong> Double-click slider handle or number field to reset to default.</div>
-                <div>• <strong style="color: var(--admin-text-secondary);">Element Reset:</strong> Use the <em>Reset Changes</em> button below to revert all edits on the element.</div>
-              </div>
-            </div>
-
-            <div style="padding-top: 10px; border-top: 1px dashed var(--admin-border-subtle);">
-              <div style="font-weight: 700; color: var(--admin-text-primary); margin-bottom: 8px; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em;">Keyboard Shortcuts</div>
-              <div style="display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 11.5px; align-items: center; color: var(--admin-text-muted);">
-                <span class="admin-kbd-group">
-                  <kbd class="admin-keycap">Shift</kbd>
-                  <kbd class="admin-keycap">E</kbd>
-                </span>
-                <span style="color: var(--admin-text-secondary); font-weight: 500;">Toggle Edit mode on / off</span>
-
-                <span class="admin-kbd-group">
-                  <kbd class="admin-keycap">I</kbd>
-                </span>
-                <span style="color: var(--admin-text-secondary); font-weight: 500;">Collapse / expand sidebar</span>
-
-                <span class="admin-kbd-group">
-                  <kbd class="admin-keycap">⌘</kbd>
-                  <span class="admin-kbd-slash">/</span>
-                  <kbd class="admin-keycap">Ctrl</kbd>
-                  <kbd class="admin-keycap">Z</kbd>
-                </span>
-                <span style="color: var(--admin-text-secondary); font-weight: 500;">Undo previous change</span>
-
-                <span class="admin-kbd-group">
-                  <kbd class="admin-keycap">⌘</kbd>
-                  <span class="admin-kbd-slash">/</span>
-                  <kbd class="admin-keycap">Ctrl</kbd>
-                  <kbd class="admin-keycap">Shift</kbd>
-                  <kbd class="admin-keycap">Z</kbd>
-                </span>
-                <span style="color: var(--admin-text-secondary); font-weight: 500;">Redo reverted change</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        ${this._buildEmptyTabNotice('text')}
         <div class="admin-sidebar-scroll-end" aria-hidden="true">---------------------------------------------------</div>
       </div>
 
@@ -1613,37 +1552,38 @@ export class SidePanel {
     }
 
     return `
-      <div class="admin-empty-notice" style="text-align: center; padding: 32px 18px; color: var(--admin-text-secondary); width: 100%; box-sizing: border-box;">
-        <div class="empty-cursor-icon-wrap" style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.35); margin-bottom: 12px; margin-inline: auto;">
+      <div class="admin-empty-notice" style="text-align: center; padding: 24px 12px; color: var(--admin-text-secondary); width: 100%; box-sizing: border-box;">
+        <div class="empty-cursor-icon-wrap" style="display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 50%; background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.35); margin-bottom: 12px; margin-inline: auto;">
           ${iconSvg}
         </div>
-        <div style="display: inline-block; padding: 2px 8px; border-radius: 4px; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.35); font-size: 10px; font-weight: 700; letter-spacing: 0.5px; color: #A78BFA; margin-bottom: 8px;">
+        <div style="display: inline-block; padding: 3px 10px; border-radius: 4px; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.35); font-size: 11px; font-weight: 700; letter-spacing: 0.5px; color: #A78BFA; margin-bottom: 8px;">
           ${categoryName}
         </div>
-        <p style="margin: 0 0 4px 0; font-size: 14.5px; font-weight: 700; color: var(--admin-text-primary); text-align: center;">${categoryTitle}</p>
-        <p style="margin: 0 0 18px 0; font-size: 12px; color: var(--admin-text-muted); text-align: center;">${categoryDesc}</p>
-        <div style="text-align: left; max-width: 320px; margin-inline: auto; font-size: 12px; line-height: 1.6; color: var(--admin-text-secondary); background: rgba(255, 255, 255, 0.02); padding: 14px 16px; border-radius: 8px; border: 1px solid var(--admin-border-subtle);">
-          <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-            <span><strong style="color: var(--admin-text-primary);">Step 1.</strong> Ensure <span style="color: var(--admin-accent-blue); font-weight: 600;">Edit mode</span> is ON</span>
-            <span class="admin-kbd-group" style="display: inline-flex; align-items: center; gap: 2px;">
+        <p style="margin: 0 0 4px 0; font-size: 15px; font-weight: 700; color: var(--admin-text-primary); text-align: center;">${categoryTitle}</p>
+        <p style="margin: 0 0 16px 0; font-size: 12.5px; color: var(--admin-text-muted); text-align: center;">${categoryDesc}</p>
+        <div style="text-align: left; width: 100%; box-sizing: border-box; margin: 0; font-size: 13px; line-height: 1.6; color: var(--admin-text-secondary); background: rgba(255, 255, 255, 0.02); padding: 16px; border-radius: 8px; border: 1px solid var(--admin-border-subtle);">
+          <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px;">
+            <span><strong style="color: var(--admin-text-primary);" class="admin-notice-bold">Step 1.</strong> Ensure <span style="color: var(--admin-accent-blue); font-weight: 600;">Edit mode</span> is ON</span>
+            <span class="admin-kbd-group" style="display: inline-flex; align-items: center; gap: 3px;">
               <kbd class="admin-keycap">Shift</kbd>
               <kbd class="admin-keycap">E</kbd>
             </span>
           </div>
-          <div style="margin-bottom: 12px;"><strong style="color: var(--admin-text-primary);">Step 2.</strong> ${step2Text}</div>
+          <div style="margin-bottom: 14px; font-size: 13px;"><strong style="color: var(--admin-text-primary);" class="admin-notice-bold">Step 2.</strong> ${step2Text}</div>
           
-          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--admin-border-subtle); margin-bottom: 10px;">
-            <div style="font-weight: 700; color: var(--admin-text-primary); margin-bottom: 5px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;">Tips &amp; Quick Resets</div>
-            <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--admin-text-muted);">
-              <div>• <strong style="color: var(--admin-text-secondary);">Underline Indication:</strong> Modified settings display an underline (yellow in dark, amber in light mode).</div>
-              <div>• <strong style="color: var(--admin-text-secondary);">Double-Click Reset:</strong> Double-click any underlined setting name to instantly revert it.</div>
-              <div>• <strong style="color: var(--admin-text-secondary);">Slider Reset:</strong> Double-click slider handle or number field to reset to default.</div>
+          <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--admin-border-subtle); margin-bottom: 12px;">
+            <div style="font-weight: 600; color: var(--admin-text-primary); margin-bottom: 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;" class="admin-notice-heading">Tips &amp; Quick Resets</div>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--admin-text-muted);">
+              <div>• <strong style="color: var(--admin-text-secondary);" class="admin-notice-bold">Underline Marks:</strong> Modified settings show an underline (yellow in dark, amber in light mode).</div>
+              <div>• <strong style="color: var(--admin-text-secondary);" class="admin-notice-bold">Quick Reset:</strong> Double-click any setting name to instantly revert it.</div>
+              <div>• <strong style="color: var(--admin-text-secondary);" class="admin-notice-bold">Slider Reset:</strong> Double-click any slider or number box to reset to default.</div>
+              <div>• <strong style="color: var(--admin-text-secondary);" class="admin-notice-bold">Highlight Edits:</strong> Toggle "Show Changes" at bottom to highlight all edited canvas elements.</div>
             </div>
           </div>
 
-          <div style="padding-top: 10px; border-top: 1px dashed var(--admin-border-subtle);">
-            <div style="font-weight: 700; color: var(--admin-text-primary); margin-bottom: 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;">Shortcuts</div>
-            <div style="display: grid; grid-template-columns: auto 1fr; gap: 5px 10px; font-size: 11px; align-items: center; color: var(--admin-text-muted);">
+          <div style="padding-top: 12px; border-top: 1px dashed var(--admin-border-subtle);">
+            <div style="font-weight: 600; color: var(--admin-text-primary); margin-bottom: 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;" class="admin-notice-heading">Shortcuts</div>
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; font-size: 12.5px; align-items: center; color: var(--admin-text-muted);">
               <span class="admin-kbd-group">
                 <kbd class="admin-keycap">Shift</kbd>
                 <kbd class="admin-keycap">E</kbd>
@@ -1661,7 +1601,7 @@ export class SidePanel {
                 <kbd class="admin-keycap">Ctrl</kbd>
                 <kbd class="admin-keycap">Z</kbd>
               </span>
-              <span style="color: var(--admin-text-secondary); font-weight: 500;">Undo</span>
+              <span style="color: var(--admin-text-secondary); font-weight: 500;">Undo action</span>
 
               <span class="admin-kbd-group">
                 <kbd class="admin-keycap">⌘</kbd>
@@ -1670,7 +1610,7 @@ export class SidePanel {
                 <kbd class="admin-keycap">Shift</kbd>
                 <kbd class="admin-keycap">Z</kbd>
               </span>
-              <span style="color: var(--admin-text-secondary); font-weight: 500;">Redo</span>
+              <span style="color: var(--admin-text-secondary); font-weight: 500;">Redo action</span>
             </div>
           </div>
         </div>
@@ -5735,5 +5675,94 @@ export class SidePanel {
 
   _camelToKebab(str) {
     return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+  }
+
+  _buildEmptyTabNotice(tabName = 'text') {
+    return `
+      <div class="admin-empty-notice" style="text-align: center; padding: 20px 16px; color: var(--admin-text-secondary); width: 100%; box-sizing: border-box;">
+        <div class="empty-cursor-icon-wrap" style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.35); margin-bottom: 12px; margin-inline: auto;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--admin-accent-cyan); transform: translate(-1px, 1px);">
+            <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+            <path d="m13 13 6 6"/>
+          </svg>
+        </div>
+        <p style="margin: 0 0 20px 0; font-size: 16px; font-weight: 700; color: var(--admin-text-primary); text-align: center;">Inspect &amp; Edit</p>
+        
+        <div class="admin-help-guide-wrap" style="text-align: left; width: 100%; box-sizing: border-box; font-size: 13.5px; line-height: 1.6; color: var(--admin-text-secondary);">
+          
+          <!-- Quick Start Steps -->
+          <div style="margin-bottom: 20px; width: 100%;">
+            <div class="admin-help-section-title">Quick Start Steps</div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <strong class="admin-help-point">Step 1:</strong>
+                <span class="admin-help-desc">Turn on Edit mode</span>
+                <span class="admin-kbd-group">
+                  <kbd class="admin-keycap">Shift</kbd>
+                  <kbd class="admin-keycap">E</kbd>
+                </span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <strong class="admin-help-point">Step 2:</strong>
+                <span class="admin-help-desc">Click any element on the preview to edit</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Tips & Editing Help -->
+          <div style="padding-top: 16px; border-top: 1px dashed var(--admin-border-subtle); margin-bottom: 20px; width: 100%;">
+            <div class="admin-help-section-title">Tips &amp; Editing Help</div>
+            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; line-height: 1.5;">
+              <div>• <strong class="admin-help-point">Underline:</strong> <span class="admin-help-desc">Shows modified settings.</span></div>
+              <div>• <strong class="admin-help-point">Reset Field:</strong> <span class="admin-help-desc">Double-click label or click <span class="admin-help-bold-tag">↺</span>.</span></div>
+              <div>• <strong class="admin-help-point">Reset Element:</strong> <span class="admin-help-desc">Click <span class="admin-help-bold-tag">Reset Changes</span> below.</span></div>
+              <div>• <strong class="admin-help-point">Link:</strong> <span class="admin-help-desc">Changes apply to similar cards.</span></div>
+            </div>
+          </div>
+
+          <!-- Keyboard Shortcuts -->
+          <div style="padding-top: 16px; border-top: 1px dashed var(--admin-border-subtle); width: 100%;">
+            <div class="admin-help-section-title">Keyboard Shortcuts</div>
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; font-size: 13px; align-items: center;">
+              <span class="admin-kbd-group">
+                <kbd class="admin-keycap">Shift</kbd>
+                <kbd class="admin-keycap">E</kbd>
+              </span>
+              <strong class="admin-help-point">Toggle Edit mode</strong>
+
+              <span class="admin-kbd-group">
+                <kbd class="admin-keycap">I</kbd>
+              </span>
+              <strong class="admin-help-point">Toggle Sidebar</strong>
+
+              <span class="admin-kbd-group">
+                <kbd class="admin-keycap">⌘</kbd>
+                <span class="admin-kbd-slash">/</span>
+                <kbd class="admin-keycap">Ctrl</kbd>
+                <kbd class="admin-keycap">Z</kbd>
+              </span>
+              <strong class="admin-help-point">Undo</strong>
+
+              <span class="admin-kbd-group">
+                <kbd class="admin-keycap">⌘</kbd>
+                <span class="admin-kbd-slash">/</span>
+                <kbd class="admin-keycap">Ctrl</kbd>
+                <kbd class="admin-keycap">Shift</kbd>
+                <kbd class="admin-keycap">Z</kbd>
+              </span>
+              <strong class="admin-help-point">Redo</strong>
+
+              <span class="admin-kbd-group">
+                <kbd class="admin-keycap">Alt</kbd>
+                <span class="admin-kbd-slash">+</span>
+                <span style="font-size: 11.5px; font-weight: 600; color: var(--admin-text-primary);">Click</span>
+              </span>
+              <strong class="admin-help-point">Reset slider</strong>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    `;
   }
 }

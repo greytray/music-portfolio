@@ -1034,8 +1034,8 @@ html[data-admin-theme="light"] .admin-topbar-right .admin-btn-publish.has-change
 .admin-viewport-wrapper:not(.is-universal):not(.is-desktop) ~ .admin-stage-container,
 .admin-stage-container:has(.is-tablet),
 .admin-stage-container:has(.is-mobile) {
-  overflow: auto;
-  padding: 20px;
+  overflow: hidden;
+  padding: 0;
 }
 
 .admin-viewport-wrapper {
@@ -1087,19 +1087,21 @@ html[data-admin-theme="light"] .admin-topbar-right .admin-btn-publish.has-change
 .admin-viewport-wrapper.is-tablet {
   width: 768px;
   max-width: 100%;
-  height: 95%;
-  margin: auto 0;
+  height: 100%;
+  min-height: 100%;
+  margin: 0 auto;
   border-radius: 0px !important;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.14) !important;
 }
 
 .admin-viewport-wrapper.is-mobile {
   width: 390px;
   max-width: 100%;
-  height: 844px;
-  margin: auto 0;
+  height: 100%;
+  min-height: 100%;
+  margin: 0 auto;
   border-radius: 0px !important;
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.16) !important;
 }
 
 /* Preview Iframe */
@@ -5410,6 +5412,95 @@ html[data-admin-theme="light"] .btn-section-link.is-linked .link-btn-count,
   background: #ffffff;
   border-color: #ffffff;
   color: #6D28D9;
+}
+
+/* --------------------------------------------------------------------------
+   Keyboard Shortcut Keycap Buttons with 2.5px Accent Bottom Ledge
+   -------------------------------------------------------------------------- */
+.admin-kbd-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.admin-keycap,
+kbd.admin-keycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 22px;
+  padding: 0 6px;
+  font-family: var(--admin-mono), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: #F1F5F9;
+  background: #181124;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 2.5px solid #64748B; /* 2.5px bottom ledge in dark mode */
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.admin-kbd-slash {
+  font-size: 11px;
+  color: #64748B;
+  font-weight: 600;
+  margin: 0 1px;
+}
+
+html[data-admin-theme="light"] .admin-keycap,
+.admin-workspace[data-theme="light"] .admin-keycap,
+html[data-admin-theme="light"] kbd.admin-keycap,
+.admin-workspace[data-theme="light"] kbd.admin-keycap {
+  color: #0F172A;
+  background: #FAF8FF;
+  border: 1px solid #CBD5E1;
+  border-bottom: 2.5px solid #94A3B8; /* 2.5px bottom ledge in light mode */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+html[data-admin-theme="light"] .admin-kbd-slash,
+.admin-workspace[data-theme="light"] .admin-kbd-slash {
+  color: #94A3B8;
+}
+
+/* Help Guide Formatting */
+.admin-help-section-title {
+  font-size: 12.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--admin-accent-cyan);
+  margin-bottom: 12px;
+}
+
+.admin-help-point {
+  font-weight: 700;
+  color: var(--admin-text-primary);
+}
+
+.admin-help-desc {
+  font-weight: 400;
+  color: var(--admin-text-secondary);
+}
+
+.admin-help-bold-tag {
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--admin-border-subtle);
+}
+
+html[data-admin-theme="light"] .admin-help-bold-tag,
+.admin-workspace[data-theme="light"] .admin-help-bold-tag {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.12);
 }
 
 
