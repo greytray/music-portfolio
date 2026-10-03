@@ -3399,13 +3399,36 @@ export class SidePanel {
       const data = await res.json();
       if (data && data.success) {
         if (Array.isArray(data.images) && data.images.length > 0) {
-          // Strictly allow only Hugging Face proxy URLs (no local ./assets or GitHub links)
-          this.availableImages = data.images.filter(img => img && img.src && (img.src.startsWith('/api/media') || img.src.startsWith('https://huggingface.co')));
+          const uniqueImages = [];
+          const seenImgKeys = new Set();
+          data.images.forEach(img => {
+            if (!img || !img.src || (!img.src.startsWith('/api/media') && !img.src.startsWith('https://huggingface.co'))) return;
+            const filename = (img.fileName || img.src.split('file=').pop() || '').toLowerCase();
+            const decodedFilename = decodeURIComponent(filename).split('/').pop();
+            if (!seenImgKeys.has(decodedFilename)) {
+              seenImgKeys.add(decodedFilename);
+              uniqueImages.push(img);
+            }
+          });
+          this.availableImages = uniqueImages;
         }
+
         if (Array.isArray(data.audio) && data.audio.length > 0) {
-          // Strictly allow only Hugging Face proxy URLs
-          this.availableAudioTracks = data.audio.filter(track => track && (track.src || track.file) && ((track.src || '').startsWith('/api/media') || (track.src || '').startsWith('https://huggingface.co')));
+          const uniqueAudio = [];
+          const seenAudioKeys = new Set();
+          data.audio.forEach(track => {
+            const trackSrc = track.src || track.file || '';
+            if (!track || (!trackSrc.startsWith('/api/media') && !trackSrc.startsWith('https://huggingface.co'))) return;
+            const filename = (track.file || trackSrc.split('file=').pop() || '').toLowerCase();
+            const decodedFilename = decodeURIComponent(filename).split('/').pop();
+            if (!seenAudioKeys.has(decodedFilename)) {
+              seenAudioKeys.add(decodedFilename);
+              uniqueAudio.push(track);
+            }
+          });
+          this.availableAudioTracks = uniqueAudio;
         }
+
         if (this.activeTab === 'media') {
           this._renderActiveTab();
         }

@@ -2812,20 +2812,23 @@ html[data-admin-theme="light"] .btn-preset-pill.is-active,
 }
 
 .btn-quick-swap {
-  padding: 4px 10px;
-  background: var(--admin-accent-cyan);
-  color: #000000;
-  font-size: 10px;
+  padding: 5px 12px;
+  background: #7C3AED;
+  color: #FFFFFF !important;
+  font-size: 11px;
   font-weight: 700;
   border-radius: 4px;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   cursor: pointer;
-  transition: transform 0.12s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: transform 0.12s ease, background 0.12s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.02em;
 }
 
 .btn-quick-swap:hover {
   transform: scale(1.08);
+  background: #6D28D9;
+  color: #FFFFFF !important;
 }
 
 /* High-contrast image name tray underneath image (Dark: #FFFEF2 bg, #000 text; Light: #000 bg, #FFF text) */

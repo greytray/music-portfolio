@@ -112,6 +112,8 @@ export async function onRequest(context) {
           const path = item.path;
           const ext = path.split('.').pop().toLowerCase();
           const fileName = path.split('/').pop();
+          const cleanKey = fileName.toLowerCase();
+
           const cleanName = fileName
             .replace(/\.[^/.]+$/, '')
             .replace(/_\d{10,}/, '')
@@ -123,8 +125,8 @@ export async function onRequest(context) {
           const proxySrc = `/api/media?file=${encodeURIComponent(path)}`;
 
           if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'ico'].includes(ext)) {
-            if (!imageSet.has(proxySrc)) {
-              imageSet.add(proxySrc);
+            if (!imageSet.has(cleanKey)) {
+              imageSet.add(cleanKey);
               let cat = 'Studio';
               const lower = path.toLowerCase();
               if (lower.includes('plugin') || lower.includes('eq') || lower.includes('dsp') || lower.includes('tuning')) cat = 'Plugins';
@@ -140,8 +142,8 @@ export async function onRequest(context) {
               });
             }
           } else if (['mp3', 'wav', 'flac', 'ogg', 'aac', 'm4a'].includes(ext)) {
-            if (!audioSet.has(proxySrc)) {
-              audioSet.add(proxySrc);
+            if (!audioSet.has(cleanKey)) {
+              audioSet.add(cleanKey);
               audio.push({
                 id: fileName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(),
                 title: cleanName || fileName,
