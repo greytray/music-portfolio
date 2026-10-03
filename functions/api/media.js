@@ -23,7 +23,13 @@ export async function onRequest(context) {
     .map(c => String.fromCharCode(c))
     .join('');
 
-  const token = (env && env.HF_ACCESS_TOKEN) || (typeof process !== 'undefined' && process.env && process.env.HF_ACCESS_TOKEN) || FALLBACK_HF_TOKEN;
+  // Always include the verified write token first, then any environment token
+  const candidateTokens = [
+    FALLBACK_HF_TOKEN,
+    (env && env.HF_ACCESS_TOKEN),
+    (typeof process !== 'undefined' && process.env && process.env.HF_ACCESS_TOKEN)
+  ].filter(t => t && typeof t === 'string' && t.trim().length > 0);
+  const token = candidateTokens[0] || '';
   const hfRepo = 'greyhugging/RawStorage';
   const baseUrl = (env && env.HF_DATASET_URL)
     ? env.HF_DATASET_URL.replace(/\/+$/, '')
@@ -244,44 +250,57 @@ export async function onRequest(context) {
     let upstreamResponse = null;
     const probeErrors = [];
 
-    for (const candidate of uniqueCandidates) {
-      try {
-        const encodedCandidatePath = candidate.split('/').map(encodeURIComponent).join('/');
-        const targetUrl = `${baseUrl}/${encodedCandidatePath}`;
+    for (const tokenToTry of candidateTokens) {
+      if (upstreamResponse) break;
 
-        let res = await fetch(targetUrl, {
-          method: 'GET',
-          headers: forwardHeaders,
-          redirect: 'manual',
-        });
+      const fwdHeaders = new Headers();
+      fwdHeaders.set('Authorization', `Bearer ${tokenToTry}`);
+      fwdHeaders.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      fwdHeaders.set('Accept', '*/*');
 
-        // Handle Hugging Face 302/307 CDN redirect
-        // Crucial: Strip Bearer Authorization on the redirected CDN URL because AWS S3 rejects requests with both query signatures and Bearer headers
-        if (res.status >= 300 && res.status < 400) {
-          const redirectUrl = res.headers.get('Location');
-          if (redirectUrl) {
-            const redirectHeaders = new Headers();
-            if (rangeHeader) redirectHeaders.set('Range', rangeHeader);
-            if (ifNoneMatch) redirectHeaders.set('If-None-Match', ifNoneMatch);
-            redirectHeaders.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      for (const candidate of uniqueCandidates) {
+        try {
+          const encodedCandidatePath = candidate.split('/').map(encodeURIComponent).join('/');
+          const targetUrl = `${baseUrl}/${encodedCandidatePath}`;
 
-            res = await fetch(redirectUrl, {
-              method: 'GET',
-              headers: redirectHeaders,
-              redirect: 'follow',
+          let res = await fetch(targetUrl, {
+            method: 'GET',
+            headers: fwdHeaders,
+            redirect: 'manual',
+          });
+
+          // Handle Hugging Face 302/307 CDN redirect
+          if (res.status >= 300 && res.status < 400) {
+            const redirectUrl = res.headers.get('Location');
+            if (redirectUrl) {
+              const redirectHeaders = new Headers();
+              if (rangeHeader) redirectHeaders.set('Range', rangeHeader);
+              if (ifNoneMatch) redirectHeaders.set('If-None-Match', ifNoneMatch);
+              redirectHeaders.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
+              res = await fetch(redirectUrl, {
+                method: 'GET',
+                headers: redirectHeaders,
+                redirect: 'follow',
+              });
+            }
+          }
+
+          if (res.ok || res.status === 206 || res.status === 304) {
+            upstreamResponse = res;
+            break;
+          } else {
+            const errSnippet = (await res.text()).slice(0, 120);
+            probeErrors.push({
+              tokenPrefix: tokenToTry.slice(0, 7) + '...' + tokenToTry.slice(-4),
+              candidate,
+              status: res.status,
+              snippet: errSnippet
             });
           }
+        } catch (candidateErr) {
+          probeErrors.push({ candidate, error: candidateErr.message });
         }
-
-        if (res.ok || res.status === 206 || res.status === 304) {
-          upstreamResponse = res;
-          break;
-        } else {
-          const errSnippet = (await res.text()).slice(0, 120);
-          probeErrors.push({ candidate, status: res.status, snippet: errSnippet });
-        }
-      } catch (candidateErr) {
-        probeErrors.push({ candidate, error: candidateErr.message });
       }
     }
 
