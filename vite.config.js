@@ -1474,17 +1474,8 @@ function mediaProxyPlugin() {
     next();
   };
 
-  // Proactive background pre-warming of showcase tracks and catalog images on dev server boot
-  const prewarmServerMemory = async () => {
-    const TRACKS_TO_WARM = [
-      'Aiobahn maybe last mix.mp3',
-      'Kensuke.mp3',
-      'broken jar mastered.mp3',
-      'feeling mello.mp3',
-      'Kpop beat.mp3',
-      'K-Pop post fx.mp3'
-    ];
-
+  // 1. Immediately load already cached media from local disk into RAM (instant 0ms, zero network usage)
+  const warmLocalDiskWarm = () => {
     const IMAGES_TO_WARM = [
       'curved_daw_monitor_1789336964825.jpg',
       'digital_eq_compressor_1789337007076.jpg',
@@ -1493,8 +1484,6 @@ function mediaProxyPlugin() {
       'spectral_cleanup_dsp_1789336993282.jpg',
       'vocal_tuning_plugin_1789336979208.jpg'
     ];
-
-    // 1. Warm images from local disk cache or assets
     for (const img of IMAGES_TO_WARM) {
       const cacheKey = img.toLowerCase();
       const cachedFilePath = path.join(mediaDiskCacheDir, img);
@@ -1508,7 +1497,14 @@ function mediaProxyPlugin() {
       }
     }
 
-    // 2. Immediately warm audio tracks from local assets
+    const TRACKS_TO_WARM = [
+      'Aiobahn maybe last mix.mp3',
+      'Kensuke.mp3',
+      'broken jar mastered.mp3',
+      'feeling mello.mp3',
+      'Kpop beat.mp3',
+      'K-Pop post fx.mp3'
+    ];
     for (const track of TRACKS_TO_WARM) {
       const cacheKey = track.toLowerCase();
       const localAudioPath = path.resolve(process.cwd(), 'public', 'assets', 'audio', track);
@@ -1520,15 +1516,34 @@ function mediaProxyPlugin() {
         } catch (_) {}
       }
     }
+  };
+  warmLocalDiskWarm();
+
+  // 2. Delayed background pre-warming of any uncached remote assets (well after initial page handshake)
+  const prewarmRemoteUpstream = async () => {
+    const IMAGES_TO_WARM = [
+      'curved_daw_monitor_1789336964825.jpg',
+      'digital_eq_compressor_1789337007076.jpg',
+      'digital_reverb_dsp_1789337033441.jpg',
+      'midi_beat_arranger_1789337019783.jpg',
+      'spectral_cleanup_dsp_1789336993282.jpg',
+      'vocal_tuning_plugin_1789336979208.jpg'
+    ];
+    const TRACKS_TO_WARM = [
+      'Aiobahn maybe last mix.mp3',
+      'Kensuke.mp3',
+      'broken jar mastered.mp3',
+      'feeling mello.mp3',
+      'Kpop beat.mp3',
+      'K-Pop post fx.mp3'
+    ];
 
     const hfToken = (process.env.HF_ACCESS_TOKEN || '').trim() || FALLBACK_HF_TOKEN;
     const hfBaseUrl = process.env.HF_DATASET_URL || 'https://huggingface.co/datasets/greyhugging/RawStorage/resolve/main';
 
-    // 3. Proactively warm remote catalog images into RAM and disk cache concurrently
-    const imageWarmPromises = IMAGES_TO_WARM.map(async (img) => {
+    const uncachedImages = IMAGES_TO_WARM.filter(img => !mediaMemoryBuffers.has(img.toLowerCase()));
+    for (const img of uncachedImages) {
       const cacheKey = img.toLowerCase();
-      if (mediaMemoryBuffers.has(cacheKey)) return;
-
       const candidates = [`Images/${img}`, img];
       for (const candidate of candidates) {
         try {
@@ -1548,17 +1563,13 @@ function mediaProxyPlugin() {
             } catch (_) {}
             break;
           }
-        } catch {
-          // Ignore background pre-warm error
-        }
+        } catch (_) {}
       }
-    });
+    }
 
-    // 4. Proactively warm remote audio tracks
-    const trackWarmPromises = TRACKS_TO_WARM.map(async (track) => {
+    const uncachedTracks = TRACKS_TO_WARM.filter(t => !mediaMemoryBuffers.has(t.toLowerCase()));
+    for (const track of uncachedTracks) {
       const cacheKey = track.toLowerCase();
-      if (mediaMemoryBuffers.has(cacheKey)) return;
-
       const candidates = [`audio/${track}`, `showcase/${track}`, track];
       for (const candidate of candidates) {
         try {
@@ -1573,16 +1584,12 @@ function mediaProxyPlugin() {
             resolvedPathCache.set(cacheKey, candidate);
             break;
           }
-        } catch {
-          // Ignore background pre-warm error
-        }
+        } catch (_) {}
       }
-    });
-
-    await Promise.allSettled([...imageWarmPromises, ...trackWarmPromises]);
+    }
   };
 
-  setTimeout(prewarmServerMemory, 50);
+  setTimeout(prewarmRemoteUpstream, 3500);
 
   return {
     name: 'media-proxy-plugin',

@@ -18,10 +18,26 @@ export function initServicesCatalog() {
   const section = document.querySelector('#services');
   if (!section) return;
 
-  // Immediately kick off proactive catalog image preloads and decoding
-  preloadCatalogImages();
+  // Anticipatory image pre-warming: preloads catalog images only when user scrolls past hero towards showcase/process (~600px before services)
+  // This leaves 100% network bandwidth and main thread free for initial hero, fonts, CSS and audio!
+  if ('IntersectionObserver' in window) {
+    const triggerEl = document.querySelector('#showcase') || document.querySelector('#process') || section;
+    const preloadObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          preloadCatalogImages();
+          observer.disconnect();
+        }
+      });
+    }, { rootMargin: '600px 0px 600px 0px' });
+    preloadObserver.observe(triggerEl);
+  } else {
+    window.addEventListener('load', () => {
+      setTimeout(preloadCatalogImages, 3000);
+    }, { once: true });
+  }
 
-  // Asynchronously decode all card images so scrolling across cards is instantaneous with zero paint lag
+  // Pre-decode loaded card images so card scrolling across the stack is 60fps
   const catalogImages = section.querySelectorAll('img.catalog-photo');
   catalogImages.forEach(img => {
     if (img.complete) {

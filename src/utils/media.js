@@ -198,7 +198,7 @@ export function preloadCatalogImages() {
 }
 
 /**
- * Executes proactive pre-warming for all known audio tracks.
+ * Executes proactive pre-warming for all known audio tracks after page load idle.
  *
  * @param {string[]} paths - Array of media paths
  */
@@ -206,12 +206,12 @@ export function warmMediaOnIdle(paths) {
   if (typeof window === 'undefined' || !Array.isArray(paths)) return;
 
   const startPreload = () => {
-    if (paths.length > 0) {
-      preloadMedia(paths[0], true);
-    }
-    paths.slice(1).forEach((p, idx) => {
-      setTimeout(() => preloadMedia(p, false), idx * 100);
-    });
+    // Wait until browser has finished rendering and is truly idle before pre-warming secondary audio
+    setTimeout(() => {
+      paths.forEach((p, idx) => {
+        setTimeout(() => preloadMedia(p, false), idx * 350);
+      });
+    }, 2500);
   };
 
   if (document.readyState === 'complete') {
@@ -231,17 +231,6 @@ if (typeof window !== 'undefined') {
   window.__preloadImage = preloadImage;
   window.__preloadCatalogImages = preloadCatalogImages;
   window.__STANDARD_CATALOG_IMAGES = STANDARD_CATALOG_IMAGES;
-
-  // Proactive image preloading on page boot
-  const startImageWarm = () => {
-    preloadCatalogImages();
-  };
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', startImageWarm, { once: true });
-  } else {
-    startImageWarm();
-  }
 
   const STANDARD_TRACKS = [
     '/api/media?file=audio/Aiobahn maybe last mix.mp3',
