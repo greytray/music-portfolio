@@ -239,21 +239,40 @@ export async function onRequest(context) {
   }
 
   try {
-    const fetchPromises = uniqueCandidates.map(async (candidate) => {
+    const fetchUpstream = async (candidate) => {
       const encodedCandidatePath = candidate.split('/').map(encodeURIComponent).join('/');
       const targetUrl = `${baseUrl}/${encodedCandidatePath}`;
 
-      const res = await fetch(targetUrl, {
+      let res = await fetch(targetUrl, {
         method: request.method,
         headers: forwardHeaders,
-        redirect: 'follow',
+        redirect: 'manual',
       });
+
+      // Handle Hugging Face 302/307 CDN redirect
+      // Crucial: Strip Bearer Authorization on the redirected CDN URL because AWS S3 rejects requests with both query signatures and Bearer headers
+      if (res.status >= 300 && res.status < 400) {
+        const redirectUrl = res.headers.get('Location');
+        if (redirectUrl) {
+          const redirectHeaders = new Headers();
+          if (rangeHeader) redirectHeaders.set('Range', rangeHeader);
+          if (ifNoneMatch) redirectHeaders.set('If-None-Match', ifNoneMatch);
+
+          res = await fetch(redirectUrl, {
+            method: request.method,
+            headers: redirectHeaders,
+            redirect: 'follow',
+          });
+        }
+      }
 
       if (res.ok || res.status === 206 || res.status === 304) {
         return { res, candidate };
       }
       throw new Error(`Candidate ${candidate} returned ${res.status}`);
-    });
+    };
+
+    const fetchPromises = uniqueCandidates.map(candidate => fetchUpstream(candidate));
 
     let winner;
     try {
