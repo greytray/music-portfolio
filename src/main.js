@@ -7,6 +7,7 @@ import { initAllCardTilts } from './utils/tilt.js';
 import { initLiquidGlassButtons } from './utils/liquidButton.js';
 import { initServicesCatalog } from './components/servicesCatalog.js';
 import { initPublishedDesignSchema, applyDesignSchema } from './utils/schemaApplier.js';
+import { initShowcaseAudioAndSequentialImages } from './utils/media.js';
 
 // Dynamic modules registry for on-demand lazy loading
 const VIEW_LOADERS = {
@@ -323,6 +324,7 @@ function startApp() {
   initAllCardTilts();
   initLiquidGlassButtons();
   initServicesCatalog();
+  initShowcaseAudioAndSequentialImages();
 }
 
 if (document.readyState === 'loading') {

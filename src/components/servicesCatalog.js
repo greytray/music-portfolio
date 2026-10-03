@@ -9,7 +9,7 @@
 
 import { fastSmoothScrollTo } from '../utils/scroll.js';
 import { pauseMainLandingAudio } from '../main.js';
-import { getMediaUrl, getInstantMediaUrl, preloadMedia, warmMediaOnIdle } from '../utils/media.js';
+import { getMediaUrl, getInstantMediaUrl, preloadMedia, warmMediaOnIdle, preloadCatalogImages } from '../utils/media.js';
 
 let catalogAudioInstance = null;
 let currentPlayingButton = null;
@@ -17,6 +17,37 @@ let currentPlayingButton = null;
 export function initServicesCatalog() {
   const section = document.querySelector('#services');
   if (!section) return;
+
+  // Anticipatory image pre-warming: preloads catalog images only when user scrolls past hero towards showcase/process (~600px before services)
+  // This leaves 100% network bandwidth and main thread free for initial hero, fonts, CSS and audio!
+  if ('IntersectionObserver' in window) {
+    const triggerEl = document.querySelector('#showcase') || document.querySelector('#process') || section;
+    const preloadObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          preloadCatalogImages();
+          observer.disconnect();
+        }
+      });
+    }, { rootMargin: '600px 0px 600px 0px' });
+    preloadObserver.observe(triggerEl);
+  } else {
+    window.addEventListener('load', () => {
+      setTimeout(preloadCatalogImages, 3000);
+    }, { once: true });
+  }
+
+  // Pre-decode loaded card images so card scrolling across the stack is 60fps
+  const catalogImages = section.querySelectorAll('img.catalog-photo');
+  catalogImages.forEach(img => {
+    if (img.complete) {
+      if (img.decode) img.decode().catch(() => {});
+    } else {
+      img.addEventListener('load', () => {
+        if (img.decode) img.decode().catch(() => {});
+      }, { once: true });
+    }
+  });
 
   initCardStacking(section);
   initCatalogAudio(section);

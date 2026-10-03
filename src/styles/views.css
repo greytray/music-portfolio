@@ -2931,9 +2931,18 @@ nav a:hover, nav a:focus-visible,
   height: 100%;
   object-fit: cover;
   object-position: center;
-  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease;
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease;
   filter: brightness(0.85) contrast(1.04);
   z-index: 1;
+}
+
+.catalog-photo[data-src]:not(.is-loaded):not([src*="/api/media"]) {
+  opacity: 0;
+}
+
+.catalog-photo.is-loaded,
+.catalog-photo[src*="/api/media"] {
+  opacity: 1;
 }
 
 .catalog-tile:hover .catalog-photo,

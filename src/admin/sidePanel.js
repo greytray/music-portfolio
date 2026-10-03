@@ -358,7 +358,7 @@ export class SidePanel {
         computedGap: computed ? computed.gap : '',
         computedTextShadow: computed ? computed.textShadow : '',
         computedBoxShadow: computed ? computed.boxShadow : '',
-        src: (this.activeElement.tagName === 'IMG' || this.activeElement.tagName === 'AUDIO') ? (this.activeElement.getAttribute('src') || '') : '',
+        src: (this.activeElement.tagName === 'IMG' || this.activeElement.tagName === 'AUDIO') ? (this.activeElement.dataset?.src || this.activeElement.getAttribute('src') || '') : '',
         audio: this.activeElement.dataset ? (this.activeElement.dataset.audio || this.activeElement.dataset.src || '') : '',
         computedTransform: computed ? computed.transform : '',
         computedWidth: computed ? computed.width : '',
@@ -3725,6 +3725,8 @@ export class SidePanel {
 
     if (isImg) {
       this.activeElement.setAttribute('src', url);
+      this.activeElement.dataset.src = url;
+      this.activeElement.classList.add('is-loaded');
       this._notifyChange({ media: { src: url, type: 'image' } });
     } else if (isAudio) {
       this.activeElement.dataset.audio = url;
@@ -3753,7 +3755,7 @@ export class SidePanel {
     const mode = this.mediaSubMode || (isAudioTarget ? 'audio' : 'image');
 
     const currentImgSrc = isImg
-      ? (this.activeElement?.getAttribute('src') || '')
+      ? (this.activeElement?.dataset?.src || this.activeElement?.getAttribute('src') || '')
       : (this.activeElement ? (this.activeElement.style.backgroundImage || '').replace(/^url\(['"]?|['"]?\)$/g, '') : '');
 
     const currentAudioSrc = isAudioTarget

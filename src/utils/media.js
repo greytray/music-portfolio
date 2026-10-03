@@ -167,6 +167,195 @@ export function warmMediaOnIdle(paths) {
   }
 }
 
+/**
+ * Loads all showcase audio files into in-memory RAM blobs.
+ * Returns a Promise that resolves when all audio files in the showcase section are fully loaded.
+ *
+ * @param {string[]} [customUrls] - Optional list of track URLs
+ * @returns {Promise<string[]>}
+ */
+export function loadAllShowcaseAudio(customUrls) {
+  if (typeof window === 'undefined') return Promise.resolve([]);
+
+  let urls = customUrls;
+  if (!urls || urls.length === 0) {
+    const showcaseSection = document.getElementById('showcase') || document.querySelector('.beats');
+    if (showcaseSection) {
+      const trackBtns = showcaseSection.querySelectorAll('.playlist .track, [data-src]');
+      const set = new Set();
+      trackBtns.forEach(btn => {
+        const s = btn.dataset.src || btn.getAttribute('data-src');
+        if (s) set.add(s);
+      });
+      urls = Array.from(set);
+    }
+  }
+
+  if (!urls || urls.length === 0) {
+    urls = [
+      '/api/media?file=audio/feeling mello.mp3',
+      '/api/media?file=audio/broken jar mastered.mp3',
+      '/api/media?file=audio/Kpop beat.mp3',
+      '/api/media?file=audio/Kensuke.mp3',
+      '/api/media?file=audio/K-Pop post fx.mp3',
+      '/api/media?file=audio/Aiobahn maybe last mix.mp3'
+    ];
+  }
+
+  // Identify active track to load first with high priority
+  const activeTrackEl = document.querySelector('#showcase .track.active') || document.querySelector('.track.active');
+  const activeSrc = activeTrackEl ? activeTrackEl.dataset.src : urls[0];
+
+  const promises = urls.map(url => {
+    const isHighPriority = (url === activeSrc);
+    return fetchAndCacheBlob(url, isHighPriority);
+  });
+
+  return Promise.allSettled(promises).then(results => {
+    window.dispatchEvent(new CustomEvent('showcase-audio-all-loaded', { detail: { urls, results } }));
+    return results;
+  });
+}
+
+let isSequentialImageLoadingStarted = false;
+
+/**
+ * Loads images one by one strictly in sequence.
+ * Next image starts loading instantly as soon as current image finishes loading.
+ *
+ * @param {HTMLImageElement[]} [customImages]
+ * @returns {Promise<void>}
+ */
+export function startSequentialImageLoading(customImages) {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (isSequentialImageLoadingStarted) return Promise.resolve();
+  isSequentialImageLoadingStarted = true;
+
+  const images = (customImages && customImages.length > 0)
+    ? Array.from(customImages)
+    : Array.from(document.querySelectorAll('.catalog-photo, img[data-src]'));
+
+  if (images.length === 0) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    let index = 0;
+
+    function loadNext() {
+      if (index >= images.length) {
+        window.dispatchEvent(new CustomEvent('all-images-sequence-loaded'));
+        resolve();
+        return;
+      }
+
+      const img = images[index];
+      index++;
+
+      const targetSrc = img.dataset.src || img.getAttribute('data-src');
+      if (!targetSrc) {
+        loadNext();
+        return;
+      }
+
+      // If already loaded
+      if (img.dataset.loaded === 'true' || (img.complete && img.src.includes('/api/media') && img.naturalWidth > 0)) {
+        img.dataset.loaded = 'true';
+        img.classList.add('is-loaded');
+        loadNext();
+        return;
+      }
+
+      let advanced = false;
+      const onDone = () => {
+        if (advanced) return;
+        advanced = true;
+        img.dataset.loaded = 'true';
+        img.classList.add('is-loaded');
+        // Instantly trigger next image in sequence
+        loadNext();
+      };
+
+      // Safety timeout per image (3.5s max) so network drop never stalls sequence
+      const timeoutId = setTimeout(onDone, 3500);
+
+      img.addEventListener('load', () => {
+        clearTimeout(timeoutId);
+        onDone();
+      }, { once: true });
+
+      img.addEventListener('error', () => {
+        clearTimeout(timeoutId);
+        onDone();
+      }, { once: true });
+
+      img.loading = 'eager';
+      img.src = targetSrc;
+
+      // In case browser resolved from cache synchronously
+      if (img.complete && img.naturalWidth > 0) {
+        clearTimeout(timeoutId);
+        onDone();
+      }
+    }
+
+    loadNext();
+  });
+}
+
+/**
+ * Coordinates Showcase Audio loading and Sequential Image loading:
+ * Once all audio files in the showcase section are loaded, images start loading instantly in sequence.
+ */
+export function initShowcaseAudioAndSequentialImages() {
+  if (typeof window === 'undefined') return;
+
+  const runCoordination = () => {
+    const showcaseSection = document.getElementById('showcase') || document.querySelector('.beats');
+    const trackBtns = showcaseSection ? showcaseSection.querySelectorAll('.playlist .track, [data-src]') : [];
+    const trackUrls = [];
+    trackBtns.forEach(b => {
+      const s = b.dataset.src || b.getAttribute('data-src');
+      if (s && !trackUrls.includes(s)) trackUrls.push(s);
+    });
+
+    const audioLoadPromise = loadAllShowcaseAudio(trackUrls);
+    // 7s max fallback in case of extreme offline/network timeout
+    const safetyTimeout = new Promise(resolve => setTimeout(resolve, 7000));
+
+    Promise.race([audioLoadPromise, safetyTimeout]).then(() => {
+      startSequentialImageLoading();
+    });
+  };
+
+  // Setup viewport observer for immediate priority if user scrolls directly into services
+  if (typeof IntersectionObserver !== 'undefined') {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          const targetSrc = img.dataset.src || img.getAttribute('data-src');
+          if (targetSrc && img.dataset.loaded !== 'true') {
+            img.loading = 'eager';
+            img.src = targetSrc;
+            img.dataset.loaded = 'true';
+            img.classList.add('is-loaded');
+          }
+          observer.unobserve(img);
+        }
+      });
+    }, { rootMargin: '200px 0px' });
+
+    document.querySelectorAll('.catalog-photo, img[data-src]').forEach(img => {
+      observer.observe(img);
+    });
+  }
+
+  if (document.readyState === 'complete') {
+    runCoordination();
+  } else {
+    window.addEventListener('load', runCoordination, { once: true });
+  }
+}
+
 // Global exports for vanilla scripts
 if (typeof window !== 'undefined') {
   window.__getMediaUrl = getMediaUrl;
@@ -174,14 +363,9 @@ if (typeof window !== 'undefined') {
   window.__preloadMedia = preloadMedia;
   window.__fetchAndCacheBlob = fetchAndCacheBlob;
   window.__warmMediaOnIdle = warmMediaOnIdle;
+  window.__loadAllShowcaseAudio = loadAllShowcaseAudio;
+  window.__startSequentialImageLoading = startSequentialImageLoading;
+  window.__initShowcaseAudioAndSequentialImages = initShowcaseAudioAndSequentialImages;
 
-  const STANDARD_TRACKS = [
-    '/api/media?file=audio/Aiobahn maybe last mix.mp3',
-    '/api/media?file=audio/Kensuke.mp3',
-    '/api/media?file=audio/broken jar mastered.mp3',
-    '/api/media?file=audio/feeling mello.mp3',
-    '/api/media?file=audio/Kpop beat.mp3',
-    '/api/media?file=audio/K-Pop post fx.mp3'
-  ];
-  warmMediaOnIdle(STANDARD_TRACKS);
+  initShowcaseAudioAndSequentialImages();
 }
