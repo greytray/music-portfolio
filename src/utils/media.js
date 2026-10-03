@@ -356,6 +356,13 @@ export function initShowcaseAudioAndSequentialImages() {
   }
 }
 
+/**
+ * Alias for sequential image loading backward-compatibility.
+ */
+export function preloadCatalogImages(images) {
+  return startSequentialImageLoading(images);
+}
+
 // Global exports for vanilla scripts
 if (typeof window !== 'undefined') {
   window.__getMediaUrl = getMediaUrl;
@@ -363,6 +370,7 @@ if (typeof window !== 'undefined') {
   window.__preloadMedia = preloadMedia;
   window.__fetchAndCacheBlob = fetchAndCacheBlob;
   window.__warmMediaOnIdle = warmMediaOnIdle;
+  window.__preloadCatalogImages = preloadCatalogImages;
   window.__loadAllShowcaseAudio = loadAllShowcaseAudio;
   window.__startSequentialImageLoading = startSequentialImageLoading;
   window.__initShowcaseAudioAndSequentialImages = initShowcaseAudioAndSequentialImages;
