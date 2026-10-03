@@ -252,15 +252,46 @@ export class ExportSystem {
     } else if (type === 'media') {
       if (breakpoint === 'all' || !breakpoint) {
         delete existing.media;
+        if (existing.styles) {
+          delete existing.styles.backgroundImage;
+          delete existing.styles.transform;
+          delete existing.styles.width;
+          delete existing.styles.height;
+          delete existing.styles.objectFit;
+        }
+        if (existing.dataAttributes) {
+          delete existing.dataAttributes.audio;
+          delete existing.dataAttributes.src;
+          delete existing.dataAttributes.title;
+        }
         if (existing.breakpoints) {
           Object.keys(existing.breakpoints).forEach(bp => {
-            if (existing.breakpoints[bp]) delete existing.breakpoints[bp].media;
+            if (existing.breakpoints[bp]) {
+              delete existing.breakpoints[bp].media;
+              delete existing.breakpoints[bp].backgroundImage;
+              delete existing.breakpoints[bp].transform;
+              delete existing.breakpoints[bp].width;
+              delete existing.breakpoints[bp].height;
+              delete existing.breakpoints[bp].objectFit;
+            }
           });
         }
       } else if (breakpoint === 'universal') {
         delete existing.media;
+        if (existing.styles) {
+          delete existing.styles.backgroundImage;
+          delete existing.styles.transform;
+          delete existing.styles.width;
+          delete existing.styles.height;
+          delete existing.styles.objectFit;
+        }
       } else if (existing.breakpoints && existing.breakpoints[breakpoint]) {
         delete existing.breakpoints[breakpoint].media;
+        delete existing.breakpoints[breakpoint].backgroundImage;
+        delete existing.breakpoints[breakpoint].transform;
+        delete existing.breakpoints[breakpoint].width;
+        delete existing.breakpoints[breakpoint].height;
+        delete existing.breakpoints[breakpoint].objectFit;
       }
     }
 
@@ -333,7 +364,30 @@ export class ExportSystem {
           });
         } else if (sectionName === 'media') {
           delete elData.media;
-          if (elData.styles) delete elData.styles.backgroundImage;
+          if (elData.styles) {
+            delete elData.styles.backgroundImage;
+            delete elData.styles.transform;
+            delete elData.styles.width;
+            delete elData.styles.height;
+            delete elData.styles.objectFit;
+          }
+          if (elData.breakpoints) {
+            ['desktop', 'tablet', 'mobile'].forEach(bp => {
+              if (elData.breakpoints[bp]) {
+                delete elData.breakpoints[bp].media;
+                delete elData.breakpoints[bp].backgroundImage;
+                delete elData.breakpoints[bp].transform;
+                delete elData.breakpoints[bp].width;
+                delete elData.breakpoints[bp].height;
+                delete elData.breakpoints[bp].objectFit;
+              }
+            });
+          }
+          if (elData.dataAttributes) {
+            delete elData.dataAttributes.audio;
+            delete elData.dataAttributes.src;
+            delete elData.dataAttributes.title;
+          }
         } else if (sectionName === 'props') {
           delete elData.dataAttributes;
         }

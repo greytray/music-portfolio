@@ -360,10 +360,12 @@ export function applyDesignSchema(schema, doc = document) {
       if (targetMedia && targetMedia.src) {
         if (el.tagName === 'IMG') {
           el.src = targetMedia.src;
+          el.setAttribute('src', targetMedia.src);
         } else if (el.tagName === 'AUDIO' || el.tagName === 'SOURCE') {
           el.src = targetMedia.src;
+          el.setAttribute('src', targetMedia.src);
           if (el.tagName === 'AUDIO') {
-            el.load();
+            try { el.load(); } catch (_) {}
           }
         } else if (targetMedia.type === 'image') {
           el.style.backgroundImage = `url("${targetMedia.src}")`;
@@ -371,15 +373,28 @@ export function applyDesignSchema(schema, doc = document) {
           const audioEl = el.querySelector('audio') || doc.querySelector('#audio');
           if (audioEl) {
             audioEl.src = targetMedia.src;
-            audioEl.load();
+            audioEl.setAttribute('src', targetMedia.src);
+            try { audioEl.load(); } catch (_) {}
           }
         }
       } else {
         if (el.__ekoOriginalSrc !== undefined && (el.tagName === 'IMG' || el.tagName === 'AUDIO' || el.tagName === 'SOURCE')) {
-          el.src = el.__ekoOriginalSrc;
+          if (el.__ekoOriginalSrc) {
+            el.src = el.__ekoOriginalSrc;
+            el.setAttribute('src', el.__ekoOriginalSrc);
+          } else {
+            el.removeAttribute('src');
+          }
+          if (el.tagName === 'AUDIO') {
+            try { el.load(); } catch (_) {}
+          }
         }
         if (el.__ekoOriginalBg !== undefined) {
-          el.style.backgroundImage = el.__ekoOriginalBg;
+          if (el.__ekoOriginalBg) {
+            el.style.backgroundImage = el.__ekoOriginalBg;
+          } else {
+            el.style.removeProperty('background-image');
+          }
         }
       }
     }

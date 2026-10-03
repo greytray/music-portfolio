@@ -9,6 +9,7 @@
  */
 
 import { getFriendlyName, findSimilarCardElements, getEnclosingSectionName } from './selectionEngine.js';
+import { applyDesignSchema } from '../utils/schemaApplier.js';
 
 export const HF_RAW_STORAGE_BASE = 'https://huggingface.co/datasets/greyhugging/RawStorage/resolve/main/Images';
 
@@ -411,6 +412,22 @@ export class SidePanel {
   }
 
   _hasActiveElementSectionChanges(sectionName) {
+    if (sectionName === 'media') {
+      if (this.activeMeta && (this.isFieldChanged('src') || this.isFieldChanged('audio') || this.isFieldChanged('backgroundImage') || this.isFieldChanged('media') || this.isFieldChanged('transform') || this.isFieldChanged('width') || this.isFieldChanged('height') || this.isFieldChanged('objectFit'))) {
+        return true;
+      }
+      if (this.exportSystem && this.exportSystem.changesMap.size > 0) {
+        for (const [, data] of this.exportSystem.changesMap.entries()) {
+          if (data && (data.media || (data.styles && (data.styles.backgroundImage || data.styles.transform || data.styles.width || data.styles.height || data.styles.objectFit)))) {
+            return true;
+          }
+        }
+      }
+      const hasTransformState = Boolean(this.imageTransformState && (this.imageTransformState.flipH || this.imageTransformState.flipV || this.imageTransformState.scale !== 100 || this.imageTransformState.width || this.imageTransformState.height));
+      if (hasTransformState) return true;
+      return false;
+    }
+
     if (!this.activeMeta) return false;
 
     const textStyleList = [
@@ -429,8 +446,6 @@ export class SidePanel {
       return textStyleList.some(k => this.isFieldChanged(k));
     } else if (sectionName === 'spacing') {
       return spacingStyleList.some(k => this.isFieldChanged(k));
-    } else if (sectionName === 'media') {
-      return this.isFieldChanged('src') || this.isFieldChanged('audio') || this.isFieldChanged('backgroundImage') || this.isFieldChanged('media') || this.isFieldChanged('transform') || this.isFieldChanged('width') || this.isFieldChanged('height') || this.isFieldChanged('objectFit');
     } else if (sectionName === 'props') {
       return this.isFieldChanged('dataAttributes');
     }
@@ -484,7 +499,13 @@ export class SidePanel {
       const bHasA = snapB.linkedSnapshots && snapB.linkedSnapshots.some(s => s && s.selector === snapA.selector);
       if (!aHasB || !bHasA) return false;
     }
+    if (snapA.domSrc !== snapB.domSrc) return false;
+    if (snapA.mainAudioSrc !== snapB.mainAudioSrc) return false;
     if (JSON.stringify(snapA.exportData) !== JSON.stringify(snapB.exportData)) return false;
+    if (JSON.stringify(snapA.fullExportMap || []) !== JSON.stringify(snapB.fullExportMap || [])) return false;
+    if (JSON.stringify(snapA.imageTransformState || {}) !== JSON.stringify(snapB.imageTransformState || {})) return false;
+    if (JSON.stringify(snapA.mediaState || []) !== JSON.stringify(snapB.mediaState || [])) return false;
+    if (snapA.playlistHtml !== snapB.playlistHtml) return false;
     if (snapA.domStyle !== snapB.domStyle) return false;
     if (snapA.domDirectText !== snapB.domDirectText) return false;
     if (JSON.stringify(snapA.dataset) !== JSON.stringify(snapB.dataset)) return false;
@@ -497,8 +518,8 @@ export class SidePanel {
    * Undo/Redo: Captures snapshot of element and export state before a change
    */
   captureCurrentSnapshot(label = '') {
-    if (!this.activeMeta || !this.exportSystem) return null;
-    const selector = this.activeMeta.selector;
+    if (!this.exportSystem) return null;
+    const selector = this.activeMeta ? this.activeMeta.selector : 'media-global';
     const el = this.activeElement;
 
     // Ensure similar elements are detected and up-to-date
@@ -522,11 +543,47 @@ export class SidePanel {
         }).filter(Boolean)
       : [];
 
+    const fullExportMap = Array.from(this.exportSystem.changesMap.entries()).map(([k, v]) => [k, JSON.parse(JSON.stringify(v))]);
+
+    const doc = (this.activeElement && this.activeElement.ownerDocument)
+      || (typeof this.getIframeDoc === 'function' ? this.getIframeDoc() : null)
+      || window.document;
+
+    const playlistEl = doc ? (doc.querySelector('#playlist') || doc.querySelector('.playlist')) : null;
+    const playlistHtml = playlistEl ? playlistEl.innerHTML : null;
+
+    const mainAudio = doc ? doc.querySelector('#audio') : null;
+    const mainAudioSrc = mainAudio ? (mainAudio.getAttribute('src') || mainAudio.src || null) : null;
+
+    // Capture comprehensive media state for all media elements in iframe doc
+    const mediaState = doc ? Array.from(doc.querySelectorAll('img, audio, [data-audio], [data-src], .track')).map(mEl => {
+      const meta = this.selectionEngine ? this.selectionEngine.extractElementMetadata(mEl) : null;
+      const mSel = meta ? meta.selector : this._generateFallbackSelector(mEl);
+      return {
+        selector: mSel,
+        tagName: mEl.tagName,
+        src: mEl.getAttribute('src') || mEl.src || null,
+        dataSrc: mEl.dataset ? mEl.dataset.src : mEl.getAttribute('data-src'),
+        dataAudio: mEl.dataset ? mEl.dataset.audio : mEl.getAttribute('data-audio'),
+        dataAudioFile: mEl.dataset ? mEl.dataset.audioFile : mEl.getAttribute('data-audio-file'),
+        dataTitle: mEl.dataset ? mEl.dataset.title : mEl.getAttribute('data-title'),
+        innerHTML: mEl.innerHTML,
+        style: mEl.getAttribute('style')
+      };
+    }) : [];
+
     return {
       label,
       selector,
       breakpoint: this.currentBreakpoint,
       activeTab: this.activeTab,
+      mediaSubMode: this.mediaSubMode,
+      imageTransformState: this.imageTransformState ? { ...this.imageTransformState } : null,
+      fullExportMap,
+      playlistHtml,
+      mainAudioSrc,
+      mediaState,
+      domSrc: el ? (el.getAttribute('src') || el.src || null) : null,
       exportData: JSON.parse(JSON.stringify(this.exportSystem.getElementData(selector) || null)),
       domStyle: el ? el.getAttribute('style') : null,
       domDirectText: el ? this._getDirectText(el) : null,
@@ -626,16 +683,78 @@ export class SidePanel {
       || (() => { try { return document.querySelector('#admin-preview-frame')?.contentDocument || null; } catch(_) { return null; } })()
       || window.document;
 
-    // 1. Restore data in exportSystem for main active element
-    if (snapshot.exportData) {
+    // 1. Restore full export map if available, otherwise restore active element export data
+    if (snapshot.fullExportMap && Array.isArray(snapshot.fullExportMap)) {
+      this.exportSystem.changesMap = new Map(JSON.parse(JSON.stringify(snapshot.fullExportMap)));
+      this.exportSystem.sessionUserChangesMap = new Map(JSON.parse(JSON.stringify(snapshot.fullExportMap)));
+    } else if (snapshot.exportData) {
       this.exportSystem.changesMap.set(selector, JSON.parse(JSON.stringify(snapshot.exportData)));
       this.exportSystem.sessionUserChangesMap.set(selector, JSON.parse(JSON.stringify(snapshot.exportData)));
-    } else {
+    } else if (selector && selector !== 'media-global') {
       this.exportSystem.changesMap.delete(selector);
       this.exportSystem.sessionUserChangesMap.delete(selector);
     }
 
-    // 2. Restore linked items in exportSystem and DOM
+    if (snapshot.imageTransformState) {
+      this.imageTransformState = { ...snapshot.imageTransformState };
+    }
+
+    if (doc && snapshot.playlistHtml !== undefined && snapshot.playlistHtml !== null) {
+      const playlistEl = doc.querySelector('#playlist') || doc.querySelector('.playlist');
+      if (playlistEl) {
+        playlistEl.innerHTML = snapshot.playlistHtml;
+      }
+    }
+
+    // 2. Restore main #audio element src in iframe
+    if (doc && snapshot.mainAudioSrc !== undefined && snapshot.mainAudioSrc !== null) {
+      const mainAudio = doc.querySelector('#audio');
+      if (mainAudio) {
+        if (snapshot.mainAudioSrc) {
+          mainAudio.setAttribute('src', snapshot.mainAudioSrc);
+          mainAudio.src = snapshot.mainAudioSrc;
+          try { mainAudio.load(); } catch (_) {}
+        } else {
+          mainAudio.removeAttribute('src');
+        }
+      }
+    }
+
+    // 3. Restore media element states (all IMG, AUDIO, track buttons in iframe doc)
+    if (doc && snapshot.mediaState && Array.isArray(snapshot.mediaState)) {
+      snapshot.mediaState.forEach(mItem => {
+        if (!mItem || !mItem.selector) return;
+        const mEl = doc.querySelector(mItem.selector);
+        if (mEl) {
+          if (mItem.src !== null && mItem.src !== undefined) {
+            mEl.setAttribute('src', mItem.src);
+            if (mEl.tagName === 'IMG' || mEl.tagName === 'AUDIO') {
+              mEl.src = mItem.src;
+            }
+          }
+          if (mItem.dataSrc !== null && mItem.dataSrc !== undefined) {
+            mEl.dataset.src = mItem.dataSrc;
+          }
+          if (mItem.dataAudio !== null && mItem.dataAudio !== undefined) {
+            mEl.dataset.audio = mItem.dataAudio;
+          }
+          if (mItem.dataAudioFile !== null && mItem.dataAudioFile !== undefined) {
+            mEl.dataset.audioFile = mItem.dataAudioFile;
+          }
+          if (mItem.dataTitle !== null && mItem.dataTitle !== undefined) {
+            mEl.dataset.title = mItem.dataTitle;
+          }
+          if (mItem.innerHTML !== null && mItem.innerHTML !== undefined) {
+            mEl.innerHTML = mItem.innerHTML;
+          }
+          if (mItem.style !== null && mItem.style !== undefined) {
+            mEl.setAttribute('style', mItem.style);
+          }
+        }
+      });
+    }
+
+    // 4. Restore linked items in exportSystem and DOM
     if (snapshot.linkedSnapshots && Array.isArray(snapshot.linkedSnapshots)) {
       snapshot.linkedSnapshots.forEach(item => {
         if (!item) return;
@@ -685,9 +804,16 @@ export class SidePanel {
     this.exportSystem.hasUnpublishedChanges = this.exportSystem.changesMap.size > 0;
 
     // 3. Restore DOM element state in iframe document for main active element
-    const targetEl = (selector && doc && doc.querySelector) ? (doc.querySelector(selector) || this.activeElement) : this.activeElement;
+    const targetEl = (selector && selector !== 'media-global' && doc && doc.querySelector) ? (doc.querySelector(selector) || this.activeElement) : this.activeElement;
 
     if (targetEl) {
+      if (snapshot.domSrc !== null && snapshot.domSrc !== undefined) {
+        targetEl.setAttribute('src', snapshot.domSrc);
+        if (targetEl.tagName === 'IMG' || targetEl.tagName === 'AUDIO') {
+          targetEl.src = snapshot.domSrc;
+        }
+      }
+
       if (snapshot.domStyle !== null && snapshot.domStyle !== undefined) {
         targetEl.setAttribute('style', snapshot.domStyle);
       } else {
@@ -789,9 +915,7 @@ export class SidePanel {
 
     // 8. Notify parent app to update status for active and linked elements
     if (typeof this.onElementChange === 'function') {
-      if (this.activeElement && this.activeMeta) {
-        this.onElementChange(this.activeElement, this.activeMeta, { undoRedo: true }, snapshot.breakpoint || this.currentBreakpoint);
-      }
+      this.onElementChange(this.activeElement, this.activeMeta, { undoRedo: true }, snapshot.breakpoint || this.currentBreakpoint);
       if (this.currentSimilarElements && this.currentSimilarElements.length > 1) {
         this.currentSimilarElements.forEach(el => {
           if (el && el.isConnected && el !== this.activeElement) {
@@ -815,6 +939,50 @@ export class SidePanel {
 
     if (this.exportSystem) {
       this.exportSystem.resetSection(currentTab, targetSelector);
+    }
+
+    if (currentTab === 'media') {
+      this.imageTransformState = {
+        flipH: false,
+        flipV: false,
+        scale: 100,
+        width: '',
+        height: '',
+        objectFit: 'cover'
+      };
+    }
+
+    const doc = (this.activeElement && this.activeElement.ownerDocument)
+      || (typeof this.getIframeDoc === 'function' ? this.getIframeDoc() : null)
+      || window.document;
+
+    if (doc) {
+      this.elementBaselines.forEach((baseline, sel) => {
+        const el = doc.querySelector(sel);
+        if (el) {
+          if (currentTab === 'media') {
+            if (el.tagName === 'IMG' || el.tagName === 'AUDIO') {
+              if (baseline.src) el.src = baseline.src;
+            }
+            if (baseline.dataset) {
+              if (baseline.dataset.audio) el.dataset.audio = baseline.dataset.audio;
+              else delete el.dataset.audio;
+              if (baseline.dataset.src) el.dataset.src = baseline.dataset.src;
+              if (baseline.dataset.title) el.dataset.title = baseline.dataset.title;
+            }
+            el.style.removeProperty('background-image');
+            el.style.removeProperty('transform');
+            el.style.removeProperty('width');
+            el.style.removeProperty('height');
+            el.style.removeProperty('object-fit');
+          }
+        }
+      });
+      if (this.exportSystem) {
+        try {
+          applyDesignSchema(this.exportSystem.serializeSchema(), doc);
+        } catch (_) {}
+      }
     }
 
     const isLinkedActive = Boolean(
@@ -1781,9 +1949,11 @@ export class SidePanel {
    */
   resetProperty(type, key) {
     this.pushUndoSnapshot(`Reset ${key || type}`);
-    if (!this.activeElement || !this.activeMeta) return;
-    const selector = this.activeMeta.selector;
-    const baseline = this.elementBaselines.get(selector);
+    const isMediaReset = type === 'media' || key === 'media' || type === 'media-transform' || key === 'media-transform' || type === 'scale' || key === 'scale' || type === 'flips' || key === 'flips' || type === 'sizing' || key === 'sizing';
+    if (!isMediaReset && (!this.activeElement || !this.activeMeta)) return;
+
+    const selector = this.activeMeta ? this.activeMeta.selector : null;
+    const baseline = selector ? this.elementBaselines.get(selector) : null;
 
     if (type === 'text' || key === 'text') {
       if (baseline) {
@@ -3377,11 +3547,21 @@ export class SidePanel {
       }
       return;
     }
+
+    // Pre-capture pristine original DOM values for schemaApplier before mutating
+    if (this.activeElement.__ekoOriginalSrc === undefined && (this.activeElement.tagName === 'IMG' || this.activeElement.tagName === 'AUDIO')) {
+      this.activeElement.__ekoOriginalSrc = this.activeElement.getAttribute('src') || this.activeElement.src || '';
+    }
+    if (this.activeElement.__ekoOriginalBg === undefined) {
+      this.activeElement.__ekoOriginalBg = this.activeElement.style.backgroundImage || '';
+    }
+
     this.pushUndoSnapshot('Swap Image');
 
     const isImg = this.activeElement.tagName === 'IMG';
     if (isImg) {
       this.activeElement.setAttribute('src', newSrc);
+      this.activeElement.src = newSrc;
       this._notifyChange({ media: { src: newSrc, type: 'image' } });
     } else {
       this.activeElement.style.backgroundImage = `url('${newSrc}')`;
@@ -3403,11 +3583,25 @@ export class SidePanel {
       }
       return;
     }
-    this.pushUndoSnapshot('Swap Audio');
 
     const trackBtn = this.activeElement.classList.contains('track') ? this.activeElement : this.activeElement.closest('.track');
     const catalogBtn = this.activeElement.hasAttribute('data-audio') ? this.activeElement : this.activeElement.closest('[data-audio]');
     const audioEl = this.activeElement.tagName === 'AUDIO' ? this.activeElement : null;
+
+    if (trackBtn && trackBtn.__ekoOriginalAudio === undefined) {
+      trackBtn.__ekoOriginalAudio = trackBtn.dataset.src || trackBtn.getAttribute('data-src') || '';
+      trackBtn.__ekoOriginalTitle = trackBtn.dataset.title || '';
+      trackBtn.__ekoOriginalAudioFile = trackBtn.dataset.audioFile || '';
+    }
+    if (catalogBtn && catalogBtn.__ekoOriginalAudio === undefined) {
+      catalogBtn.__ekoOriginalAudio = catalogBtn.dataset.audio || catalogBtn.getAttribute('data-audio') || '';
+      catalogBtn.__ekoOriginalTitle = catalogBtn.dataset.title || '';
+    }
+    if (audioEl && audioEl.__ekoOriginalSrc === undefined) {
+      audioEl.__ekoOriginalSrc = audioEl.getAttribute('src') || audioEl.src || '';
+    }
+
+    this.pushUndoSnapshot('Swap Audio');
 
     if (trackBtn) {
       trackBtn.dataset.src = newSrc;
@@ -3434,9 +3628,13 @@ export class SidePanel {
       });
     } else if (audioEl) {
       audioEl.src = newSrc;
-      audioEl.load();
+      audioEl.setAttribute('src', newSrc);
+      try { audioEl.load(); } catch (_) {}
       this._notifyChange({ media: { src: newSrc, type: 'audio' } });
     } else {
+      if (this.activeElement.__ekoOriginalAudio === undefined) {
+        this.activeElement.__ekoOriginalAudio = this.activeElement.dataset.audio || '';
+      }
       this.activeElement.dataset.audio = newSrc;
       if (newTitle) this.activeElement.dataset.title = newTitle;
       this._notifyChange({
@@ -3448,9 +3646,15 @@ export class SidePanel {
     const iframeDoc = this.getIframeDoc ? this.getIframeDoc() : document;
     if (iframeDoc) {
       const mainAudio = iframeDoc.querySelector('#audio');
-      if (mainAudio && (trackBtn?.classList.contains('active') || mainAudio.src.includes(newSrc))) {
-        mainAudio.src = newSrc;
-        mainAudio.load();
+      if (mainAudio) {
+        if (mainAudio.__ekoOriginalSrc === undefined) {
+          mainAudio.__ekoOriginalSrc = mainAudio.getAttribute('src') || mainAudio.src || '';
+        }
+        if (trackBtn?.classList.contains('active') || mainAudio.src.includes(newSrc)) {
+          mainAudio.src = newSrc;
+          mainAudio.setAttribute('src', newSrc);
+          try { mainAudio.load(); } catch (_) {}
+        }
       }
     }
 
