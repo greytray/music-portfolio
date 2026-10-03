@@ -1,34 +1,34 @@
 #!/usr/bin/env node
-/**
- * Sync script to upload all images to Hugging Face RawStorage dataset:
- * Repository: greyhugging/RawStorage
- * Target Folder: Images/
- */
-
 import fs from 'node:fs';
 import path from 'node:path';
+import { uploadFiles, commit } from '@huggingface/hub';
 
-const HF_REPO = process.env.HF_REPO || 'greyhugging/RawStorage';
-const HF_TOKEN = process.env.HF_ACCESS_TOKEN || process.env.HUGGINGFACE_TOKEN || process.env.HF_TOKEN;
-
-async function syncImages() {
-  console.log(`[HF Sync] Target Repository: ${HF_REPO}`);
-  console.log(`[HF Sync] Target Folder: Images/`);
-
-  if (!HF_TOKEN) {
-    console.error(`[HF Sync Error] Missing HF_ACCESS_TOKEN.`);
-    console.error(`Please provide your Hugging Face write token:`);
-    console.error(`  export HF_ACCESS_TOKEN=hf_...`);
-    console.error(`  node scripts/sync-images-to-hf.js`);
-    process.exit(1);
+// Load .env file
+const envPath = path.resolve(process.cwd(), '.env');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  for (const line of envContent.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx !== -1) {
+      const key = trimmed.slice(0, eqIdx).trim();
+      const val = trimmed.slice(eqIdx + 1).trim();
+      process.env[key] = val;
+    }
   }
+}
+
+const HF_REPO = 'greyhugging/RawStorage';
+const HF_TOKEN = process.env.HF_ACCESS_TOKEN;
+
+async function run() {
+  console.log('[HF Upload] Using @huggingface/hub SDK');
+  console.log('[HF Upload] Target repo:', HF_REPO);
 
   let imagesDir = path.resolve(process.cwd(), 'assets', 'images');
-  if (!fs.existsSync(imagesDir) || fs.readdirSync(imagesDir).length === 0) {
-    const backupDir = path.resolve(process.cwd(), 'scripts', 'images_backup');
-    if (fs.existsSync(backupDir) && fs.readdirSync(backupDir).length > 0) {
-      imagesDir = backupDir;
-    }
+  if (!fs.existsSync(imagesDir)) {
+    imagesDir = path.resolve(process.cwd(), 'scripts', 'images_backup');
   }
 
   const files = fs.readdirSync(imagesDir).filter(f => {
@@ -36,54 +36,38 @@ async function syncImages() {
     return ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'].includes(ext);
   });
 
-  console.log(`[HF Sync] Found ${files.length} images to upload.`);
+  console.log(`[HF Upload] Preparing ${files.length} files...`);
 
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    const fullPath = path.join(imagesDir, file);
-    const buffer = fs.readFileSync(fullPath);
-    const remotePath = `Images/${file}`;
-
-    console.log(`[HF Sync] (${i + 1}/${files.length}) Uploading ${file} -> ${remotePath}...`);
-
-    const commitPayload = {
-      summary: `Upload ${file} to Images/ in ${HF_REPO}`,
-      operations: [
-        {
-          key: 'file',
-          value: buffer.toString('base64'),
-          encoding: 'base64',
-          path: remotePath
-        }
-      ]
-    };
-
-    try {
-      const res = await fetch(`https://huggingface.co/api/datasets/${HF_REPO}/commit/main`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${HF_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(commitPayload)
-      });
-
-      if (res.ok) {
-        console.log(`  ✓ Successfully uploaded ${file}`);
-      } else {
-        const txt = await res.text();
-        console.error(`  ✗ Failed to upload ${file} (${res.status}): ${txt}`);
-      }
-    } catch (err) {
-      console.error(`  ✗ Error uploading ${file}:`, err.message);
-    }
+  const fileObjects = [];
+  for (const file of files) {
+    const filePath = path.join(imagesDir, file);
+    const buffer = fs.readFileSync(filePath);
+    const blob = new Blob([buffer]);
+    fileObjects.push({
+      path: `Images/${file}`,
+      content: blob
+    });
+    console.log(`  + Queued: Images/${file} (${buffer.length} bytes)`);
   }
 
-  console.log(`[HF Sync] Complete! Images are accessible at:`);
-  console.log(`https://huggingface.co/datasets/${HF_REPO}/resolve/main/Images/<filename>`);
+  console.log('[HF Upload] Committing files to Hugging Face dataset...');
+
+  const result = await commit({
+    repo: { type: 'dataset', name: HF_REPO },
+    credentials: { accessToken: HF_TOKEN },
+    title: 'Upload all catalog images to Images/ folder',
+    operations: fileObjects.map(f => ({
+      operation: 'addOrUpdate',
+      path: f.path,
+      content: f.content
+    }))
+  });
+
+  console.log('✓ Successfully committed all images to Hugging Face!');
+  console.log('Result:', result);
 }
 
-syncImages().catch(err => {
-  console.error('[HF Sync Fatal]:', err);
+run().catch(err => {
+  console.error('✗ Upload error:', err);
   process.exit(1);
 });

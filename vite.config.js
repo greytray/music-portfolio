@@ -31,7 +31,7 @@ if (fs.existsSync(localEnvPath)) {
         const [k, ...vParts] = trimmed.split('=');
         const key = k.trim();
         const val = vParts.join('=').trim().replace(/^["']|["']$/g, '');
-        if (key && !process.env[key]) {
+        if (key) {
           process.env[key] = val;
         }
       }
@@ -924,7 +924,33 @@ function adminDesignModePlugin() {
           .replace(/\b\w/g, c => c.toUpperCase());
       };
 
-      if (fs.existsSync(imagesDir)) {
+      // Try fetching live images directly from Hugging Face RawStorage/Images
+      if (process.env.HF_ACCESS_TOKEN) {
+        try {
+          const hfRes = await fetch('https://huggingface.co/api/datasets/greyhugging/RawStorage/tree/main/Images', {
+            headers: { Authorization: `Bearer ${process.env.HF_ACCESS_TOKEN}` }
+          });
+          if (hfRes.ok) {
+            const items = await hfRes.json();
+            for (const item of items) {
+              if (item.type === 'file') {
+                const fname = path.basename(item.path);
+                const ext = path.extname(fname).toLowerCase();
+                if (['.jpg', '.jpeg', '.png', '.webp', '.svg', '.gif'].includes(ext)) {
+                  foundImages.push({
+                    name: humanize(fname),
+                    fileName: fname,
+                    src: `https://huggingface.co/datasets/greyhugging/RawStorage/resolve/main/Images/${fname}`,
+                    category: fname.includes('dsp') || fname.includes('eq') || fname.includes('reverb') || fname.includes('tuning') ? 'Plugins' : 'Studio'
+                  });
+                }
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
+      if (foundImages.length === 0 && fs.existsSync(imagesDir)) {
         try {
           fs.readdirSync(imagesDir).forEach(file => {
             const ext = path.extname(file).toLowerCase();
@@ -1316,8 +1342,10 @@ function mediaProxyPlugin() {
         return serveBuffer(cached.buffer, cached.etag);
       }
 
-      // 1b. Check local disk assets (public/assets/audio, assets/audio, public/assets/images, etc.)
+      // 1b. Check local disk assets (public/assets/audio, assets/audio, assets/images, etc.)
       const possibleDiskPaths = [
+        path.resolve(process.cwd(), 'assets', 'images', path.basename(fileName)),
+        path.resolve(process.cwd(), 'assets', 'images', fileName),
         path.resolve(process.cwd(), 'scripts', 'images_backup', path.basename(fileName)),
         path.resolve(process.cwd(), 'scripts', 'images_backup', fileName),
         path.resolve(process.cwd(), 'public', 'assets', 'audio', fileName),
@@ -1465,19 +1493,19 @@ function mediaProxyPlugin() {
   setTimeout(prewarmServerMemory, 500);
 
   return {
-    name: 'admin-design-mode-middleware',
+    name: 'media-proxy-plugin',
     configureServer(server) {
-      server.middlewares.use(makeHandler(server));
+      server.middlewares.use(handler);
     },
     configurePreviewServer(server) {
-      server.middlewares.use(makeHandler(server));
+      server.middlewares.use(handler);
     },
   };
 }
 
 export default defineConfig({
   base: "/",
-  plugins: [copyAssetsPlugin(), adminDesignModePlugin()],
+  plugins: [copyAssetsPlugin(), adminDesignModePlugin(), mediaProxyPlugin()],
   build: {
     rollupOptions: {
       input: {
