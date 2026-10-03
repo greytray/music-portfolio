@@ -30,8 +30,7 @@ export const DEFAULT_PROJECT_IMAGES = [
   { name: 'Studio Tape Reel', src: '/api/media?file=Images/studio_tape_reel_1789331415391.jpg', category: 'Vintage' },
   { name: 'Studio Vocal Booth', src: '/api/media?file=Images/studio_vocal_booth_1789331461100.jpg', category: 'Recording' },
   { name: 'Studio Vocal Mic', src: '/api/media?file=Images/studio_vocal_mic_1789325878081.jpg', category: 'Recording' },
-  { name: 'Futuristic Grid Loop', src: './assets/backgrounds/gif2.gif', category: 'Backgrounds' },
-  { name: 'Waveform Visualizer Loop', src: './assets/backgrounds/c1.gif', category: 'Backgrounds' }
+  { name: 'ChatGPT Image', src: '/api/media?file=Images/ChatGPT%20Image%20Sep%2023%2C%202026%2C%2012_24_25%20PM.png', category: 'Studio' }
 ];
 
 export const DEFAULT_PROJECT_AUDIO = [
@@ -3308,8 +3307,11 @@ export class SidePanel {
         ['Top', 'Bottom', 'Left', 'Right'].forEach(d => {
           this.activeElement.style.removeProperty(`margin-${d.toLowerCase()}`);
           this._notifyChange({ styleKey: `margin${d}`, val: `${val}px` });
+          const sl = container.querySelector(`#slider-margin-${d.toLowerCase()}`);
+          const num = container.querySelector(`#num-margin-${d.toLowerCase()}`);
+          if (sl) sl.value = val;
+          if (num) num.value = val;
         });
-        this._renderActiveTab();
       } else {
         setMargin('top', val);
       }
@@ -3347,8 +3349,11 @@ export class SidePanel {
         ['Top', 'Bottom', 'Left', 'Right'].forEach(d => {
           this.activeElement.style.removeProperty(`padding-${d.toLowerCase()}`);
           this._notifyChange({ styleKey: `padding${d}`, val: `${val}px` });
+          const sl = container.querySelector(`#slider-padding-${d.toLowerCase()}`);
+          const num = container.querySelector(`#num-padding-${d.toLowerCase()}`);
+          if (sl) sl.value = val;
+          if (num) num.value = val;
         });
-        this._renderActiveTab();
       } else {
         setPadding('top', val);
       }
@@ -3394,22 +3399,12 @@ export class SidePanel {
       const data = await res.json();
       if (data && data.success) {
         if (Array.isArray(data.images) && data.images.length > 0) {
-          const existingSrcs = new Set(this.availableImages.map(img => img.src));
-          data.images.forEach(img => {
-            if (!existingSrcs.has(img.src)) {
-              this.availableImages.push(img);
-              existingSrcs.add(img.src);
-            }
-          });
+          // Strictly allow only Hugging Face proxy URLs (no local ./assets or GitHub links)
+          this.availableImages = data.images.filter(img => img && img.src && (img.src.startsWith('/api/media') || img.src.startsWith('https://huggingface.co')));
         }
         if (Array.isArray(data.audio) && data.audio.length > 0) {
-          const existingFiles = new Set(this.availableAudioTracks.map(t => t.file || t.src));
-          data.audio.forEach(track => {
-            if (!existingFiles.has(track.file || track.src)) {
-              this.availableAudioTracks.push(track);
-              existingFiles.add(track.file || track.src);
-            }
-          });
+          // Strictly allow only Hugging Face proxy URLs
+          this.availableAudioTracks = data.audio.filter(track => track && (track.src || track.file) && ((track.src || '').startsWith('/api/media') || (track.src || '').startsWith('https://huggingface.co')));
         }
         if (this.activeTab === 'media') {
           this._renderActiveTab();
@@ -3517,7 +3512,12 @@ export class SidePanel {
       this._notifyChange({ styleKey: 'transform', val: '' });
     }
 
-    this._renderActiveTab();
+    // Update preset pills highlights directly without replacing tab DOM
+    const currentScale = this.imageTransformState.scale || 100;
+    this.container.querySelectorAll('.btn-preset-scale').forEach(pill => {
+      pill.classList.toggle('is-active', parseInt(pill.dataset.scale, 10) === currentScale);
+    });
+
     this.updateTabCounters();
   }
 

@@ -2723,9 +2723,9 @@ html[data-admin-theme="light"] .btn-preset-pill.is-active,
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  max-height: 220px;
-  overflow-y: auto;
-  padding-right: 4px;
+  max-height: none;
+  overflow-y: visible;
+  padding-right: 0;
   margin-bottom: 12px;
 }
 

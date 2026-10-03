@@ -80,41 +80,120 @@ export async function onRequest(context) {
 
   // 2. Handle action=list for media library listing
   if (url.searchParams.get('action') === 'list' || url.pathname.endsWith('/list')) {
-    const defaultImages = [
-      { name: 'Curved DAW Monitor', fileName: 'curved_daw_monitor_1789336964825.jpg', src: '/api/media?file=Images/curved_daw_monitor_1789336964825.jpg', category: 'Studio Gear' },
-      { name: 'Digital EQ & Compressor', fileName: 'digital_eq_compressor_1789337007076.jpg', src: '/api/media?file=Images/digital_eq_compressor_1789337007076.jpg', category: 'Plugins' },
-      { name: 'Digital Reverb DSP', fileName: 'digital_reverb_dsp_1789337033441.jpg', src: '/api/media?file=Images/digital_reverb_dsp_1789337033441.jpg', category: 'Plugins' },
-      { name: 'MIDI Beat Arranger', fileName: 'midi_beat_arranger_1789337019783.jpg', src: '/api/media?file=Images/midi_beat_arranger_1789337019783.jpg', category: 'Production' },
-      { name: 'Spectral Cleanup DSP', fileName: 'spectral_cleanup_dsp_1789336993282.jpg', src: '/api/media?file=Images/spectral_cleanup_dsp_1789336993282.jpg', category: 'Plugins' },
-      { name: 'Vocal Tuning Plugin', fileName: 'vocal_tuning_plugin_1789336979208.jpg', src: '/api/media?file=Images/vocal_tuning_plugin_1789336979208.jpg', category: 'Plugins' },
-      { name: 'Studio Mixing Desk', fileName: 'studio_mixing_desk_1789325845543.jpg', src: '/api/media?file=Images/studio_mixing_desk_1789325845543.jpg', category: 'Studio Gear' },
-      { name: 'Studio Acoustic Monitors', fileName: 'studio_acoustic_monitors_1789331401789.jpg', src: '/api/media?file=Images/studio_acoustic_monitors_1789331401789.jpg', category: 'Hardware' },
-      { name: 'Studio Drum Pads', fileName: 'studio_drum_pads_1789331427695.jpg', src: '/api/media?file=Images/studio_drum_pads_1789331427695.jpg', category: 'Production' },
-      { name: 'Studio Headphones', fileName: 'studio_headphones_1789331438637.jpg', src: '/api/media?file=Images/studio_headphones_1789331438637.jpg', category: 'Hardware' },
-      { name: 'Studio Rack Gear', fileName: 'studio_rack_gear_1789331450217.jpg', src: '/api/media?file=Images/studio_rack_gear_1789331450217.jpg', category: 'Hardware' },
-      { name: 'Studio Sound Waves', fileName: 'studio_sound_waves_1789325859183.jpg', src: '/api/media?file=Images/studio_sound_waves_1789325859183.jpg', category: 'Audio' },
-      { name: 'Studio Synth Keys', fileName: 'studio_synth_keys_1789325893151.jpg', src: '/api/media?file=Images/studio_synth_keys_1789325893151.jpg', category: 'Instruments' },
-      { name: 'Studio Tape Reel', fileName: 'studio_tape_reel_1789331415391.jpg', src: '/api/media?file=Images/studio_tape_reel_1789331415391.jpg', category: 'Vintage' },
-      { name: 'Studio Vocal Booth', fileName: 'studio_vocal_booth_1789331461100.jpg', src: '/api/media?file=Images/studio_vocal_booth_1789331461100.jpg', category: 'Recording' },
-      { name: 'Studio Vocal Mic', fileName: 'studio_vocal_mic_1789325878081.jpg', src: '/api/media?file=Images/studio_vocal_mic_1789325878081.jpg', category: 'Recording' },
-      { name: 'ChatGPT Image', fileName: 'ChatGPT Image Sep 23, 2026, 12_24_25 PM.png', src: '/api/media?file=Images/ChatGPT%20Image%20Sep%2023%2C%202026%2C%2012_24_25%20PM.png', category: 'Studio' },
-      { name: 'Futuristic Grid Loop', fileName: 'gif2.gif', src: './assets/backgrounds/gif2.gif', category: 'Backgrounds' },
-      { name: 'Waveform Visualizer Loop', fileName: 'c1.gif', src: './assets/backgrounds/c1.gif', category: 'Backgrounds' }
-    ];
+    let images = [];
+    let audio = [];
 
-    const defaultAudio = [
-      { id: 'feeling_mello', title: 'Feeling Mello', style: 'Original production', duration: '0:44', file: 'audio/feeling mello.mp3', src: '/api/media?file=audio/feeling mello.mp3' },
-      { id: 'broken_jar', title: 'Broken Jar', style: 'Mastered production', duration: '0:38', file: 'audio/broken jar mastered.mp3', src: '/api/media?file=audio/broken jar mastered.mp3' },
-      { id: 'kpop_beat', title: 'Kpop Beat', style: 'K-Pop production', duration: '1:14', file: 'audio/Kpop beat.mp3', src: '/api/media?file=audio/Kpop beat.mp3' },
-      { id: 'kensuke', title: 'Kensuke', style: 'Original production', duration: '0:45', file: 'audio/Kensuke.mp3', src: '/api/media?file=audio/Kensuke.mp3' },
-      { id: 'kpop_post_fx', title: 'K-Pop Post FX', style: 'Post-production mix', duration: '0:14', file: 'audio/K-Pop post fx.mp3', src: '/api/media?file=audio/K-Pop post fx.mp3' },
-      { id: 'aiobahn', title: 'Aiobahn Maybe Last Mix', style: 'Final mix', duration: '0:53', file: 'audio/Aiobahn maybe last mix.mp3', src: '/api/media?file=audio/Aiobahn maybe last mix.mp3' }
-    ];
+    // Attempt live recursive tree listing directly from Hugging Face dataset API
+    try {
+      let treeItems = [];
+      for (const tokenToTry of candidateTokens) {
+        if (treeItems.length > 0) break;
+        const fwdHeaders = new Headers();
+        if (tokenToTry) fwdHeaders.set('Authorization', `Bearer ${tokenToTry}`);
+        fwdHeaders.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
+        const treeRes = await fetch(`https://huggingface.co/api/datasets/${hfRepo}/tree/main?recursive=true`, {
+          headers: fwdHeaders
+        });
+
+        if (treeRes.ok) {
+          const data = await treeRes.json();
+          if (Array.isArray(data)) {
+            treeItems = data.filter(item => item && item.type === 'file' && item.path);
+          }
+        }
+      }
+
+      if (treeItems.length > 0) {
+        const imageSet = new Set();
+        const audioSet = new Set();
+
+        treeItems.forEach(item => {
+          const path = item.path;
+          const ext = path.split('.').pop().toLowerCase();
+          const fileName = path.split('/').pop();
+          const cleanName = fileName
+            .replace(/\.[^/.]+$/, '')
+            .replace(/_\d{10,}/, '')
+            .replace(/[-_]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .replace(/\b\w/g, l => l.toUpperCase());
+
+          const proxySrc = `/api/media?file=${encodeURIComponent(path)}`;
+
+          if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'ico'].includes(ext)) {
+            if (!imageSet.has(proxySrc)) {
+              imageSet.add(proxySrc);
+              let cat = 'Studio';
+              const lower = path.toLowerCase();
+              if (lower.includes('plugin') || lower.includes('eq') || lower.includes('dsp') || lower.includes('tuning')) cat = 'Plugins';
+              else if (lower.includes('monitor') || lower.includes('desk') || lower.includes('gear') || lower.includes('headphone') || lower.includes('mic') || lower.includes('rack') || lower.includes('booth')) cat = 'Hardware';
+              else if (lower.includes('gif') || lower.includes('background') || lower.includes('loop')) cat = 'Backgrounds';
+              else if (lower.includes('drum') || lower.includes('synth') || lower.includes('beat') || lower.includes('arranger')) cat = 'Production';
+
+              images.push({
+                name: cleanName || fileName,
+                fileName: fileName,
+                src: proxySrc,
+                category: cat
+              });
+            }
+          } else if (['mp3', 'wav', 'flac', 'ogg', 'aac', 'm4a'].includes(ext)) {
+            if (!audioSet.has(proxySrc)) {
+              audioSet.add(proxySrc);
+              audio.push({
+                id: fileName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(),
+                title: cleanName || fileName,
+                style: 'Production',
+                duration: '0:45',
+                file: path,
+                src: proxySrc
+              });
+            }
+          }
+        });
+      }
+    } catch (_) {}
+
+    // Fallback ONLY to verified Hugging Face paths if HF tree API fails or is offline (zero local ./assets/ or GitHub files)
+    if (images.length === 0) {
+      images = [
+        { name: 'Curved DAW Monitor', fileName: 'curved_daw_monitor_1789336964825.jpg', src: '/api/media?file=Images/curved_daw_monitor_1789336964825.jpg', category: 'Studio Gear' },
+        { name: 'Digital EQ & Compressor', fileName: 'digital_eq_compressor_1789337007076.jpg', src: '/api/media?file=Images/digital_eq_compressor_1789337007076.jpg', category: 'Plugins' },
+        { name: 'Digital Reverb DSP', fileName: 'digital_reverb_dsp_1789337033441.jpg', src: '/api/media?file=Images/digital_reverb_dsp_1789337033441.jpg', category: 'Plugins' },
+        { name: 'MIDI Beat Arranger', fileName: 'midi_beat_arranger_1789337019783.jpg', src: '/api/media?file=Images/midi_beat_arranger_1789337019783.jpg', category: 'Production' },
+        { name: 'Spectral Cleanup DSP', fileName: 'spectral_cleanup_dsp_1789336993282.jpg', src: '/api/media?file=Images/spectral_cleanup_dsp_1789336993282.jpg', category: 'Plugins' },
+        { name: 'Vocal Tuning Plugin', fileName: 'vocal_tuning_plugin_1789336979208.jpg', src: '/api/media?file=Images/vocal_tuning_plugin_1789336979208.jpg', category: 'Plugins' },
+        { name: 'Studio Mixing Desk', fileName: 'studio_mixing_desk_1789325845543.jpg', src: '/api/media?file=Images/studio_mixing_desk_1789325845543.jpg', category: 'Studio Gear' },
+        { name: 'Studio Acoustic Monitors', fileName: 'studio_acoustic_monitors_1789331401789.jpg', src: '/api/media?file=Images/studio_acoustic_monitors_1789331401789.jpg', category: 'Hardware' },
+        { name: 'Studio Drum Pads', fileName: 'studio_drum_pads_1789331427695.jpg', src: '/api/media?file=Images/studio_drum_pads_1789331427695.jpg', category: 'Production' },
+        { name: 'Studio Headphones', fileName: 'studio_headphones_1789331438637.jpg', src: '/api/media?file=Images/studio_headphones_1789331438637.jpg', category: 'Hardware' },
+        { name: 'Studio Rack Gear', fileName: 'studio_rack_gear_1789331450217.jpg', src: '/api/media?file=Images/studio_rack_gear_1789331450217.jpg', category: 'Hardware' },
+        { name: 'Studio Sound Waves', fileName: 'studio_sound_waves_1789325859183.jpg', src: '/api/media?file=Images/studio_sound_waves_1789325859183.jpg', category: 'Audio' },
+        { name: 'Studio Synth Keys', fileName: 'studio_synth_keys_1789325893151.jpg', src: '/api/media?file=Images/studio_synth_keys_1789325893151.jpg', category: 'Instruments' },
+        { name: 'Studio Tape Reel', fileName: 'studio_tape_reel_1789331415391.jpg', src: '/api/media?file=Images/studio_tape_reel_1789331415391.jpg', category: 'Vintage' },
+        { name: 'Studio Vocal Booth', fileName: 'studio_vocal_booth_1789331461100.jpg', src: '/api/media?file=Images/studio_vocal_booth_1789331461100.jpg', category: 'Recording' },
+        { name: 'Studio Vocal Mic', fileName: 'studio_vocal_mic_1789325878081.jpg', src: '/api/media?file=Images/studio_vocal_mic_1789325878081.jpg', category: 'Recording' },
+        { name: 'ChatGPT Image', fileName: 'ChatGPT Image Sep 23, 2026, 12_24_25 PM.png', src: '/api/media?file=Images/ChatGPT%20Image%20Sep%2023%2C%202026%2C%2012_24_25%20PM.png', category: 'Studio' }
+      ];
+    }
+
+    if (audio.length === 0) {
+      audio = [
+        { id: 'feeling_mello', title: 'Feeling Mello', style: 'Original production', duration: '0:44', file: 'audio/feeling mello.mp3', src: '/api/media?file=audio/feeling mello.mp3' },
+        { id: 'broken_jar', title: 'Broken Jar', style: 'Mastered production', duration: '0:38', file: 'audio/broken jar mastered.mp3', src: '/api/media?file=audio/broken jar mastered.mp3' },
+        { id: 'kpop_beat', title: 'Kpop Beat', style: 'K-Pop production', duration: '1:14', file: 'audio/Kpop beat.mp3', src: '/api/media?file=audio/Kpop beat.mp3' },
+        { id: 'kensuke', title: 'Kensuke', style: 'Original production', duration: '0:45', file: 'audio/Kensuke.mp3', src: '/api/media?file=audio/Kensuke.mp3' },
+        { id: 'kpop_post_fx', title: 'K-Pop Post FX', style: 'Post-production mix', duration: '0:14', file: 'audio/K-Pop post fx.mp3', src: '/api/media?file=audio/K-Pop post fx.mp3' },
+        { id: 'aiobahn', title: 'Aiobahn Maybe Last Mix', style: 'Final mix', duration: '0:53', file: 'audio/Aiobahn maybe last mix.mp3', src: '/api/media?file=audio/Aiobahn maybe last mix.mp3' }
+      ];
+    }
 
     return new Response(JSON.stringify({
       success: true,
-      images: defaultImages,
-      audio: defaultAudio
+      images,
+      audio
     }), {
       status: 200,
       headers: {
