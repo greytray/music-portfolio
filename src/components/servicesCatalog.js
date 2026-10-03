@@ -9,7 +9,7 @@
 
 import { fastSmoothScrollTo } from '../utils/scroll.js';
 import { pauseMainLandingAudio } from '../main.js';
-import { getMediaUrl, getInstantMediaUrl, preloadMedia, warmMediaOnIdle } from '../utils/media.js';
+import { getMediaUrl, getInstantMediaUrl, preloadMedia, warmMediaOnIdle, preloadCatalogImages } from '../utils/media.js';
 
 let catalogAudioInstance = null;
 let currentPlayingButton = null;
@@ -17,6 +17,21 @@ let currentPlayingButton = null;
 export function initServicesCatalog() {
   const section = document.querySelector('#services');
   if (!section) return;
+
+  // Immediately kick off proactive catalog image preloads and decoding
+  preloadCatalogImages();
+
+  // Asynchronously decode all card images so scrolling across cards is instantaneous with zero paint lag
+  const catalogImages = section.querySelectorAll('img.catalog-photo');
+  catalogImages.forEach(img => {
+    if (img.complete) {
+      if (img.decode) img.decode().catch(() => {});
+    } else {
+      img.addEventListener('load', () => {
+        if (img.decode) img.decode().catch(() => {});
+      }, { once: true });
+    }
+  });
 
   initCardStacking(section);
   initCatalogAudio(section);
