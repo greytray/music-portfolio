@@ -23,12 +23,17 @@ export async function onRequest(context) {
     .map(c => String.fromCharCode(c))
     .join('');
 
-  // Always include the verified write token first, then any environment token
+  // 1. Dynamic token configured in Cloudflare Pages Settings -> Environment Variables
+  const cloudflareEnvToken = (env && env.HF_ACCESS_TOKEN && typeof env.HF_ACCESS_TOKEN === 'string')
+    ? env.HF_ACCESS_TOKEN.trim()
+    : ((typeof process !== 'undefined' && process.env && process.env.HF_ACCESS_TOKEN) ? process.env.HF_ACCESS_TOKEN.trim() : '');
+
+  // 2. Prioritize the Cloudflare environment variable, falling back to internal token if unset
   const candidateTokens = [
-    FALLBACK_HF_TOKEN,
-    (env && env.HF_ACCESS_TOKEN),
-    (typeof process !== 'undefined' && process.env && process.env.HF_ACCESS_TOKEN)
-  ].filter(t => t && typeof t === 'string' && t.trim().length > 0);
+    cloudflareEnvToken,
+    FALLBACK_HF_TOKEN
+  ].filter(t => t && typeof t === 'string' && t.length > 0);
+
   const token = candidateTokens[0] || '';
   const hfRepo = 'greyhugging/RawStorage';
   const baseUrl = (env && env.HF_DATASET_URL)
