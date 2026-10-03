@@ -2934,7 +2934,6 @@ nav a:hover, nav a:focus-visible,
   transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease;
   filter: brightness(0.85) contrast(1.04);
   z-index: 1;
-  background-color: #16151f;
 }
 
 .catalog-tile:hover .catalog-photo,

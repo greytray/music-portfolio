@@ -143,62 +143,8 @@ export function preloadMedia(pathOrUrl, highPriority = false) {
   fetchAndCacheBlob(fullUrl, highPriority);
 }
 
-export const STANDARD_CATALOG_IMAGES = [
-  '/api/media?file=Images/curved_daw_monitor_1789336964825.jpg',
-  '/api/media?file=Images/midi_beat_arranger_1789337019783.jpg',
-  '/api/media?file=Images/digital_reverb_dsp_1789337033441.jpg',
-  '/api/media?file=Images/digital_eq_compressor_1789337007076.jpg',
-  '/api/media?file=Images/spectral_cleanup_dsp_1789336993282.jpg',
-  '/api/media?file=Images/vocal_tuning_plugin_1789336979208.jpg'
-];
-
 /**
- * Preloads and decodes an image into browser memory and HTTP cache.
- *
- * @param {string} pathOrUrl - Image asset path or proxy URL
- * @param {boolean} [highPriority=false] - Whether to set fetchpriority="high"
- */
-export function preloadImage(pathOrUrl, highPriority = false) {
-  if (!pathOrUrl || typeof window === 'undefined') return;
-  const fullUrl = getMediaUrl(pathOrUrl);
-  if (prefetchedUrls.has(fullUrl)) return;
-  prefetchedUrls.add(fullUrl);
-
-  const img = new Image();
-  if (highPriority && 'fetchPriority' in img) {
-    img.fetchPriority = 'high';
-  }
-  img.decoding = 'async';
-  img.src = fullUrl;
-  if (img.decode) {
-    img.decode().catch(() => {});
-  }
-}
-
-/**
- * Proactively preloads all catalog images before user scrolls to Studio Services.
- */
-export function preloadCatalogImages() {
-  if (typeof window === 'undefined') return;
-
-  // 1. Immediately preload top visible card images with high priority
-  preloadImage('/api/media?file=Images/curved_daw_monitor_1789336964825.jpg', true);
-  preloadImage('/api/media?file=Images/midi_beat_arranger_1789337019783.jpg', true);
-  preloadImage('/api/media?file=Images/digital_reverb_dsp_1789337033441.jpg', true);
-
-  // 2. Preload remaining card images in quick succession
-  const remaining = [
-    '/api/media?file=Images/digital_eq_compressor_1789337007076.jpg',
-    '/api/media?file=Images/spectral_cleanup_dsp_1789336993282.jpg',
-    '/api/media?file=Images/vocal_tuning_plugin_1789336979208.jpg'
-  ];
-  remaining.forEach((p, idx) => {
-    setTimeout(() => preloadImage(p, false), (idx + 1) * 60);
-  });
-}
-
-/**
- * Executes proactive pre-warming for all known audio tracks after page load idle.
+ * Executes proactive pre-warming for all known audio tracks.
  *
  * @param {string[]} paths - Array of media paths
  */
@@ -206,12 +152,12 @@ export function warmMediaOnIdle(paths) {
   if (typeof window === 'undefined' || !Array.isArray(paths)) return;
 
   const startPreload = () => {
-    // Wait until browser has finished rendering and is truly idle before pre-warming secondary audio
-    setTimeout(() => {
-      paths.forEach((p, idx) => {
-        setTimeout(() => preloadMedia(p, false), idx * 350);
-      });
-    }, 2500);
+    if (paths.length > 0) {
+      preloadMedia(paths[0], true);
+    }
+    paths.slice(1).forEach((p, idx) => {
+      setTimeout(() => preloadMedia(p, false), idx * 100);
+    });
   };
 
   if (document.readyState === 'complete') {
@@ -228,9 +174,6 @@ if (typeof window !== 'undefined') {
   window.__preloadMedia = preloadMedia;
   window.__fetchAndCacheBlob = fetchAndCacheBlob;
   window.__warmMediaOnIdle = warmMediaOnIdle;
-  window.__preloadImage = preloadImage;
-  window.__preloadCatalogImages = preloadCatalogImages;
-  window.__STANDARD_CATALOG_IMAGES = STANDARD_CATALOG_IMAGES;
 
   const STANDARD_TRACKS = [
     '/api/media?file=audio/Aiobahn maybe last mix.mp3',

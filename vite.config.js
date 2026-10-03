@@ -65,17 +65,6 @@ function copyAssetsPlugin() {
   };
 }
 
-const FALLBACK_HF_TOKEN = [104, 102, 95, 113, 122, 66, 113, 82, 67, 112, 110, 70, 120, 65, 69, 83, 115, 73, 74, 76, 69, 77, 83, 98, 82, 100, 107, 67, 69, 97, 75, 121, 65, 102, 66, 114, 86]
-  .map(c => String.fromCharCode(c))
-  .join('');
-
-const mediaDiskCacheDir = path.resolve(process.cwd(), 'node_modules', '.cache', 'media');
-try {
-  if (!fs.existsSync(mediaDiskCacheDir)) {
-    fs.mkdirSync(mediaDiskCacheDir, { recursive: true });
-  }
-} catch (_) {}
-
 const mediaMemoryBuffers = new Map();
 const resolvedPathCache = new Map();
 
@@ -1373,10 +1362,8 @@ function mediaProxyPlugin() {
         return serveBuffer(cached.buffer, cached.etag);
       }
 
-      // 1b. Check local disk assets (public/assets/audio, assets/audio, assets/images, node_modules/.cache/media, etc.)
+      // 1b. Check local disk assets (public/assets/audio, assets/audio, assets/images, etc.)
       const possibleDiskPaths = [
-        path.join(mediaDiskCacheDir, fileName),
-        path.join(mediaDiskCacheDir, path.basename(fileName)),
         path.resolve(process.cwd(), 'assets', 'images', path.basename(fileName)),
         path.resolve(process.cwd(), 'assets', 'images', fileName),
         path.resolve(process.cwd(), 'scripts', 'images_backup', path.basename(fileName)),
@@ -1399,7 +1386,7 @@ function mediaProxyPlugin() {
       }
 
       // 2. Query Hugging Face RawStorage directly (concurrent candidate probing)
-      const hfToken = (process.env.HF_ACCESS_TOKEN || '').trim() || FALLBACK_HF_TOKEN;
+      const hfToken = process.env.HF_ACCESS_TOKEN || '';
       const hfBaseUrl = process.env.HF_DATASET_URL || 'https://huggingface.co/datasets/greyhugging/RawStorage/resolve/main';
 
       try {
@@ -1456,9 +1443,6 @@ function mediaProxyPlugin() {
           const buf = Buffer.from(arrayBuf);
           const etag = upstreamRes.headers.get('etag') || `"${buf.length.toString(16)}-${fileName}"`;
           mediaMemoryBuffers.set(cacheKey, { buffer: buf, etag });
-          try {
-            fs.writeFileSync(path.join(mediaDiskCacheDir, fileName), buf);
-          } catch (_) {}
           return serveBuffer(buf, etag);
         }
       } catch (e) {
@@ -1469,34 +1453,13 @@ function mediaProxyPlugin() {
       // CRITICAL: NEVER call next() for /api/media, or Vite SPA fallback will return index.html as audio!
       res.statusCode = 404;
       res.setHeader('Content-Type', 'application/json');
-      return res.end(JSON.stringify({ error: `Media asset "${fileName}" not found` }));
+      return res.end(JSON.stringify({ error: `Audio file "${fileName}" not found` }));
     }
     next();
   };
 
-  // 1. Immediately load already cached media from local disk into RAM (instant 0ms, zero network usage)
-  const warmLocalDiskWarm = () => {
-    const IMAGES_TO_WARM = [
-      'curved_daw_monitor_1789336964825.jpg',
-      'digital_eq_compressor_1789337007076.jpg',
-      'digital_reverb_dsp_1789337033441.jpg',
-      'midi_beat_arranger_1789337019783.jpg',
-      'spectral_cleanup_dsp_1789336993282.jpg',
-      'vocal_tuning_plugin_1789336979208.jpg'
-    ];
-    for (const img of IMAGES_TO_WARM) {
-      const cacheKey = img.toLowerCase();
-      const cachedFilePath = path.join(mediaDiskCacheDir, img);
-      if (fs.existsSync(cachedFilePath)) {
-        try {
-          const buf = fs.readFileSync(cachedFilePath);
-          const etag = `"${buf.length.toString(16)}-${img}"`;
-          mediaMemoryBuffers.set(cacheKey, { buffer: buf, etag });
-          mediaMemoryBuffers.set(`images/${img}`.toLowerCase(), { buffer: buf, etag });
-        } catch (_) {}
-      }
-    }
-
+  // Proactive background pre-warming of showcase tracks on dev server boot
+  const prewarmServerMemory = async () => {
     const TRACKS_TO_WARM = [
       'Aiobahn maybe last mix.mp3',
       'Kensuke.mp3',
@@ -1505,6 +1468,8 @@ function mediaProxyPlugin() {
       'Kpop beat.mp3',
       'K-Pop post fx.mp3'
     ];
+
+    // 1. Immediately warm from local assets
     for (const track of TRACKS_TO_WARM) {
       const cacheKey = track.toLowerCase();
       const localAudioPath = path.resolve(process.cwd(), 'public', 'assets', 'audio', track);
@@ -1516,60 +1481,14 @@ function mediaProxyPlugin() {
         } catch (_) {}
       }
     }
-  };
-  warmLocalDiskWarm();
 
-  // 2. Delayed background pre-warming of any uncached remote assets (well after initial page handshake)
-  const prewarmRemoteUpstream = async () => {
-    const IMAGES_TO_WARM = [
-      'curved_daw_monitor_1789336964825.jpg',
-      'digital_eq_compressor_1789337007076.jpg',
-      'digital_reverb_dsp_1789337033441.jpg',
-      'midi_beat_arranger_1789337019783.jpg',
-      'spectral_cleanup_dsp_1789336993282.jpg',
-      'vocal_tuning_plugin_1789336979208.jpg'
-    ];
-    const TRACKS_TO_WARM = [
-      'Aiobahn maybe last mix.mp3',
-      'Kensuke.mp3',
-      'broken jar mastered.mp3',
-      'feeling mello.mp3',
-      'Kpop beat.mp3',
-      'K-Pop post fx.mp3'
-    ];
-
-    const hfToken = (process.env.HF_ACCESS_TOKEN || '').trim() || FALLBACK_HF_TOKEN;
+    const hfToken = process.env.HF_ACCESS_TOKEN || '';
     const hfBaseUrl = process.env.HF_DATASET_URL || 'https://huggingface.co/datasets/greyhugging/RawStorage/resolve/main';
 
-    const uncachedImages = IMAGES_TO_WARM.filter(img => !mediaMemoryBuffers.has(img.toLowerCase()));
-    for (const img of uncachedImages) {
-      const cacheKey = img.toLowerCase();
-      const candidates = [`Images/${img}`, img];
-      for (const candidate of candidates) {
-        try {
-          const encoded = candidate.split('/').map(encodeURIComponent).join('/');
-          const url = `${hfBaseUrl.replace(/\/+$/, '')}/${encoded}`;
-          const headers = hfToken ? { Authorization: `Bearer ${hfToken}` } : {};
-          const res = await fetch(url, { headers, redirect: 'follow' });
-          if (res.ok) {
-            const buf = Buffer.from(await res.arrayBuffer());
-            const etag = res.headers.get('etag') || `"${buf.length.toString(16)}-${img}"`;
-            mediaMemoryBuffers.set(cacheKey, { buffer: buf, etag });
-            mediaMemoryBuffers.set(`images/${img}`.toLowerCase(), { buffer: buf, etag });
-            resolvedPathCache.set(cacheKey, candidate);
-            resolvedPathCache.set(`images/${img}`.toLowerCase(), candidate);
-            try {
-              fs.writeFileSync(path.join(mediaDiskCacheDir, img), buf);
-            } catch (_) {}
-            break;
-          }
-        } catch (_) {}
-      }
-    }
-
-    const uncachedTracks = TRACKS_TO_WARM.filter(t => !mediaMemoryBuffers.has(t.toLowerCase()));
-    for (const track of uncachedTracks) {
+    for (const track of TRACKS_TO_WARM) {
       const cacheKey = track.toLowerCase();
+      if (mediaMemoryBuffers.has(cacheKey)) continue;
+
       const candidates = [`audio/${track}`, `showcase/${track}`, track];
       for (const candidate of candidates) {
         try {
@@ -1584,12 +1503,14 @@ function mediaProxyPlugin() {
             resolvedPathCache.set(cacheKey, candidate);
             break;
           }
-        } catch (_) {}
+        } catch {
+          // Ignore background pre-warm error
+        }
       }
     }
   };
 
-  setTimeout(prewarmRemoteUpstream, 3500);
+  setTimeout(prewarmServerMemory, 500);
 
   return {
     name: 'media-proxy-plugin',
