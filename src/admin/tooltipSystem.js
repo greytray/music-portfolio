@@ -105,20 +105,34 @@ export class TooltipManager {
     const rect = target.getBoundingClientRect();
     const tooltipRect = this.tooltipEl.getBoundingClientRect();
 
-    let top = rect.top - tooltipRect.height - 9;
+    let top = rect.top - tooltipRect.height - 7;
     let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
     let placement = 'top';
 
     // If clipping top screen boundary (e.g. topbar buttons), place BELOW target
     if (top < 8) {
-      top = rect.bottom + 9;
+      top = rect.bottom + 7;
       placement = 'bottom';
     }
 
     // Keep within horizontal screen bounds
-    if (left < 10) left = 10;
-    if (left + tooltipRect.width > window.innerWidth - 10) {
-      left = window.innerWidth - tooltipRect.width - 10;
+    if (left < 8) left = 8;
+    if (left + tooltipRect.width > window.innerWidth - 8) {
+      left = window.innerWidth - tooltipRect.width - 8;
+    }
+
+    // If target is inside the admin sidebar, constrain tooltip strictly within the sidebar bounds
+    const sidebar = target.closest('#admin-side-panel, .admin-sidepanel, #admin-sidepanel, .admin-side-panel');
+    if (sidebar) {
+      const sideRect = sidebar.getBoundingClientRect();
+      const minLeft = Math.max(8, sideRect.left + 8);
+      const maxRight = Math.min(window.innerWidth - 8, sideRect.right - 8);
+      if (left < minLeft) {
+        left = minLeft;
+      }
+      if (left + tooltipRect.width > maxRight) {
+        left = Math.max(minLeft, maxRight - tooltipRect.width);
+      }
     }
 
     this.tooltipEl.dataset.placement = placement;
@@ -129,7 +143,7 @@ export class TooltipManager {
     // When displaying BELOW item (placement='bottom'): arrow sits on TOP edge pointing UPWARDS to the item.
     // When displaying ABOVE item (placement='top'): arrow sits on BOTTOM edge pointing DOWNWARDS to the item.
     const targetCenterX = rect.left + (rect.width / 2);
-    const arrowLeft = Math.max(10, Math.min(tooltipRect.width - 10, targetCenterX - left));
+    const arrowLeft = Math.max(8, Math.min(tooltipRect.width - 14, targetCenterX - left - 3));
 
     this.arrowEl.style.left = `${Math.round(arrowLeft)}px`;
 

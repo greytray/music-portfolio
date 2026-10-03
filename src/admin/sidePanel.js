@@ -412,17 +412,17 @@ export class SidePanel {
 
   _hasActiveElementSectionChanges(sectionName) {
     if (sectionName === 'media') {
-      if (this.activeMeta && (this.isFieldChanged('src') || this.isFieldChanged('audio') || this.isFieldChanged('backgroundImage') || this.isFieldChanged('media') || this.isFieldChanged('transform') || this.isFieldChanged('width') || this.isFieldChanged('height') || this.isFieldChanged('objectFit'))) {
+      if (this.activeMeta && (this.isFieldChanged('src') || this.isFieldChanged('audio') || this.isFieldChanged('backgroundImage') || this.isFieldChanged('media') || this.isFieldChanged('transform') || this.isFieldChanged('objectPosition') || this.isFieldChanged('backgroundPosition') || this.isFieldChanged('width') || this.isFieldChanged('height') || this.isFieldChanged('objectFit'))) {
         return true;
       }
       if (this.exportSystem && this.exportSystem.changesMap.size > 0) {
         for (const [, data] of this.exportSystem.changesMap.entries()) {
-          if (data && (data.media || (data.styles && (data.styles.backgroundImage || data.styles.transform || data.styles.width || data.styles.height || data.styles.objectFit)))) {
+          if (data && (data.media || (data.styles && (data.styles.backgroundImage || data.styles.transform || data.styles.objectPosition || data.styles.backgroundPosition || data.styles.width || data.styles.height || data.styles.objectFit)))) {
             return true;
           }
         }
       }
-      const hasTransformState = Boolean(this.imageTransformState && (this.imageTransformState.flipH || this.imageTransformState.flipV || this.imageTransformState.scale !== 100 || this.imageTransformState.width || this.imageTransformState.height));
+      const hasTransformState = Boolean(this.imageTransformState && (this.imageTransformState.flipH || this.imageTransformState.flipV || this.imageTransformState.scale !== 100 || this.imageTransformState.posX !== 50 || this.imageTransformState.posY !== 50 || (this.imageTransformState.objectFit && this.imageTransformState.objectFit !== 'cover')));
       if (hasTransformState) return true;
       return false;
     }
@@ -1602,6 +1602,10 @@ export class SidePanel {
   }
 
   _renderActiveTab() {
+    if (this._isAltPreviewing) {
+      this._endAltPreview(true);
+    }
+
     const contentEl = this.container.querySelector('#admin-tab-content');
     if (!contentEl) return;
     const prevScrollTop = contentEl.scrollTop;
@@ -2122,16 +2126,24 @@ export class SidePanel {
         flipH: false,
         flipV: false,
         scale: 100,
+        posX: 50,
+        posY: 50,
         width: '',
         height: '',
         objectFit: 'cover'
       };
       this.activeElement.style.removeProperty('transform');
+      this.activeElement.style.removeProperty('transform-origin');
+      this.activeElement.style.removeProperty('object-position');
+      this.activeElement.style.removeProperty('background-position');
       this.activeElement.style.removeProperty('width');
       this.activeElement.style.removeProperty('height');
       this.activeElement.style.removeProperty('object-fit');
       if (this.exportSystem) {
         this.exportSystem.removeChange(selector, 'style', 'transform', 'all');
+        this.exportSystem.removeChange(selector, 'style', 'transformOrigin', 'all');
+        this.exportSystem.removeChange(selector, 'style', 'objectPosition', 'all');
+        this.exportSystem.removeChange(selector, 'style', 'backgroundPosition', 'all');
         this.exportSystem.removeChange(selector, 'style', 'width', 'all');
         this.exportSystem.removeChange(selector, 'style', 'height', 'all');
         this.exportSystem.removeChange(selector, 'style', 'objectFit', 'all');
@@ -2147,6 +2159,20 @@ export class SidePanel {
     } else if (type === 'scale' || key === 'scale') {
       this.imageTransformState.scale = 100;
       this._applyImageTransform();
+      return;
+    } else if (type === 'position' || key === 'position' || key === 'objectPosition' || key === 'backgroundPosition') {
+      this.imageTransformState.posX = 50;
+      this.imageTransformState.posY = 50;
+      this.activeElement.style.removeProperty('object-position');
+      this.activeElement.style.removeProperty('background-position');
+      this.activeElement.style.removeProperty('transform-origin');
+      if (this.exportSystem) {
+        this.exportSystem.removeChange(selector, 'style', 'objectPosition', 'all');
+        this.exportSystem.removeChange(selector, 'style', 'backgroundPosition', 'all');
+        this.exportSystem.removeChange(selector, 'style', 'transformOrigin', 'all');
+      }
+      this._notifyChange({ reset: true });
+      this._renderActiveTab();
       return;
     } else if (type === 'sizing' || key === 'sizing') {
       this.imageTransformState.width = '';
@@ -3480,7 +3506,9 @@ export class SidePanel {
         if (sy < 0) flipV = true;
         const mag = Math.abs(sx);
         if (!isNaN(mag) && mag > 0) {
-          scale = Math.round(mag * 100);
+          const parsedScale = Math.round(mag * 100);
+          // Only treat as user zoom if it exceeds off-axis travel threshold (> 120%)
+          scale = (parsedScale > 100 && parsedScale <= 120) ? 100 : parsedScale;
         }
       } else if (effectiveTransform.startsWith('matrix(')) {
         const parts = effectiveTransform.replace(/^matrix\(|\)$/g, '').split(',').map(s => parseFloat(s.trim()));
@@ -3501,47 +3529,372 @@ export class SidePanel {
     const currentHeight = this.activeElement.style.height || (overrides.styles && overrides.styles.height) || '';
     const currentObjectFit = this.activeElement.style.objectFit || (overrides.styles && overrides.styles.objectFit) || (computed ? computed.objectFit : 'cover') || 'cover';
 
+    let currentObjectPosition = '';
+    if (isImg) {
+      currentObjectPosition = this.activeElement.style.objectPosition || (overrides.styles && overrides.styles.objectPosition) || (computed ? computed.objectPosition : '') || '50% 50%';
+    } else {
+      currentObjectPosition = this.activeElement.style.backgroundPosition || (overrides.styles && overrides.styles.backgroundPosition) || (computed ? computed.backgroundPosition : '') || '50% 50%';
+    }
+
+    let posX = 50;
+    let posY = 50;
+
+    if (currentObjectPosition) {
+      const posParts = currentObjectPosition.trim().split(/\s+/);
+      const parsePosPart = (part) => {
+        if (part === 'center') return 50;
+        if (part === 'left') return 0;
+        if (part === 'right') return 100;
+        if (part === 'top') return 0;
+        if (part === 'bottom') return 100;
+        if (part.endsWith('%')) {
+          const val = parseFloat(part);
+          return isNaN(val) ? 50 : val;
+        }
+        return 50;
+      };
+
+      if (posParts.length === 1) {
+        if (posParts[0] === 'top' || posParts[0] === 'bottom') {
+          posY = parsePosPart(posParts[0]);
+          posX = 50;
+        } else {
+          posX = parsePosPart(posParts[0]);
+          posY = 50;
+        }
+      } else if (posParts.length >= 2) {
+        posX = parsePosPart(posParts[0]);
+        posY = parsePosPart(posParts[1]);
+      }
+    }
+
     this.imageTransformState = {
       flipH,
       flipV,
-      scale,
+      scale: Math.max(100, Math.min(300, scale || 100)),
+      posX,
+      posY,
       width: currentWidth,
       height: currentHeight,
       objectFit: currentObjectFit
     };
   }
 
-  _applyImageTransform() {
-    if (!this.activeElement) return;
-    this.pushUndoSnapshot('Image Transform');
+  _calculateCropBox(scale = 100, posX = 50, posY = 50) {
+    const el = this.activeElement;
+    let targetImgEl = null;
+    if (el) {
+      if (el.tagName === 'IMG') {
+        targetImgEl = el;
+      } else if (el.querySelector && el.querySelector('img')) {
+        targetImgEl = el.querySelector('img');
+      }
+    }
+    const isImg = Boolean(targetImgEl);
 
-    const S = (this.imageTransformState.scale || 100) / 100;
-    const sx = this.imageTransformState.flipH ? -S : S;
-    const sy = this.imageTransformState.flipV ? -S : S;
+    // Container dimensions on the website
+    const container = (isImg && targetImgEl.parentElement) ? targetImgEl.parentElement : (el || null);
+    const containerRect = container?.getBoundingClientRect();
+    const containerW = (containerRect && containerRect.width > 0) ? containerRect.width : 16;
+    const containerH = (containerRect && containerRect.height > 0) ? containerRect.height : 9;
+    const targetRatio = Math.max(0.01, containerW / containerH);
 
-    let transformVal = '';
-    if (this.imageTransformState.flipH || this.imageTransformState.flipV || this.imageTransformState.scale !== 100) {
-      transformVal = `scale(${sx}, ${sy})`;
+    // Intrinsic image dimensions
+    let imgW = isImg ? (targetImgEl.naturalWidth || targetImgEl.width || 0) : 0;
+    let imgH = isImg ? (targetImgEl.naturalHeight || targetImgEl.height || 0) : 0;
+
+    // Fallback: check panel preview image
+    if (!imgW || !imgH) {
+      const fullImg = this.container?.querySelector('#admin-pfp-full-img');
+      if (fullImg && fullImg.naturalWidth && fullImg.naturalHeight) {
+        imgW = fullImg.naturalWidth;
+        imgH = fullImg.naturalHeight;
+      }
     }
 
-    if (transformVal) {
-      this.activeElement.style.transform = transformVal;
-      this._notifyChange({ styleKey: 'transform', val: transformVal });
+    if (!imgW || !imgH) {
+      imgW = 16;
+      imgH = 9;
+    }
+
+    const imgRatio = Math.max(0.01, imgW / imgH);
+    const S = Math.max(1.0, (scale || 100) / 100);
+
+    let cropWidthFraction = 1.0;
+    let cropHeightFraction = 1.0;
+
+    if (imgRatio >= targetRatio) {
+      cropHeightFraction = Math.min(1.0, 1.0 / S);
+      cropWidthFraction = Math.min(1.0, (targetRatio / imgRatio) / S);
     } else {
-      this.activeElement.style.removeProperty('transform');
-      if (this.exportSystem && this.activeMeta) {
-        this.exportSystem.removeChange(this.activeMeta.selector, 'style', 'transform', this.currentBreakpoint);
+      cropWidthFraction = Math.min(1.0, 1.0 / S);
+      cropHeightFraction = Math.min(1.0, (imgRatio / targetRatio) / S);
+    }
+
+    const maxOffsetXPct = (1.0 - cropWidthFraction) * 100;
+    const maxOffsetYPct = (1.0 - cropHeightFraction) * 100;
+
+    const leftPct = maxOffsetXPct * (Math.max(0, Math.min(100, posX)) / 100);
+    const topPct = maxOffsetYPct * (Math.max(0, Math.min(100, posY)) / 100);
+    const widthPct = cropWidthFraction * 100;
+    const heightPct = cropHeightFraction * 100;
+
+    return {
+      imgRatio,
+      targetRatio,
+      cropWidthFraction,
+      cropHeightFraction,
+      leftPct,
+      topPct,
+      widthPct,
+      heightPct
+    };
+  }
+
+  _getImageFitAxes() {
+    const scale = this.imageTransformState?.scale || 100;
+    const posX = this.imageTransformState?.posX ?? 50;
+    const posY = this.imageTransformState?.posY ?? 50;
+    return this._calculateCropBox(scale, posX, posY);
+  }
+
+  _applyImagePosition(posX, posY, pushUndo = false) {
+    if (!this.activeElement) return;
+    if (pushUndo) {
+      this.pushUndoSnapshot('Image Reposition');
+    }
+
+    const px = Math.max(0, Math.min(100, Math.round(posX * 10) / 10));
+    const py = Math.max(0, Math.min(100, Math.round(posY * 10) / 10));
+    const posVal = `${px}% ${py}%`;
+
+    this.imageTransformState.posX = px;
+    this.imageTransformState.posY = py;
+
+    const isImg = this.activeElement.tagName === 'IMG';
+    if (isImg) {
+      this.activeElement.style.objectPosition = posVal;
+      if (!this.activeElement.style.objectFit) {
+        this.activeElement.style.objectFit = this.imageTransformState.objectFit || 'cover';
       }
-      this._notifyChange({ styleKey: 'transform', val: '' });
+      if (pushUndo) {
+        this._notifyChange({ styleKey: 'objectPosition', val: posVal });
+      }
+    } else {
+      this.activeElement.style.backgroundPosition = posVal;
+      if (pushUndo) {
+        this._notifyChange({ styleKey: 'backgroundPosition', val: posVal });
+      }
+    }
+
+    this._applyImageTransform(pushUndo);
+  }
+
+  _applyImageTransform(pushUndo = false) {
+    if (!this.activeElement) return;
+
+    const scale = Math.max(100, Math.min(300, this.imageTransformState.scale || 100));
+    this.imageTransformState.scale = scale;
+
+    const posX = this.imageTransformState.posX ?? 50;
+    const posY = this.imageTransformState.posY ?? 50;
+    const flipH = Boolean(this.imageTransformState.flipH);
+    const flipV = Boolean(this.imageTransformState.flipV);
+
+    const userScale = scale / 100;
+    const isImg = this.activeElement.tagName === 'IMG';
+
+    // Calculate aspect ratio dynamics so dragging off-axis (or non-overflow axis) always shifts visibly
+    let effectiveScale = userScale;
+    if (isImg) {
+      const naturalW = this.activeElement.naturalWidth || this.activeElement.width || 1;
+      const naturalH = this.activeElement.naturalHeight || this.activeElement.height || 1;
+      const imgRatio = naturalW / naturalH;
+      const parentRect = this.activeElement.parentElement?.getBoundingClientRect();
+      const pW = (parentRect && parentRect.width > 0) ? parentRect.width : 16;
+      const pH = (parentRect && parentRect.height > 0) ? parentRect.height : 9;
+      const targetRatio = pW / pH;
+
+      // If user repositions along the non-overflow axis, provide subtle scale travel so all 4 directions respond
+      if (imgRatio > targetRatio && Math.abs(50 - posY) > 1) {
+        const neededY = 1.0 + (Math.abs(50 - posY) / 50) * 0.18;
+        effectiveScale = Math.max(userScale, neededY);
+      } else if (imgRatio < targetRatio && Math.abs(50 - posX) > 1) {
+        const neededX = 1.0 + (Math.abs(50 - posX) / 50) * 0.18;
+        effectiveScale = Math.max(userScale, neededX);
+      }
+    }
+
+    const sx = (flipH ? -1 : 1) * effectiveScale;
+    const sy = (flipV ? -1 : 1) * effectiveScale;
+
+    if (effectiveScale === 1.0 && !flipH && !flipV) {
+      this.activeElement.style.transform = '';
+      this.activeElement.style.transformOrigin = '';
+      if (pushUndo) {
+        this._notifyChange({ styleKey: 'transform', val: '' });
+      }
+    } else {
+      const transformVal = `scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
+      this.activeElement.style.transform = transformVal;
+      this.activeElement.style.transformOrigin = 'center center';
+      if (pushUndo) {
+        this._notifyChange({ styleKey: 'transform', val: transformVal });
+        this._notifyChange({ styleKey: 'transformOrigin', val: 'center center' });
+      }
     }
 
     // Update preset pills highlights directly without replacing tab DOM
-    const currentScale = this.imageTransformState.scale || 100;
-    this.container.querySelectorAll('.btn-preset-scale').forEach(pill => {
-      pill.classList.toggle('is-active', parseInt(pill.dataset.scale, 10) === currentScale);
+    this.container?.querySelectorAll('.btn-preset-scale').forEach(pill => {
+      pill.classList.toggle('is-active', parseInt(pill.dataset.scale, 10) === scale);
     });
 
-    this.updateTabCounters();
+    this._updatePfpPreviewUi();
+    if (this.selectionEngine) {
+      this.selectionEngine._updateBoxes();
+    }
+  }
+
+  _updatePfpPreviewUi() {
+    if (!this.container) return;
+    const fullImg = this.container.querySelector('#admin-pfp-full-img');
+    const stage = this.container.querySelector('#admin-pfp-stage');
+    const cropBox = this.container.querySelector('#admin-pfp-crop-box');
+    const coordsEl = this.container.querySelector('#admin-pfp-coords');
+    const pfpViewport = this.container.querySelector('#admin-pfp-viewport');
+
+    const scale = Math.max(100, Math.min(300, this.imageTransformState.scale || 100));
+    const posX = this.imageTransformState.posX ?? 50;
+    const posY = this.imageTransformState.posY ?? 50;
+    const flipH = this.imageTransformState.flipH;
+    const flipV = this.imageTransformState.flipV;
+
+    const fit = this._calculateCropBox(scale, posX, posY);
+
+    if (fullImg) {
+      const sx = flipH ? -1 : 1;
+      const sy = flipV ? -1 : 1;
+      fullImg.style.transform = `scale(${sx}, ${sy})`;
+    }
+
+    if (stage) {
+      stage.style.aspectRatio = `${fit.imgRatio.toFixed(4)}`;
+    }
+
+    if (cropBox) {
+      cropBox.style.left = `${fit.leftPct.toFixed(2)}%`;
+      cropBox.style.top = `${fit.topPct.toFixed(2)}%`;
+      cropBox.style.width = `${fit.widthPct.toFixed(2)}%`;
+      cropBox.style.height = `${fit.heightPct.toFixed(2)}%`;
+    }
+
+    if (coordsEl) {
+      coordsEl.textContent = `X: ${Math.round(posX)}% · Y: ${Math.round(posY)}%`;
+    }
+
+    if (pfpViewport) {
+      pfpViewport.style.cursor = 'grab';
+    }
+
+    this.container.querySelectorAll('.btn-pfp-align').forEach(btn => {
+      const bx = parseFloat(btn.dataset.x);
+      const by = parseFloat(btn.dataset.y);
+      const isActive = Math.abs(posX - bx) < 1 && Math.abs(posY - by) < 1;
+      btn.classList.toggle('is-active', isActive);
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+    });
+
+    this.container.querySelectorAll('.btn-preset-scale').forEach(pill => {
+      pill.classList.toggle('is-active', parseInt(pill.dataset.scale, 10) === scale);
+    });
+  }
+
+  _startAltPreview(src, card) {
+    if (!this.activeElement || !src) return;
+
+    if (!this._isAltPreviewing) {
+      const isImg = this.activeElement.tagName === 'IMG';
+      this._altPreviewOriginal = {
+        type: isImg ? 'img' : 'bg',
+        src: isImg ? (this.activeElement.getAttribute('src') || this.activeElement.src) : '',
+        datasetSrc: isImg ? (this.activeElement.dataset?.src || null) : null,
+        srcset: isImg ? this.activeElement.getAttribute('srcset') : null,
+        bg: !isImg ? (this.activeElement.style.backgroundImage || '') : ''
+      };
+      this._isAltPreviewing = true;
+    }
+
+    const isImg = this.activeElement.tagName === 'IMG';
+    if (isImg) {
+      if (this.activeElement.hasAttribute('srcset')) {
+        this.activeElement.removeAttribute('srcset');
+      }
+      this.activeElement.setAttribute('src', src);
+      this.activeElement.src = src;
+      if (this.activeElement.dataset) {
+        this.activeElement.dataset.src = src;
+      }
+    } else {
+      this.activeElement.style.backgroundImage = `url('${src}')`;
+    }
+
+    if (this.selectionEngine) {
+      this.selectionEngine._updateBoxes();
+    }
+
+    // Mirror preview in panel full-image stage
+    const fullImg = this.container?.querySelector('#admin-pfp-full-img');
+    if (fullImg) {
+      fullImg.src = src;
+    }
+
+    // Highlight card
+    if (this.container) {
+      this.container.querySelectorAll('.admin-gallery-card').forEach(c => {
+        c.classList.toggle('is-alt-previewing', c === card);
+      });
+    }
+  }
+
+  _endAltPreview(shouldRestore = true) {
+    if (this.container) {
+      this.container.querySelectorAll('.admin-gallery-card').forEach(c => {
+        c.classList.remove('is-alt-previewing');
+      });
+    }
+
+    if (this._isAltPreviewing && shouldRestore && this.activeElement && this._altPreviewOriginal) {
+      if (this._altPreviewOriginal.type === 'img') {
+        if (this._altPreviewOriginal.srcset) {
+          this.activeElement.setAttribute('srcset', this._altPreviewOriginal.srcset);
+        } else {
+          this.activeElement.removeAttribute('srcset');
+        }
+        if (this._altPreviewOriginal.src) {
+          this.activeElement.setAttribute('src', this._altPreviewOriginal.src);
+          this.activeElement.src = this._altPreviewOriginal.src;
+        }
+        if (this._altPreviewOriginal.datasetSrc) {
+          this.activeElement.dataset.src = this._altPreviewOriginal.datasetSrc;
+        }
+      } else if (this._altPreviewOriginal.type === 'bg') {
+        this.activeElement.style.backgroundImage = this._altPreviewOriginal.bg;
+      }
+
+      const fullImg = this.container?.querySelector('#admin-pfp-full-img');
+      if (fullImg && this._altPreviewOriginal.src) {
+        fullImg.src = this._altPreviewOriginal.src;
+      }
+
+      if (this.selectionEngine) {
+        this.selectionEngine._updateBoxes();
+      }
+    }
+
+    this._isAltPreviewing = false;
+    this._altPreviewOriginal = null;
   }
 
   _applyImageSizing(key, val) {
@@ -3560,15 +3913,29 @@ export class SidePanel {
     }
 
     this.imageTransformState[key] = val;
+    this._updatePfpPreviewUi();
     this.updateTabCounters();
   }
 
   _swapImage(newSrc, newName) {
     if (!this.activeElement) {
+      const iframeDoc = this.getIframeDoc ? this.getIframeDoc() : null;
+      const firstImg = iframeDoc ? (iframeDoc.querySelector('.catalog-photo') || iframeDoc.querySelector('img')) : null;
+      if (firstImg && this.selectionEngine) {
+        this.selectionEngine.selectElement(firstImg);
+      }
+    }
+
+    if (!this.activeElement) {
       if (typeof this.onToast === 'function') {
-        this.onToast(`Selected image: ${newName || 'image'}. Click an element in preview to apply it.`);
+        this.onToast(`Selected image: ${newName || 'image'}. Click an image on the website to apply it.`);
       }
       return;
+    }
+
+    // Cancel any active Alt preview so it does not revert to old image
+    if (this._isAltPreviewing) {
+      this._endAltPreview(false);
     }
 
     // Pre-capture pristine original DOM values for schemaApplier before mutating
@@ -3585,10 +3952,24 @@ export class SidePanel {
     if (isImg) {
       this.activeElement.setAttribute('src', newSrc);
       this.activeElement.src = newSrc;
+      this.activeElement.dataset.src = newSrc;
+      this.activeElement.classList.add('is-loaded');
       this._notifyChange({ media: { src: newSrc, type: 'image' } });
     } else {
       this.activeElement.style.backgroundImage = `url('${newSrc}')`;
       this._notifyChange({ styleKey: 'backgroundImage', val: `url('${newSrc}')`, media: { src: newSrc, type: 'image' } });
+    }
+
+    // Reset transform & position for fresh image
+    this.imageTransformState.posX = 50;
+    this.imageTransformState.posY = 50;
+    this.imageTransformState.scale = 100;
+    this.imageTransformState.flipH = false;
+    this.imageTransformState.flipV = false;
+
+    const fullImg = this.container?.querySelector('#admin-pfp-full-img');
+    if (fullImg) {
+      fullImg.src = newSrc;
     }
 
     if (typeof this.onToast === 'function') {
@@ -3968,7 +4349,16 @@ export class SidePanel {
   }
 
   _buildMediaTabHtml() {
-    const isImg = Boolean(this.activeElement && this.activeElement.tagName === 'IMG');
+    let targetImgEl = null;
+    if (this.activeElement) {
+      if (this.activeElement.tagName === 'IMG') {
+        targetImgEl = this.activeElement;
+      } else if (this.activeElement.querySelector && this.activeElement.querySelector('img')) {
+        targetImgEl = this.activeElement.querySelector('img');
+      }
+    }
+
+    const isImg = Boolean(targetImgEl);
     const isAudioTarget = Boolean(
       this.activeElement && (
         this.activeElement.hasAttribute('data-audio') ||
@@ -3979,11 +4369,23 @@ export class SidePanel {
       )
     );
 
-    const mode = this.mediaSubMode || (isAudioTarget ? 'audio' : 'image');
+    let currentImgSrc = '';
+    if (targetImgEl) {
+      const srcAttr = targetImgEl.getAttribute('src') || targetImgEl.src || '';
+      const dataSrc = targetImgEl.dataset?.src || '';
+      if (srcAttr && !srcAttr.startsWith('data:image/svg')) {
+        currentImgSrc = srcAttr;
+      } else if (dataSrc) {
+        currentImgSrc = dataSrc;
+      } else {
+        currentImgSrc = srcAttr;
+      }
+    } else if (this.activeElement) {
+      const bg = this.activeElement.style.backgroundImage || '';
+      currentImgSrc = bg.replace(/^url\(['"]?|['"]?\)$/g, '');
+    }
 
-    const currentImgSrc = isImg
-      ? (this.activeElement?.dataset?.src || this.activeElement?.getAttribute('src') || '')
-      : (this.activeElement ? (this.activeElement.style.backgroundImage || '').replace(/^url\(['"]?|['"]?\)$/g, '') : '');
+    const mode = this.mediaSubMode || (isAudioTarget ? 'audio' : 'image');
 
     const currentAudioSrc = isAudioTarget
       ? (this.activeElement?.dataset?.audio || this.activeElement?.getAttribute('data-src') || this.activeElement?.dataset?.src || this.activeElement?.getAttribute('src') || '')
@@ -3995,10 +4397,14 @@ export class SidePanel {
 
     // Check changed states
     const hasFlipChanged = Boolean(this.imageTransformState.flipH || this.imageTransformState.flipV);
-    const hasScaleChanged = this.imageTransformState.scale !== 100;
-    const hasSizingChanged = Boolean(this.imageTransformState.width || this.imageTransformState.height || (this.imageTransformState.objectFit && this.imageTransformState.objectFit !== 'cover'));
+    const hasScaleChanged = (this.imageTransformState.scale || 100) !== 100;
+    const hasPositionChanged = Boolean(this.imageTransformState.posX !== 50 || this.imageTransformState.posY !== 50);
+    const hasSizingChanged = Boolean(hasPositionChanged || (this.imageTransformState.objectFit && this.imageTransformState.objectFit !== 'cover'));
     const hasTransformChanged = hasFlipChanged || hasScaleChanged || hasSizingChanged;
-    const hasMediaChanged = this.isFieldChanged('media') || this.isFieldChanged('backgroundImage') || this.isFieldChanged('transform') || this.isFieldChanged('width') || this.isFieldChanged('height');
+    const hasMediaChanged = this.isFieldChanged('media') || this.isFieldChanged('backgroundImage') || this.isFieldChanged('transform') || this.isFieldChanged('objectPosition') || this.isFieldChanged('backgroundPosition');
+
+    // Calculate crop boundary rectangle and aspect ratio matching actual website display
+    const fit = this._calculateCropBox(this.imageTransformState.scale || 100, this.imageTransformState.posX ?? 50, this.imageTransformState.posY ?? 50);
 
     // Retrieve live playlist tracks for Arrangement feature
     const iframeDoc = this.getIframeDoc ? this.getIframeDoc() : document;
@@ -4050,14 +4456,61 @@ export class SidePanel {
           </div>
         ` : ''}
 
-        <!-- 3. Combined Transforms, Scaling, Resizing and Flips Under One Category -->
+        <!-- 3. Combined Transforms, Framing, Scaling & Repositioning -->
         <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-media-transform') ? 'is-collapsed' : ''} ${hasTransformChanged ? 'is-modified' : ''}">
-          ${this._renderSectionHeader('sec-media-transform', 'Transform & Sizing', ['transform', 'width', 'height', 'objectFit'], 'media-transform', null)}
+          ${this._renderSectionHeader('sec-media-transform', 'Transform & Sizing', ['transform', 'objectPosition', 'objectFit', 'backgroundPosition'], 'media-transform', null)}
+
+          ${currentImgSrc ? `
+            <div class="admin-pfp-header">
+              <label class="admin-field-label" style="font-weight: 600;">Framing &amp; Position</label>
+              <span class="admin-pfp-coords" id="admin-pfp-coords">X: ${Math.round(this.imageTransformState.posX ?? 50)}% · Y: ${Math.round(this.imageTransformState.posY ?? 50)}%</span>
+            </div>
+
+            <!-- Full Image Framing Viewport with Boundary Rectangle & Dull Overlay (No outer nesting container) -->
+            <div class="admin-pfp-viewport" id="admin-pfp-viewport" data-tooltip="Drag to reposition frame. Hold Ctrl + Scroll to zoom in/out.">
+              <div class="admin-pfp-stage" id="admin-pfp-stage" style="aspect-ratio: ${fit.imgRatio.toFixed(4)};">
+                <img id="admin-pfp-full-img" src="${currentImgSrc}" class="admin-pfp-full-img" alt="Full Image" draggable="false" style="transform: scale(${this.imageTransformState.flipH ? -1 : 1}, ${this.imageTransformState.flipV ? -1 : 1});">
+                
+                <!-- Website Display Boundary Rectangle (Bright) with Dull Dark Mask Outside -->
+                <div class="admin-pfp-crop-box" id="admin-pfp-crop-box" style="left: ${fit.leftPct.toFixed(2)}%; top: ${fit.topPct.toFixed(2)}%; width: ${fit.widthPct.toFixed(2)}%; height: ${fit.heightPct.toFixed(2)}%;">
+                  <!-- Corner Handles -->
+                  <div class="pfp-crop-handle pfp-handle-tl"></div>
+                  <div class="pfp-crop-handle pfp-handle-tr"></div>
+                  <div class="pfp-crop-handle pfp-handle-bl"></div>
+                  <div class="pfp-crop-handle pfp-handle-br"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Alignment Nudge Shortcuts -->
+            <div class="admin-pfp-align-row">
+              <span class="admin-pfp-align-label">Focal Point:</span>
+              <div class="admin-pfp-align-buttons">
+                <button type="button" class="btn-pfp-align ${(this.imageTransformState.posX ?? 50) === 50 && (this.imageTransformState.posY ?? 50) === 50 ? 'is-active' : ''}" data-x="50" data-y="50" data-tooltip="Center (50% 50%)">Center</button>
+                <button type="button" class="btn-pfp-align ${(this.imageTransformState.posY ?? 50) === 0 ? 'is-active' : ''}" data-x="50" data-y="0" data-tooltip="Top (50% 0%)">Top</button>
+                <button type="button" class="btn-pfp-align ${(this.imageTransformState.posY ?? 50) === 100 ? 'is-active' : ''}" data-x="50" data-y="100" data-tooltip="Bottom (50% 100%)">Bottom</button>
+                <button type="button" class="btn-pfp-align ${(this.imageTransformState.posX ?? 50) === 0 ? 'is-active' : ''}" data-x="0" data-y="50" data-tooltip="Left (0% 50%)">Left</button>
+                <button type="button" class="btn-pfp-align ${(this.imageTransformState.posX ?? 50) === 100 ? 'is-active' : ''}" data-x="100" data-y="50" data-tooltip="Right (100% 50%)">Right</button>
+                <button type="button" class="btn-pfp-reset" id="btn-pfp-reset-pos" data-tooltip="Reset framing &amp; zoom to default">Reset</button>
+              </div>
+            </div>
+          ` : `
+            <!-- Blank Viewport when no image is selected: pure white in light mode, pure black in dark mode with a tip -->
+            <div class="admin-pfp-empty-viewport">
+              <div class="admin-pfp-empty-tip">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="admin-pfp-empty-icon">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <div class="admin-pfp-empty-title">No image selected</div>
+                <div class="admin-pfp-empty-desc">Select an image on the website or from the gallery below to adjust</div>
+              </div>
+            </div>
+          `}
 
           <!-- Flips & Orientation -->
           <div class="admin-field-row ${hasFlipChanged ? 'is-modified' : ''}" style="margin-bottom: 8px;">
             <div class="admin-field-label-wrap">
-              <label class="admin-field-label">Flips & Mirror</label>
+              <label class="admin-field-label">Flips &amp; Mirror</label>
             </div>
             <div class="admin-field-control">
               <div class="admin-flip-group">
@@ -4083,28 +4536,16 @@ export class SidePanel {
               <label class="admin-field-label">Scale / Zoom</label>
             </div>
             <div class="admin-field-control">
-              ${this._renderSliderRow('img-scale', 25, 200, 5, this.imageTransformState.scale || 100, '%')}
+              ${this._renderSliderRow('img-scale', 100, 300, 1, this.imageTransformState.scale || 100, '%')}
               <button type="button" class="btn-field-reset" data-reset-type="scale" data-tooltip="Reset scale to 100%" style="display: ${hasScaleChanged ? 'inline-flex' : 'none'};">↺</button>
             </div>
           </div>
 
           <!-- Scale Preset Pills -->
           <div class="admin-preset-pills-row" style="margin-top: 2px; margin-bottom: 12px;">
-            ${[50, 75, 100, 125, 150, 200].map(s => `
+            ${[100, 125, 150, 200, 250, 300].map(s => `
               <button type="button" class="btn-preset-pill btn-preset-scale ${this.imageTransformState.scale === s ? 'is-active' : ''}" data-scale="${s}">${s}%</button>
             `).join('')}
-          </div>
-
-          <!-- Resizing: Width & Height Inputs -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-            <div class="admin-field-col">
-              <label class="admin-field-label" style="font-size: 10px; margin-bottom: 4px; display: block;">Width</label>
-              <input type="text" class="admin-input" id="img-width-input" value="${this.imageTransformState.width || ''}" placeholder="e.g. 100%, 320px, auto">
-            </div>
-            <div class="admin-field-col">
-              <label class="admin-field-label" style="font-size: 10px; margin-bottom: 4px; display: block;">Height</label>
-              <input type="text" class="admin-input" id="img-height-input" value="${this.imageTransformState.height || ''}" placeholder="e.g. 240px, auto">
-            </div>
           </div>
 
           <!-- Resizing: Object Fit Select -->
@@ -4122,36 +4563,27 @@ export class SidePanel {
               </select>
             </div>
           </div>
-
-          <!-- Dimension Preset Quick Pills -->
-          <div class="admin-preset-pills-row" style="margin-top: 4px;">
-            <button type="button" class="btn-preset-pill btn-preset-size" data-width="auto" data-height="auto">Auto</button>
-            <button type="button" class="btn-preset-pill btn-preset-size" data-width="100%" data-height="auto">100% Width</button>
-            <button type="button" class="btn-preset-pill btn-preset-size" data-width="300px" data-height="auto">300px</button>
-            <button type="button" class="btn-preset-pill btn-preset-size" data-width="400px" data-height="auto">400px</button>
-            <button type="button" class="btn-preset-pill btn-preset-size" data-width="300px" data-height="300px">1:1 Square</button>
-          </div>
         </div>
 
-        <!-- 6. Easy Image Swapping & Project Library -->
+        <!-- 6. Image Source -->
         <div class="admin-section ${this.collapsedSections && this.collapsedSections.has('sec-media-swap') ? 'is-collapsed' : ''}" style="margin-bottom: 0;">
-          ${this._renderSectionHeader('sec-media-swap', 'Image Source & Swapping', ['media', 'src', 'backgroundImage'], 'media')}
+          ${this._renderSectionHeader('sec-media-swap', 'Image Source', ['media', 'src', 'backgroundImage'], 'media')}
 
-          <!-- Storage Location Banner -->
-          <div style="display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: var(--admin-radius-sm); margin-bottom: 12px; font-size: 11px;">
-            <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
-              <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #10b981; flex-shrink: 0;"></span>
-              <span style="font-weight: 600; color: var(--admin-text-primary); flex-shrink: 0;">HF Repo:</span>
-              <span style="font-family: var(--admin-mono); font-size: 10px; color: var(--admin-accent-cyan); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="greyhugging/RawStorage/Images">greyhugging/RawStorage/Images</span>
+          <!-- Storage Location Banner with Full-Height Sync HF Button -->
+          <div class="admin-hf-banner">
+            <div class="admin-hf-banner-info">
+              <span class="admin-hf-status-dot"></span>
+              <span class="admin-hf-label">HF Repo:</span>
+              <span class="admin-hf-path" title="greyhugging/RawStorage/Images">greyhugging/RawStorage/Images</span>
             </div>
-            <button type="button" class="admin-btn admin-btn-ghost" id="btn-sync-hf-images" style="padding: 2px 7px; font-size: 10px; flex-shrink: 0;" title="Sync local images to Hugging Face">Sync HF</button>
+            <button type="button" class="admin-btn admin-btn-ghost btn-sync-hf-full" id="btn-sync-hf-images" title="Sync local images to Hugging Face">Sync HF</button>
           </div>
 
-          <!-- Upload Dropzone Option with High Contrast Light Mode Text (Item 3) -->
-          <div class="admin-dropzone" id="media-dropzone" style="margin-bottom: 12px;">
+          <!-- Upload Dropzone Option with High Contrast Light Mode Text -->
+          <div class="admin-dropzone" id="media-dropzone" style="margin-bottom: 4px;">
             <input type="file" id="media-file-input" style="display: none;" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif">
             <div class="dropzone-icon admin-dropzone-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             </div>
             <div class="admin-dropzone-title">
               Upload New Image (PNG / JPG / WebP / SVG)
@@ -4161,59 +4593,75 @@ export class SidePanel {
             </div>
           </div>
 
-          <!-- Direct URL Input with Apply Action placed BELOW label (Item 2) -->
-          <div class="admin-field-vertical" style="margin-bottom: 12px;">
-            <div class="admin-field-label-wrap">
+          <!-- Direct URL Input with Apply Action placed BELOW label -->
+          <div class="admin-field-vertical" style="margin-bottom: 0;">
+            <div class="admin-field-label-wrap" style="margin-bottom: 2px;">
               <label class="admin-field-label">Custom Image URL</label>
             </div>
-            <div class="admin-url-input-wrap">
+            <div class="admin-url-input-wrap" style="margin-top: 0;">
               <input type="text" class="admin-input" id="media-url-input" value="${currentImgSrc}" placeholder="https://huggingface.co/datasets/greyhugging/RawStorage/resolve/main/Images/...">
               <button type="button" class="admin-btn admin-btn-primary" id="btn-apply-img-url">Apply</button>
             </div>
           </div>
+        </div>
 
-          <!-- Existing Images Gallery -->
-          <div class="admin-gallery-section" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--admin-border-subtle);">
-            <div class="admin-gallery-header">
-              <div class="admin-gallery-title">
-                <span>Swap with Existing Project Images</span>
-              </div>
-              <span class="admin-gallery-count">${this.availableImages.length} images</span>
+        <!-- 7. Swap Section with Full-Width Snapping to Sidebar Edges -->
+        <div class="admin-section admin-swap-full-section ${this.collapsedSections && this.collapsedSections.has('sec-media-swap-gallery') ? 'is-collapsed' : ''}" style="margin-bottom: 0;">
+          ${this._renderSectionHeader('sec-media-swap-gallery', 'Swap', ['media', 'src'], 'media')}
+
+          <!-- Compact Steps -->
+          <div class="admin-swap-steps">
+            <div class="swap-step-item">
+              <span class="swap-step-badge">Step 1</span>
+              <span class="swap-step-text">Turn on Edit mode</span>
             </div>
-
-            <!-- Category Filter Pills -->
-            <div class="admin-preset-pills-row" id="img-gallery-categories" style="margin-bottom: 8px;">
-              <button type="button" class="btn-preset-pill btn-gallery-cat is-active" data-cat="all">All</button>
-              <button type="button" class="btn-preset-pill btn-gallery-cat" data-cat="Studio Gear">Studio</button>
-              <button type="button" class="btn-preset-pill btn-gallery-cat" data-cat="Plugins">Plugins</button>
-              <button type="button" class="btn-preset-pill btn-gallery-cat" data-cat="Hardware">Hardware</button>
-              <button type="button" class="btn-preset-pill btn-gallery-cat" data-cat="Backgrounds">Loops</button>
-              <button type="button" class="btn-preset-pill btn-gallery-cat" data-cat="Uploaded">Uploaded</button>
+            <div class="swap-step-item">
+              <span class="swap-step-badge">Step 2</span>
+              <span class="swap-step-text">Select image in the website</span>
             </div>
+            <div class="swap-step-item">
+              <span class="swap-step-badge">Step 3</span>
+              <span class="swap-step-text">Select image here to swap</span>
+            </div>
+          </div>
 
-            <!-- Search Filter -->
-            <input type="text" class="admin-input" id="img-gallery-search" placeholder="Search images by name..." style="margin-bottom: 8px; font-size: 10.5px; height: 26px;">
+          <!-- Alt + Hover Preview Hint -->
+          <div class="admin-swap-hint">
+            <kbd class="admin-kbd">Alt</kbd> <span>+ Hover on images to preview live on website</span>
+          </div>
 
-            <!-- Gallery Cards Grid with 1-Click Swap -->
-            <div class="admin-gallery-grid" id="img-gallery-grid">
-              ${this.availableImages.map(img => {
-                const isActive = currentImgSrc && (currentImgSrc.includes(img.src.replace(/^\.\//, '')) || img.src.includes(currentImgSrc.replace(/^\.\//, '')));
-                return `
-                  <div class="admin-gallery-card ${isActive ? 'is-active' : ''}" data-src="${img.src}" data-name="${img.name}" data-category="${img.category || 'General'}" data-tooltip="Click to swap with ${img.name}">
-                    <div class="admin-gallery-thumb-wrap">
-                      <img src="${img.src}" alt="${img.name}" loading="lazy">
-                      ${isActive ? `<span class="admin-gallery-card-badge">Active</span>` : ''}
-                      <div class="admin-gallery-card-hover-action">
-                        <button type="button" class="btn-quick-swap">Swap</button>
-                      </div>
-                    </div>
-                    <div class="admin-gallery-meta">
-                      <span class="admin-gallery-name">${img.name}</span>
+          <!-- Category Filter Pills -->
+          <div class="admin-preset-pills-row" id="img-gallery-categories" style="margin-bottom: 8px;">
+            <button type="button" class="btn-preset-pill btn-gallery-cat is-active" data-cat="all">All</button>
+            <button type="button" class="btn-preset-pill btn-gallery-cat" data-cat="Studio Gear">Studio</button>
+            <button type="button" class="btn-preset-pill btn-gallery-cat" data-cat="Plugins">Plugins</button>
+            <button type="button" class="btn-preset-pill btn-gallery-cat" data-cat="Hardware">Hardware</button>
+            <button type="button" class="btn-preset-pill btn-gallery-cat" data-cat="Backgrounds">Loops</button>
+            <button type="button" class="btn-preset-pill btn-gallery-cat" data-cat="Uploaded">Uploaded</button>
+          </div>
+
+          <!-- Search Filter -->
+          <input type="text" class="admin-input" id="img-gallery-search" placeholder="Search images by name..." style="margin-bottom: 8px; font-size: 10.5px; height: 26px;">
+
+          <!-- Gallery Cards Grid with 1-Click Swap -->
+          <div class="admin-gallery-grid" id="img-gallery-grid">
+            ${this.availableImages.map(img => {
+              const isActive = currentImgSrc && (currentImgSrc.includes(img.src.replace(/^\.\//, '')) || img.src.includes(currentImgSrc.replace(/^\.\//, '')));
+              return `
+                <div class="admin-gallery-card ${isActive ? 'is-active' : ''}" data-src="${img.src}" data-name="${img.name}" data-category="${img.category || 'General'}" data-tooltip="Click to swap with ${img.name}">
+                  <div class="admin-gallery-thumb-wrap">
+                    <img src="${img.src}" alt="${img.name}" loading="lazy">
+                    ${isActive ? `<span class="admin-gallery-card-badge">Active</span>` : ''}
+                    <div class="admin-gallery-card-hover-action">
+                      <button type="button" class="btn-quick-swap">Swap</button>
                     </div>
                   </div>
-                `;
-              }).join('')}
-            </div>
+                  <div class="admin-gallery-meta">
+                    <span class="admin-gallery-name">${img.name}</span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
           </div>
         </div>
 
@@ -4387,6 +4835,11 @@ export class SidePanel {
   }
 
   _bindMediaTabControls(container) {
+    const isImg = Boolean(this.activeElement && this.activeElement.tagName === 'IMG');
+    const currentImgSrc = isImg
+      ? (this.activeElement?.dataset?.src || this.activeElement?.getAttribute('src') || '')
+      : (this.activeElement ? (this.activeElement.style.backgroundImage || '').replace(/^url\(['"]?|['"]?\)$/g, '') : '');
+
     // 1. Sub-mode switcher (Images vs Audio)
     container.querySelectorAll('.admin-media-mode-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -4430,42 +4883,121 @@ export class SidePanel {
       });
     });
 
-    // 4. Resizing: Width, Height, Object Fit & Presets
-    const widthInput = container.querySelector('#img-width-input');
-    if (widthInput) {
-      widthInput.addEventListener('change', () => {
-        this._applyImageSizing('width', widthInput.value.trim());
+    // 4. PFP-Style Interactive Framing Viewport (Live Drag Repositioning & Wheel Zoom)
+    const pfpViewport = container.querySelector('#admin-pfp-viewport');
+    if (pfpViewport) {
+      let isDragging = false;
+      let startX = 0;
+      let startY = 0;
+      let startPosX = 50;
+      let startPosY = 50;
+
+      pfpViewport.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        e.preventDefault();
+        try { pfpViewport.setPointerCapture(e.pointerId); } catch (_) {}
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startPosX = this.imageTransformState.posX ?? 50;
+        startPosY = this.imageTransformState.posY ?? 50;
+        pfpViewport.classList.add('is-dragging');
+      });
+
+      pfpViewport.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        const stage = pfpViewport.querySelector('#admin-pfp-stage') || pfpViewport;
+        const stageRect = stage.getBoundingClientRect();
+        if (stageRect.width <= 0 || stageRect.height <= 0) return;
+
+        const fit = this._calculateCropBox(this.imageTransformState.scale || 100, startPosX, startPosY);
+
+        // Calculate available travel distance in pixels across stage for 1:1 direct dragging:
+        const travelDistX = stageRect.width * (1.0 - fit.cropWidthFraction);
+        const travelDistY = stageRect.height * (1.0 - fit.cropHeightFraction);
+
+        const deltaX = travelDistX > 3 ? (dx / travelDistX) * 100 : (dx / (stageRect.width * 0.8)) * 100;
+        const deltaY = travelDistY > 3 ? (dy / travelDistY) * 100 : (dy / (stageRect.height * 0.8)) * 100;
+
+        const newPosX = Math.max(0, Math.min(100, startPosX + deltaX));
+        const newPosY = Math.max(0, Math.min(100, startPosY + deltaY));
+
+        this._applyImagePosition(newPosX, newPosY, false);
+      });
+
+      const fullImg = pfpViewport.querySelector('#admin-pfp-full-img');
+      if (fullImg) {
+        if (fullImg.complete) {
+          this._updatePfpPreviewUi();
+        } else {
+          fullImg.addEventListener('load', () => this._updatePfpPreviewUi(), { once: true });
+        }
+      }
+
+      const finishDrag = (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        pfpViewport.classList.remove('is-dragging');
+        try { pfpViewport.releasePointerCapture(e.pointerId); } catch (_) {}
+        this.pushUndoSnapshot('Image Reposition');
+        this._applyImagePosition(this.imageTransformState.posX, this.imageTransformState.posY, true);
+      };
+
+      pfpViewport.addEventListener('pointerup', finishDrag);
+      pfpViewport.addEventListener('pointercancel', finishDrag);
+
+      // Item 5: Normal scrolls should not work for any positioning/framing while in the framing/positioning area.
+      // Only Ctrl + scroll should work for zooming in/out while in the framing/positioning area.
+      pfpViewport.addEventListener('wheel', (e) => {
+        if (!e.ctrlKey && !e.metaKey) {
+          // Allow normal scrolling to scroll the inspector sidebar smoothly without zooming or repositioning
+          return;
+        }
+
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 5 : -5;
+        const currentScale = this.imageTransformState.scale || 100;
+        const newScale = Math.min(300, Math.max(100, currentScale + delta));
+        this.imageTransformState.scale = newScale;
+        const slider = container.querySelector('#slider-img-scale');
+        const num = container.querySelector('#num-img-scale');
+        if (slider) slider.value = newScale;
+        if (num) num.value = newScale;
+        this._applyImageTransform();
+      }, { passive: false });
+    }
+
+    // Focal Point Alignment Shortcuts & Reset
+    container.querySelectorAll('.btn-pfp-align').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const x = parseFloat(btn.dataset.x);
+        const y = parseFloat(btn.dataset.y);
+        this._applyImagePosition(x, y, true);
+      });
+    });
+
+    const resetPosBtn = container.querySelector('#btn-pfp-reset-pos');
+    if (resetPosBtn) {
+      resetPosBtn.addEventListener('click', () => {
+        this.imageTransformState.scale = 100;
+        const slider = container.querySelector('#slider-img-scale');
+        const num = container.querySelector('#num-img-scale');
+        if (slider) slider.value = 100;
+        if (num) num.value = 100;
+        this._applyImageTransform();
+        this._applyImagePosition(50, 50, true);
       });
     }
 
-    const heightInput = container.querySelector('#img-height-input');
-    if (heightInput) {
-      heightInput.addEventListener('change', () => {
-        this._applyImageSizing('height', heightInput.value.trim());
-      });
-    }
-
+    // Object Fit select
     const fitSelect = container.querySelector('#img-object-fit-select');
     if (fitSelect) {
       fitSelect.addEventListener('change', () => {
         this._applyImageSizing('objectFit', fitSelect.value);
       });
     }
-
-    container.querySelectorAll('.btn-preset-size').forEach(pill => {
-      pill.addEventListener('click', () => {
-        const w = pill.dataset.width;
-        const h = pill.dataset.height;
-        if (w) {
-          if (widthInput) widthInput.value = w;
-          this._applyImageSizing('width', w);
-        }
-        if (h) {
-          if (heightInput) heightInput.value = h;
-          this._applyImageSizing('height', h);
-        }
-      });
-    });
 
     // 5. Image Dropzone & File Input
     const imgDropzone = container.querySelector('#media-dropzone');
@@ -4556,10 +5088,87 @@ export class SidePanel {
       });
     }
 
-    // 6. Existing Image Gallery: Category Filtering & Search & Click Swapping
+    // 6. Existing Image Gallery: Category Filtering, Search, Click Swapping & Alt+Hover Live Preview
     const catButtons = container.querySelectorAll('.btn-gallery-cat');
     const searchInput = container.querySelector('#img-gallery-search');
     const galleryCards = container.querySelectorAll('.admin-gallery-card');
+    const galleryGrid = container.querySelector('#img-gallery-grid');
+
+    // Clean up previous window and document listeners to avoid duplicate bindings
+    if (this._altKeyDownHandler) {
+      window.removeEventListener('keydown', this._altKeyDownHandler, true);
+      document.removeEventListener('keydown', this._altKeyDownHandler, true);
+    }
+    if (this._altKeyUpHandler) {
+      window.removeEventListener('keyup', this._altKeyUpHandler, true);
+      document.removeEventListener('keyup', this._altKeyUpHandler, true);
+    }
+    if (this._altBlurHandler) {
+      window.removeEventListener('blur', this._altBlurHandler, true);
+    }
+    if (this._altMouseMoveDocHandler) {
+      document.removeEventListener('mousemove', this._altMouseMoveDocHandler, true);
+    }
+
+    this._currentlyHoveredCard = null;
+
+    this._altKeyDownHandler = (e) => {
+      if (e.key === 'Alt' || e.code === 'AltLeft' || e.code === 'AltRight') {
+        // Prevent Windows / Chrome menu bar activation so keyup is never eaten by the OS!
+        if (this._currentlyHoveredCard || this._isAltPreviewing) {
+          e.preventDefault();
+        }
+        if (this._currentlyHoveredCard) {
+          this._startAltPreview(this._currentlyHoveredCard.dataset.src, this._currentlyHoveredCard);
+        }
+      }
+    };
+
+    // Item 3: Live preview resets back to original image as soon as alt button is lifted up (even without cursor movement)
+    this._altKeyUpHandler = (e) => {
+      if (e.key === 'Alt' || e.code === 'AltLeft' || e.code === 'AltRight' || !e.altKey) {
+        if (this._isAltPreviewing) {
+          e.preventDefault();
+          this._endAltPreview(true);
+        }
+      }
+    };
+
+    this._altBlurHandler = () => {
+      if (this._isAltPreviewing) {
+        this._endAltPreview(true);
+      }
+    };
+
+    // Safety check: if Alt was released without keyup event triggering (e.g. OS focus switch)
+    this._altMouseMoveDocHandler = (e) => {
+      if (this._isAltPreviewing && !e.altKey) {
+        this._endAltPreview(true);
+      }
+    };
+
+    window.addEventListener('keydown', this._altKeyDownHandler, { capture: true, passive: false });
+    window.addEventListener('keyup', this._altKeyUpHandler, { capture: true, passive: false });
+    window.addEventListener('blur', this._altBlurHandler, true);
+    document.addEventListener('keydown', this._altKeyDownHandler, { capture: true, passive: false });
+    document.addEventListener('keyup', this._altKeyUpHandler, { capture: true, passive: false });
+    document.addEventListener('mousemove', this._altMouseMoveDocHandler, true);
+
+    const iframeDoc = this.getIframeDoc ? this.getIframeDoc() : null;
+    if (iframeDoc) {
+      const iframeWin = iframeDoc.defaultView || iframeDoc.parentWindow;
+      if (iframeWin) {
+        try {
+          iframeWin.addEventListener('keydown', this._altKeyDownHandler, { capture: true, passive: false });
+          iframeWin.addEventListener('keyup', this._altKeyUpHandler, { capture: true, passive: false });
+          iframeWin.addEventListener('blur', this._altBlurHandler, true);
+        } catch (_) {}
+      }
+      try {
+        iframeDoc.addEventListener('keydown', this._altKeyDownHandler, { capture: true, passive: false });
+        iframeDoc.addEventListener('keyup', this._altKeyUpHandler, { capture: true, passive: false });
+      } catch (_) {}
+    }
 
     const filterGallery = () => {
       const activeCatBtn = container.querySelector('.btn-gallery-cat.is-active');
@@ -4588,13 +5197,49 @@ export class SidePanel {
       searchInput.addEventListener('input', () => filterGallery());
     }
 
+    // Item 1: Hovering on images while holding down alt, will show a direct preview in the website as the user hovers over different images
     galleryCards.forEach(card => {
+      card.addEventListener('mouseenter', (e) => {
+        this._currentlyHoveredCard = card;
+        if (e.altKey) {
+          this._startAltPreview(card.dataset.src, card);
+        }
+      });
+
+      card.addEventListener('mousemove', (e) => {
+        this._currentlyHoveredCard = card;
+        if (e.altKey) {
+          if (!this._isAltPreviewing || card.dataset.src !== (this.activeElement?.getAttribute('src') || this.activeElement?.src)) {
+            this._startAltPreview(card.dataset.src, card);
+          }
+        } else if (this._isAltPreviewing) {
+          this._endAltPreview(true);
+        }
+      });
+
+      card.addEventListener('mouseleave', () => {
+        if (this._currentlyHoveredCard === card) {
+          this._currentlyHoveredCard = null;
+        }
+      });
+
       card.addEventListener('click', () => {
         const src = card.dataset.src;
         const name = card.dataset.name;
+        // Finalize swap permanently without restoring original
+        this._endAltPreview(false);
         this._swapImage(src, name);
       });
     });
+
+    if (galleryGrid) {
+      galleryGrid.addEventListener('mouseleave', () => {
+        this._currentlyHoveredCard = null;
+        if (this._isAltPreviewing) {
+          this._endAltPreview(true);
+        }
+      });
+    }
 
     // 7. Audio: Minimal Inline Seekbar Controls (Item 5)
     container.querySelectorAll('.admin-track-inline-seek').forEach(seekContainer => {

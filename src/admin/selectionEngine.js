@@ -846,10 +846,17 @@ export class SelectionEngine {
 
   _onMouseMove(e) {
     if (this.mode !== 'select') return;
-    const target = this.doc.elementFromPoint(e.clientX, e.clientY);
+    let target = this.doc.elementFromPoint(e.clientX, e.clientY);
     if (this._isIgnored(target)) {
       this.hideHover();
       return;
+    }
+
+    if (target && target.tagName !== 'IMG' && target.querySelector('img')) {
+      const img = target.querySelector('img');
+      if (img && !this._isIgnored(img)) {
+        target = img;
+      }
     }
 
     if (target === this.selectedElement) {
@@ -863,8 +870,16 @@ export class SelectionEngine {
 
   _onClick(e) {
     if (this.mode !== 'select') return;
-    const target = this.doc.elementFromPoint(e.clientX, e.clientY);
+    let target = this.doc.elementFromPoint(e.clientX, e.clientY);
     if (this._isIgnored(target)) return;
+
+    // When clicking an image container wrapper, prefer the img inside it
+    if (target && target.tagName !== 'IMG' && target.querySelector('img')) {
+      const img = target.querySelector('img');
+      if (img && !this._isIgnored(img)) {
+        target = img;
+      }
+    }
 
     e.preventDefault();
     e.stopPropagation();
@@ -942,7 +957,7 @@ export class SelectionEngine {
       if (!el || !el.isConnected) return;
       if (el === this.selectedElement) return; // Selected element is already highlighted with selectedBox
 
-      const rect = el.getBoundingClientRect();
+      const rect = this._getElementContainerRect(el) || el.getBoundingClientRect();
       if (rect.width === 0 && rect.height === 0) return;
       if (rect.bottom < 0 || rect.top > viewportHeight || rect.right < 0 || rect.left > viewportWidth) return;
 
@@ -1034,7 +1049,7 @@ export class SelectionEngine {
     if (this.changedElements && this.changedElements.size > 0) {
       this.changedElements.forEach(el => {
         if (!el || !el.isConnected) return;
-        const rect = el.getBoundingClientRect();
+        const rect = this._getElementContainerRect(el) || el.getBoundingClientRect();
         if (rect.width === 0 && rect.height === 0) return;
         // Filter out elements scrolled completely outside viewport
         if (rect.bottom < 0 || rect.top > viewportHeight || rect.right < 0 || rect.left > viewportWidth) return;
@@ -1264,13 +1279,61 @@ export class SelectionEngine {
     this.circuitSvg.innerHTML = svgHtml;
   }
 
+  /**
+   * Calculates the true container rect for an element on the website canvas.
+   * For images and elements with transforms/focal repositioning, ensures the inspect
+   * outline remains locked to the visual container size and is never affected by internal
+   * image scaling or zoom adjustments.
+   */
+  _getElementContainerRect(targetEl) {
+    if (!targetEl || !targetEl.getBoundingClientRect) return null;
+
+    const isImg = targetEl.tagName === 'IMG';
+    const hasTransform = Boolean(targetEl.style && (targetEl.style.transform || targetEl.style.objectPosition || targetEl.style.backgroundPosition));
+
+    if (isImg || hasTransform) {
+      const parent = targetEl.parentElement;
+      if (parent && parent !== this.doc.body && parent !== this.doc.documentElement) {
+        const parentStyle = this.win.getComputedStyle ? this.win.getComputedStyle(parent) : null;
+        const parentOverflow = parentStyle ? (parentStyle.overflow || '') : '';
+        const isClipping = parentOverflow === 'hidden' || parentOverflow === 'clip' || parentOverflow === 'auto';
+
+        if (isClipping || parent.classList.contains('catalog-hero-img-wrap') || parent.classList.contains('catalog-tile')) {
+          const pRect = parent.getBoundingClientRect();
+          if (pRect.width > 0 && pRect.height > 0) {
+            return pRect;
+          }
+        }
+      }
+
+      // If untransformed layout dimensions exist on the element:
+      if (targetEl.offsetWidth > 0 && targetEl.offsetHeight > 0) {
+        const rect = targetEl.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const w = targetEl.offsetWidth;
+        const h = targetEl.offsetHeight;
+        return {
+          left: centerX - w / 2,
+          top: centerY - h / 2,
+          right: centerX + w / 2,
+          bottom: centerY + h / 2,
+          width: w,
+          height: h
+        };
+      }
+    }
+
+    return targetEl.getBoundingClientRect();
+  }
+
   _renderBox(boxEl, badgeEl, targetEl, isSelected) {
     if (!boxEl || !targetEl || !targetEl.getBoundingClientRect || this.mode !== 'select') {
       if (boxEl) boxEl.style.display = 'none';
       return;
     }
 
-    const rect = targetEl.getBoundingClientRect();
+    const rect = this._getElementContainerRect(targetEl) || targetEl.getBoundingClientRect();
     if (rect.width === 0 && rect.height === 0) {
       boxEl.style.display = 'none';
       return;
