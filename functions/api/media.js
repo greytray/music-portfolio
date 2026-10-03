@@ -227,6 +227,8 @@ export async function onRequest(context) {
   if (token) {
     forwardHeaders.set('Authorization', `Bearer ${token}`);
   }
+  forwardHeaders.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+  forwardHeaders.set('Accept', '*/*');
 
   const rangeHeader = request.headers.get('Range');
   if (rangeHeader) {
@@ -239,49 +241,49 @@ export async function onRequest(context) {
   }
 
   try {
-    const fetchUpstream = async (candidate) => {
-      const encodedCandidatePath = candidate.split('/').map(encodeURIComponent).join('/');
-      const targetUrl = `${baseUrl}/${encodedCandidatePath}`;
+    let upstreamResponse = null;
+    const probeErrors = [];
 
-      let res = await fetch(targetUrl, {
-        method: request.method,
-        headers: forwardHeaders,
-        redirect: 'manual',
-      });
+    for (const candidate of uniqueCandidates) {
+      try {
+        const encodedCandidatePath = candidate.split('/').map(encodeURIComponent).join('/');
+        const targetUrl = `${baseUrl}/${encodedCandidatePath}`;
 
-      // Handle Hugging Face 302/307 CDN redirect
-      // Crucial: Strip Bearer Authorization on the redirected CDN URL because AWS S3 rejects requests with both query signatures and Bearer headers
-      if (res.status >= 300 && res.status < 400) {
-        const redirectUrl = res.headers.get('Location');
-        if (redirectUrl) {
-          const redirectHeaders = new Headers();
-          if (rangeHeader) redirectHeaders.set('Range', rangeHeader);
-          if (ifNoneMatch) redirectHeaders.set('If-None-Match', ifNoneMatch);
+        let res = await fetch(targetUrl, {
+          method: 'GET',
+          headers: forwardHeaders,
+          redirect: 'manual',
+        });
 
-          res = await fetch(redirectUrl, {
-            method: request.method,
-            headers: redirectHeaders,
-            redirect: 'follow',
-          });
+        // Handle Hugging Face 302/307 CDN redirect
+        // Crucial: Strip Bearer Authorization on the redirected CDN URL because AWS S3 rejects requests with both query signatures and Bearer headers
+        if (res.status >= 300 && res.status < 400) {
+          const redirectUrl = res.headers.get('Location');
+          if (redirectUrl) {
+            const redirectHeaders = new Headers();
+            if (rangeHeader) redirectHeaders.set('Range', rangeHeader);
+            if (ifNoneMatch) redirectHeaders.set('If-None-Match', ifNoneMatch);
+            redirectHeaders.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
+            res = await fetch(redirectUrl, {
+              method: 'GET',
+              headers: redirectHeaders,
+              redirect: 'follow',
+            });
+          }
         }
+
+        if (res.ok || res.status === 206 || res.status === 304) {
+          upstreamResponse = res;
+          break;
+        } else {
+          const errSnippet = (await res.text()).slice(0, 120);
+          probeErrors.push({ candidate, status: res.status, snippet: errSnippet });
+        }
+      } catch (candidateErr) {
+        probeErrors.push({ candidate, error: candidateErr.message });
       }
-
-      if (res.ok || res.status === 206 || res.status === 304) {
-        return { res, candidate };
-      }
-      throw new Error(`Candidate ${candidate} returned ${res.status}`);
-    };
-
-    const fetchPromises = uniqueCandidates.map(candidate => fetchUpstream(candidate));
-
-    let winner;
-    try {
-      winner = await Promise.any(fetchPromises);
-    } catch {
-      winner = null;
     }
-
-    const upstreamResponse = winner ? winner.res : null;
 
     if (!upstreamResponse || (!upstreamResponse.ok && upstreamResponse.status !== 304 && upstreamResponse.status !== 206)) {
       const status = upstreamResponse ? upstreamResponse.status : 404;
@@ -290,9 +292,12 @@ export async function onRequest(context) {
           error: `Upstream media not found: ${status}`,
           requested: decodedPath,
           candidatesTested: uniqueCandidates,
+          hasToken: Boolean(token),
+          baseUrl,
+          probeErrors
         }),
         {
-          status,
+          status: 404,
           headers: {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
